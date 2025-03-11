@@ -39,7 +39,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 45px 30px;
+  padding: 65px 30px;
 }
 
 .textContent {
@@ -84,12 +84,12 @@
 .collectionName {
   font-family: "Gruppo", "Inter", sans-serif;
   font-weight: 300;
-  font-size: 32px;
-  margin-bottom: 30px;
+  font-size: clamp(32px, 4vw, 48px); /* Responsive font size */
+  margin-bottom: clamp(20px, 3vh, 40px); /* Responsive margin */
   letter-spacing: 2px;
   color: #333;
   align-self: flex-start;
-  margin-left: 20px; /* Slight stagger to the right */
+  margin-left: clamp(10px, 2vw, 20px); /* Responsive margin-left */
 }
 
 .eventDetails {
@@ -161,35 +161,31 @@
   user-select: none;
 }
 
-.redCross img,
-.decorativeElement img,
-.starDecoration img {
+.redCross,
+.decorativeElement,
+.starDecoration {
+  position: absolute;
   z-index: 2;
+  width: 40%;
 }
 
 .redCross {
-  margin: 30px 0;
-  max-width: 400px;
-  position: absolute;
-  bottom: 0px;
-  left: 180px;
-  z-index: 2;
+  bottom: 10%;
+  left: 15%;
 }
 
 .decorativeElement {
-  position: absolute;
-  max-width: 300px;
-  bottom: 0px;
-  left: 180px;
-  z-index: 2;
+  bottom: 10%;
+  left: -30%;
+  opacity: 0.35;
 }
 
 .starDecoration {
-  position: absolute;
-  max-width: 300px;
-  bottom: 0px;
-  left: 115px;
-  z-index: 2;
+  bottom: 0%;
+  left: -35%;
+  width: 60%;
+  opacity: 0.35;
+  z-index: -1;
 }
 
 /* Responsive adjustments */
@@ -220,6 +216,12 @@
 
   .imageColumn {
     height: 400px;
+  }
+
+  .redCross,
+  .decorativeElement,
+  .starDecoration {
+    display: none;
   }
 }
 

@@ -28,14 +28,6 @@ export default function Home() {
           <div className={styles.textContent}>
             <div className={styles.dateCode}>SW20250/1</div>
             <h1 className={styles.collectionName}>frostbite</h1>
-            <div className={styles.redCross}>
-              <Image
-                src="/images/red-cross.png"
-                alt="Red Cross"
-                width={250}
-                height={250}
-              />
-            </div>
             <div className={styles.eventDetails}>
               <div className={styles.codeEffect}>
                 {`> init_sequence()`}
@@ -59,6 +51,14 @@ export default function Home() {
               quality={100}
               priority
             />
+            <div className={styles.redCross}>
+              <Image
+                src="/images/red-cross.png"
+                alt="Red Cross"
+                width={250}
+                height={250}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -69,14 +69,6 @@ export default function Home() {
           <div className={styles.textContent}>
             <div className={styles.dateCode}>SW20250/1</div>
             <h2 className={styles.collectionName}>santowrld</h2>
-            <div className={styles.decorativeElement}>
-              <Image
-                src="/images/circular-sketch.png"
-                alt="Decorative Element"
-                width={257}
-                height={500}
-              />
-            </div>
           </div>
         </div>
         <div className={styles.imageColumn}>
@@ -88,6 +80,14 @@ export default function Home() {
               height={600}
               quality={100}
             />
+            <div className={styles.decorativeElement}>
+              <Image
+                src="/images/circular-sketch.png"
+                alt="Decorative Element"
+                width={257}
+                height={500}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -130,14 +130,6 @@ export default function Home() {
           <div className={styles.textContent}>
             <div className={styles.dateCode}>SW20250/1</div>
             <h2 className={styles.collectionName}>santowrld</h2>
-            <div className={styles.starDecoration}>
-              <Image
-                src="/images/star-decoration.png"
-                alt="Star Decoration"
-                width={427}
-                height={593}
-              />
-            </div>
           </div>
         </div>
         <div className={styles.imageColumn}>
@@ -149,6 +141,14 @@ export default function Home() {
               height={600}
               quality={100}
             />
+            <div className={styles.starDecoration}>
+              <Image
+                src="/images/star-decoration.png"
+                alt="Star Decoration"
+                width={427}
+                height={593}
+              />
+            </div>
           </div>
         </div>
       </div>
