@@ -1,0 +1,306 @@
+.container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  position: relative;
+}
+
+.logoContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: transparent;
+  width: 100%;
+  pointer-events: none; /* Allow clicks to pass through */
+}
+
+.logo {
+  max-width: 150px;
+  padding: 5px 0;
+  pointer-events: auto; /* Make the logo itself clickable */
+}
+
+.section {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.textColumn {
+  width: 35%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 45px 30px;
+}
+
+.textContent {
+  max-width: 400px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.imageColumn {
+  width: 65%;
+  height: 100vh;
+  position: relative;
+  margin-bottom: 10px;
+  z-index: 1;
+}
+
+.imageWrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.imageWrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.dateCode {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  color: #585858;
+  letter-spacing: -1.2px;
+  font-weight: 700;
+  align-self: flex-start;
+}
+
+.collectionName {
+  font-family: "Gruppo", "Inter", sans-serif;
+  font-weight: 300;
+  font-size: 32px;
+  margin-bottom: 30px;
+  letter-spacing: 2px;
+  color: #333;
+  align-self: flex-start;
+  margin-left: 20px; /* Slight stagger to the right */
+}
+
+.eventDetails {
+  margin-top: auto;
+  margin-bottom: auto;
+  align-self: center;
+  font-family: "Courier New", monospace;
+  position: relative;
+}
+
+.eventDetails p {
+  font-family: "Courier New", monospace;
+  font-weight: 400;
+  font-size: 16px;
+  margin-bottom: 5px;
+  color: #333;
+  text-align: center;
+  position: relative;
+  letter-spacing: 1px;
+}
+
+.eventDetails p:first-child {
+  position: relative;
+}
+
+.eventDetails p:first-child::after {
+  content: "";
+  position: absolute;
+  right: -10px;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background-color: #333;
+  animation: blink 1s infinite;
+}
+
+.eventDetails p.animated::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  animation: scramble 8s infinite;
+  animation-delay: 0.5s;
+}
+
+.eventDetails p.animated + p::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  animation: timeScramble 8s infinite;
+  animation-delay: 1s;
+}
+
+.codeEffect {
+  position: absolute;
+  top: -20px;
+  left: -30px;
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.2);
+  font-family: "Courier New", monospace;
+  pointer-events: none;
+  user-select: none;
+}
+
+.redCross img,
+.decorativeElement img,
+.starDecoration img {
+  z-index: 2;
+}
+
+.redCross {
+  margin: 30px 0;
+  max-width: 400px;
+  position: absolute;
+  bottom: 0px;
+  left: 180px;
+  z-index: 2;
+}
+
+.decorativeElement {
+  position: absolute;
+  max-width: 300px;
+  bottom: 0px;
+  left: 180px;
+  z-index: 2;
+}
+
+.starDecoration {
+  position: absolute;
+  max-width: 300px;
+  bottom: 0px;
+  left: 115px;
+  z-index: 2;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .section {
+    min-height: auto;
+  }
+
+  .imageColumn {
+    height: 600px;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    flex-direction: column;
+  }
+
+  .textColumn,
+  .imageColumn {
+    width: 100%;
+  }
+
+  .textContent {
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .imageColumn {
+    height: 400px;
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes scramble {
+  0% {
+    content: "";
+  }
+  10% {
+    content: "Th3r5d4y 1_0$82";
+  }
+  20% {
+    content: "Thu7sd@y 13008%";
+  }
+  30% {
+    content: "Thur5day 1300&2";
+  }
+  40% {
+    content: "Thur$day 13008#";
+  }
+  50% {
+    content: "Thursday 130082";
+  }
+  60% {
+    content: "Thursday 130082";
+  }
+  70% {
+    content: "Thursday 130082";
+  }
+  80% {
+    content: "Thursday 130082";
+  }
+  90% {
+    content: "Thursday 130082";
+  }
+  100% {
+    content: "Thursday 130082";
+  }
+}
+
+@keyframes timeScramble {
+  0% {
+    content: "";
+  }
+  10% {
+    content: "20%0 - 2#01B$T";
+  }
+  20% {
+    content: "200& - 20@1BST";
+  }
+  30% {
+    content: "2000 - 20_1BS7";
+  }
+  40% {
+    content: "2000 - 2001B$T";
+  }
+  50% {
+    content: "2000 - 2001BST";
+  }
+  60% {
+    content: "2000 - 2001BST";
+  }
+  70% {
+    content: "2000 - 2001BST";
+  }
+  80% {
+    content: "2000 - 2001BST";
+  }
+  90% {
+    content: "2000 - 2001BST";
+  }
+  100% {
+    content: "2000 - 2001BST";
+  }
+}
