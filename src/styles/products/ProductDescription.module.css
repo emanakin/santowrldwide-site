@@ -1,0 +1,36 @@
+.container {
+  margin-bottom: 25px;
+}
+
+.content {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.paragraph {
+  margin: 0 0 15px 0;
+}
+
+.bulletList {
+  margin: 0 0 15px 0;
+  padding-left: 18px;
+}
+
+.bulletItem {
+  margin-bottom: 5px;
+}
+
+.bulletItem:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .content {
+    font-size: 13px;
+  }
+
+  .bulletList {
+    padding-left: 15px;
+  }
+}

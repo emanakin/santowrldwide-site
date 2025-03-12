@@ -1,0 +1,53 @@
+.gallery {
+  display: flex;
+  flex-direction: column;
+}
+
+.mainImage {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background-color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.thumbnails {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  padding-bottom: 5px;
+}
+
+.thumbnails::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.thumbnail {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.thumbnail.active {
+  border-color: #000;
+}
+
+.thumbnail:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .mainImage {
+    height: 450px;
+  }
+
+  .thumbnail {
+    width: 60px;
+    height: 60px;
+  }
+}

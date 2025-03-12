@@ -1,0 +1,54 @@
+.container {
+  margin-bottom: 25px;
+  border: 1px solid #ddd;
+}
+
+.toggleButton {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.arrow {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.arrow.up {
+  transform: rotate(180deg);
+}
+
+.content {
+  padding: 0 15px 15px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #666;
+}
+
+.content p {
+  margin: 0 0 8px 0;
+}
+
+.content p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .toggleButton {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .content {
+    padding: 0 12px 12px;
+    font-size: 13px;
+  }
+}

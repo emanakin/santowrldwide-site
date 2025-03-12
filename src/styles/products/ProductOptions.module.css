@@ -1,0 +1,71 @@
+.container {
+  margin-bottom: 20px;
+}
+
+.optionContainer {
+  margin-bottom: 15px;
+}
+
+.optionName {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.optionValues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.optionValue {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.optionValue:hover {
+  border-color: #999;
+}
+
+.optionValue.selected {
+  border-color: #000;
+  background-color: #000;
+  color: white;
+}
+
+/* For color swatches */
+.colorSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #ddd;
+}
+
+.selected .colorSwatch {
+  border-color: #000;
+}
+
+@media (max-width: 768px) {
+  .optionValue {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .colorSwatch {
+    width: 20px;
+    height: 20px;
+  }
+}
