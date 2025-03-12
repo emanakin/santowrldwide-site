@@ -16,10 +16,8 @@ type AddToCartButtonProps = {
 
 export default function AddToCartButton({ product }: AddToCartButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState(
-    product.variants[0]?.id
-  );
-  const [quantity, setQuantity] = useState(1);
+  const [selectedVariant] = useState(product.variants[0]?.id);
+  const [quantity] = useState(1);
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;

@@ -12,6 +12,7 @@ type VariantType = {
   id: string;
   title: string;
   availableForSale: boolean;
+  price: string;
   selectedOptions: {
     name: string;
     value: string;
@@ -23,10 +24,7 @@ type ProductOptionsProps = {
   variants?: VariantType[];
 };
 
-export default function ProductOptions({
-  options,
-  variants,
-}: ProductOptionsProps) {
+export default function ProductOptions({ options }: ProductOptionsProps) {
   const [selectedOptions, setSelectedOptions] = useState<
     Record<string, string>
   >({});
