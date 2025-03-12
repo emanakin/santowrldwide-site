@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import Link from "next/link";
 import styles from "@/styles/Navbar.module.css";
 
 export default function Navbar() {
@@ -23,23 +24,23 @@ export default function Navbar() {
     <div className={styles.navbar}>
       {/* Left-aligned links - visible on desktop */}
       <div className={styles.desktopLinks}>
-        <a href="#home" className={styles.link}>
+        <Link href="/" className={styles.link}>
           HOME
-        </a>
-        <a href="#drop" className={styles.link}>
+        </Link>
+        <Link href="/products" className={styles.link}>
           DROP
-        </a>
-        <a href="#about" className={styles.link}>
+        </Link>
+        <Link href="/about" className={styles.link}>
           ABOUT
-        </a>
-        <a href="#contact" className={styles.link}>
+        </Link>
+        <Link href="/contact" className={styles.link}>
           CONTACT
-        </a>
+        </Link>
       </div>
 
       {/* Right-aligned icons - visible on desktop */}
       <div className={styles.desktopLinks}>
-        <a href="#login" className={styles.link}>
+        <Link href="/auth/login" className={styles.link}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -54,8 +55,15 @@ export default function Navbar() {
             />
           </svg>
           LOGIN
-        </a>
-        <a href="#search" className={styles.link}>
+        </Link>
+        <Link
+          href="#"
+          className={styles.link}
+          onClick={(e) => {
+            e.preventDefault();
+            toggleMenu();
+          }}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -70,8 +78,8 @@ export default function Navbar() {
             />
           </svg>
           SEARCH
-        </a>
-        <a href="#bag" className={styles.link}>
+        </Link>
+        <Link href="/(protected)/checkout" className={styles.link}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -86,7 +94,7 @@ export default function Navbar() {
             />
           </svg>
           BAG
-        </a>
+        </Link>
       </div>
 
       {/* Hamburger button - visible on mobile */}
@@ -129,22 +137,22 @@ export default function Navbar() {
           </form>
 
           {/* Primary navigation links */}
-          <a href="#home" className={styles.mobileLink}>
+          <Link href="/" className={styles.mobileLink}>
             HOME
-          </a>
-          <a href="#drop" className={styles.mobileLink}>
+          </Link>
+          <Link href="/products" className={styles.mobileLink}>
             DROP
-          </a>
-          <a href="#about" className={styles.mobileLink}>
+          </Link>
+          <Link href="/about" className={styles.mobileLink}>
             ABOUT
-          </a>
-          <a href="#contact" className={styles.mobileLink}>
+          </Link>
+          <Link href="/contact" className={styles.mobileLink}>
             CONTACT
-          </a>
+          </Link>
 
           {/* Secondary utility links */}
           <div className={styles.mobileUtilityLinks}>
-            <a href="#login" className={styles.mobileUtilityLink}>
+            <Link href="/auth/login" className={styles.mobileUtilityLink}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -159,8 +167,11 @@ export default function Navbar() {
                 />
               </svg>
               LOGIN
-            </a>
-            <a href="#bag" className={styles.mobileUtilityLink}>
+            </Link>
+            <Link
+              href="/(protected)/checkout"
+              className={styles.mobileUtilityLink}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -175,29 +186,29 @@ export default function Navbar() {
                 />
               </svg>
               BAG
-            </a>
+            </Link>
           </div>
 
           {/* Tertiary footer links */}
           <div className={styles.mobileFooterLinks}>
-            <a href="#contact-page" className={styles.mobileFooterLink}>
+            <Link href="/contact" className={styles.mobileFooterLink}>
               Contact
-            </a>
-            <a href="#shipping" className={styles.mobileFooterLink}>
+            </Link>
+            <Link href="/shipping-returns" className={styles.mobileFooterLink}>
               Shipping & Return
-            </a>
-            <a href="#newsletter" className={styles.mobileFooterLink}>
+            </Link>
+            <Link href="#newsletter" className={styles.mobileFooterLink}>
               Newsletter
-            </a>
-            <a href="#terms" className={styles.mobileFooterLink}>
+            </Link>
+            <Link href="/policy" className={styles.mobileFooterLink}>
               Terms & Conditions
-            </a>
-            <a href="#privacy" className={styles.mobileFooterLink}>
+            </Link>
+            <Link href="/policy" className={styles.mobileFooterLink}>
               Privacy & Cookie Policy
-            </a>
-            <a href="#faq" className={styles.mobileFooterLink}>
+            </Link>
+            <Link href="/faq" className={styles.mobileFooterLink}>
               FAQ
-            </a>
+            </Link>
           </div>
         </div>
       </div>

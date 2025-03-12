@@ -1,14 +1,10 @@
 import React from "react";
 import Image from "next/image";
-import Navbar from "@/components/home/Navbar";
-import Footer from "@/components/home/Footer";
 import styles from "@/styles/Home.module.css";
 
 export default function Home() {
   return (
     <div className={styles.container}>
-      <Navbar />
-
       {/* Fixed Logo Overlay - Now positioned absolute */}
       <div className={styles.logoContainer}>
         <div className={styles.logo}>
@@ -152,8 +148,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

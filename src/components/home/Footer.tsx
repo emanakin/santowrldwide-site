@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import styles from "../../styles/Footer.module.css";
 
 const Footer = () => {
@@ -6,30 +7,30 @@ const Footer = () => {
     <footer className={styles.footer}>
       <div className={styles.linksContainer}>
         <div className={styles.linkColumn}>
-          <a href="/contact" className={styles.link}>
+          <Link href="/contact" className={styles.link}>
             Contact
-          </a>
-          <a href="/shipping-return" className={styles.link}>
+          </Link>
+          <Link href="/shipping-returns" className={styles.link}>
             Shipping & Return
-          </a>
+          </Link>
         </div>
 
         <div className={styles.linkColumn}>
-          <a href="/newsletter" className={styles.link}>
+          <Link href="#newsletter" className={styles.link}>
             Newsletter
-          </a>
-          <a href="/terms" className={styles.link}>
+          </Link>
+          <Link href="/policy" className={styles.link}>
             Terms & Conditions
-          </a>
+          </Link>
         </div>
 
         <div className={styles.linkColumn}>
-          <a href="/privacy" className={styles.link}>
+          <Link href="/policy" className={styles.link}>
             Privacy & Cookie Policy
-          </a>
-          <a href="/faq" className={styles.link}>
+          </Link>
+          <Link href="/faq" className={styles.link}>
             FAQ
-          </a>
+          </Link>
         </div>
       </div>
 
