@@ -1,4 +1,9 @@
 import { GraphQLClient } from "graphql-request";
+import {
+  CustomerCreateResponse,
+  CustomerAccessTokenResponse,
+  CustomerQueryResponse,
+} from "@/types/shopify";
 
 const client = new GraphQLClient(process.env.SHOPIFY_STOREFRONT_API_URL!, {
   headers: {
@@ -42,7 +47,10 @@ export async function createCustomerAccount(
     },
   };
 
-  const data = await client.request(mutation, variables);
+  const data = await client.request<CustomerCreateResponse>(
+    mutation,
+    variables
+  );
   return data.customerCreate;
 }
 
@@ -71,7 +79,10 @@ export async function customerLogin(email: string, password: string) {
     },
   };
 
-  const data = await client.request(mutation, variables);
+  const data = await client.request<CustomerAccessTokenResponse>(
+    mutation,
+    variables
+  );
   return data.customerAccessTokenCreate;
 }
 
@@ -132,6 +143,6 @@ export async function getCustomer(accessToken: string) {
     customerAccessToken: accessToken,
   };
 
-  const data = await client.request(query, variables);
+  const data = await client.request<CustomerQueryResponse>(query, variables);
   return data.customer;
 }

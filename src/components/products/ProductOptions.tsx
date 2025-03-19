@@ -1,27 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import styles from "@/styles/products/ProductOptions.module.css";
-
-type OptionType = {
-  id: string;
-  name: string;
-  values: string[];
-};
-
-type VariantType = {
-  id: string;
-  title: string;
-  availableForSale: boolean;
-  price: string;
-  selectedOptions: {
-    name: string;
-    value: string;
-  }[];
-};
+import { ProductOption, ProductVariant } from "@/types/product";
 
 type ProductOptionsProps = {
-  options?: OptionType[];
-  variants?: VariantType[];
+  options?: ProductOption[];
+  variants?: ProductVariant[];
 };
 
 export default function ProductOptions({ options }: ProductOptionsProps) {

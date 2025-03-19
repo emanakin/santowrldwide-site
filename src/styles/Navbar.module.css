@@ -15,6 +15,7 @@
   display: inline-flex;
   align-items: center;
   font-weight: 500;
+  position: relative;
 }
 
 .icon {
@@ -188,4 +189,56 @@
   .navbar {
     padding: 10px 15px;
   }
+}
+
+.cartCount {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #000;
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.centerLogo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-58%);
+  top: 1.6rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.logo {
+  max-width: 150px;
+  pointer-events: auto; /* Make the logo itself clickable */
+}
+
+.activeLink {
+  position: relative;
+}
+
+.activeLink::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #000;
+}
+
+/* For mobile links, adjust the positioning */
+.mobileLink.activeLink::after {
+  bottom: -8px;
 }

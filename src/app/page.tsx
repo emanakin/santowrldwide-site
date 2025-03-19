@@ -1,11 +1,10 @@
 import React from "react";
 import Image from "next/image";
-import styles from "@/styles/Home.module.css";
+import styles from "../styles/Home.module.css";
 
 export default function Home() {
   return (
     <div className={styles.container}>
-      {/* Fixed Logo Overlay - Now positioned absolute */}
       <div className={styles.logoContainer}>
         <div className={styles.logo}>
           <Image

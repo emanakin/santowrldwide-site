@@ -2,7 +2,7 @@ import React from "react";
 import ProductGrid from "@/components/products/ProductGrid";
 import Breadcrumb from "@/components/products/Breadcrumb";
 import { getProducts } from "@/lib/shopify";
-import styles from "@/styles/products/Products.module.css";
+import styles from "../../styles/products/Products.module.css";
 
 // Fallback data in case the API fails
 const fallbackProducts = [
@@ -45,12 +45,7 @@ export default async function ProductsPage() {
 
   return (
     <div className={styles.container}>
-      <Breadcrumb
-        items={[
-          { label: "SW2025 Drop", url: "/products" },
-          { label: "2023S-09-34" },
-        ]}
-      />
+      <Breadcrumb items={[{ label: "SW2025 Drop", url: "/products" }]} />
       <div className={styles.headerRow}>
         <div className={styles.itemCount}>{products.length} items</div>
         <button className={styles.filterButton}>FILTER</button>

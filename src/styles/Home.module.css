@@ -25,7 +25,6 @@
 .logo {
   max-width: 150px;
   padding: 5px 0;
-  pointer-events: auto; /* Make the logo itself clickable */
 }
 
 .section {

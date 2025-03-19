@@ -1,11 +1,25 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 import styles from "@/styles/Navbar.module.css";
+import { useCart } from "@/context/CartContext";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { cartCount } = useCart();
+  const pathname = usePathname();
+
+  // Check if we're on the home page
+  const isHomePage = pathname === "/";
+
+  // Helper function to determine if a link is active
+  const isActiveLink = (path: string) => {
+    if (path === "/") return pathname === "/";
+    return pathname.startsWith(path);
+  };
 
   // Toggle menu state
   const toggleMenu = () => {
@@ -24,19 +38,56 @@ export default function Navbar() {
     <div className={styles.navbar}>
       {/* Left-aligned links - visible on desktop */}
       <div className={styles.desktopLinks}>
-        <Link href="/" className={styles.link}>
+        <Link
+          href="/"
+          className={`${styles.link} ${
+            isActiveLink("/") ? styles.activeLink : ""
+          }`}
+        >
           HOME
         </Link>
-        <Link href="/products" className={styles.link}>
+        <Link
+          href="/products"
+          className={`${styles.link} ${
+            isActiveLink("/products") ? styles.activeLink : ""
+          }`}
+        >
           DROP
         </Link>
-        <Link href="/about" className={styles.link}>
+        <Link
+          href="/about"
+          className={`${styles.link} ${
+            isActiveLink("/about") ? styles.activeLink : ""
+          }`}
+        >
           ABOUT
         </Link>
-        <Link href="/contact" className={styles.link}>
+        <Link
+          href="/contact"
+          className={`${styles.link} ${
+            isActiveLink("/contact") ? styles.activeLink : ""
+          }`}
+        >
           CONTACT
         </Link>
       </div>
+
+      {/* Center logo - only for non-home pages */}
+      {!isHomePage && (
+        <div className={styles.centerLogo}>
+          <Link href="/">
+            <div className={styles.logo}>
+              <Image
+                src="/images/santo-logo.png"
+                alt="SANTOWRLDWIDE"
+                width={122}
+                height={60}
+                priority
+              />
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* Right-aligned icons - visible on desktop */}
       <div className={styles.desktopLinks}>
@@ -79,7 +130,7 @@ export default function Navbar() {
           </svg>
           SEARCH
         </Link>
-        <Link href="/(protected)/checkout" className={styles.link}>
+        <Link href="/cart" className={styles.link}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -93,7 +144,7 @@ export default function Navbar() {
               fill="black"
             />
           </svg>
-          BAG
+          BAG ( {cartCount} )
         </Link>
       </div>
 
@@ -137,16 +188,36 @@ export default function Navbar() {
           </form>
 
           {/* Primary navigation links */}
-          <Link href="/" className={styles.mobileLink}>
+          <Link
+            href="/"
+            className={`${styles.mobileLink} ${
+              isActiveLink("/") ? styles.activeLink : ""
+            }`}
+          >
             HOME
           </Link>
-          <Link href="/products" className={styles.mobileLink}>
+          <Link
+            href="/products"
+            className={`${styles.mobileLink} ${
+              isActiveLink("/products") ? styles.activeLink : ""
+            }`}
+          >
             DROP
           </Link>
-          <Link href="/about" className={styles.mobileLink}>
+          <Link
+            href="/about"
+            className={`${styles.mobileLink} ${
+              isActiveLink("/about") ? styles.activeLink : ""
+            }`}
+          >
             ABOUT
           </Link>
-          <Link href="/contact" className={styles.mobileLink}>
+          <Link
+            href="/contact"
+            className={`${styles.mobileLink} ${
+              isActiveLink("/contact") ? styles.activeLink : ""
+            }`}
+          >
             CONTACT
           </Link>
 
@@ -168,10 +239,7 @@ export default function Navbar() {
               </svg>
               LOGIN
             </Link>
-            <Link
-              href="/(protected)/checkout"
-              className={styles.mobileUtilityLink}
-            >
+            <Link href="/cart" className={styles.mobileUtilityLink}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"

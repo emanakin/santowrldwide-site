@@ -1,5 +1,7 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
 import ProductGallery from "@/components/products/ProductGallery";
+import ProductThumbnails from "@/components/products/ProductThumbnails";
 import ProductInfo from "@/components/products/ProductInfo";
 import ProductOptions from "@/components/products/ProductOptions";
 import AddToCartButton from "@/components/products/AddToCartButton";
@@ -7,41 +9,38 @@ import ProductDescription from "@/components/products/ProductDescription";
 import ShippingInfo from "@/components/products/ShippingInfo";
 import Breadcrumb from "@/components/products/Breadcrumb";
 import { getProduct } from "@/lib/shopify";
-import styles from "@/styles/products/ProductDetail.module.css";
-import { notFound } from "next/navigation";
+import styles from "../../../styles/products/ProductDetail.module.css";
+import { useParams } from "next/navigation";
+import { Product } from "@/types/product";
 
-export default async function ProductPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  if (!params?.slug) {
-    return notFound();
-  }
+export default function ProductPage() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const params = useParams();
+  const slug = params.slug as string;
 
-  const slug = params.slug;
-  // Fetch product data from Shopify
-  const product = await getProduct(slug);
+  const product = useProduct(slug);
 
   if (!product) {
-    return notFound();
+    return <div>Loading...</div>;
   }
 
   return (
     <div className={styles.container}>
       <Breadcrumb
         items={[
-          { label: "Products", url: "/products" },
+          { label: "SW2025 Drop", url: "/products" },
           { label: product.title },
         ]}
       />
 
       <div className={styles.productContent}>
-        <div className={styles.productGalleryColumn}>
-          <ProductGallery images={product.images} />
-        </div>
-
         <div className={styles.productInfoColumn}>
+          <ProductThumbnails
+            images={product.images}
+            activeIndex={activeIndex}
+            setActiveIndex={setActiveIndex}
+          />
+
           <ProductInfo title={product.title} price={product.price} />
 
           <ProductOptions
@@ -55,26 +54,53 @@ export default async function ProductPage({
 
           <ProductDescription description={product.description} />
         </div>
+
+        <div className={styles.productGalleryColumn}>
+          <ProductGallery
+            images={product.images}
+            activeIndex={activeIndex}
+            setActiveIndex={setActiveIndex}
+          />
+        </div>
       </div>
     </div>
   );
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}) {
-  const product = await getProduct(params.slug);
+// Simulated data hook (in a real app, you'd use SWR or React Query)
+function useProduct(slug: string) {
+  const [product, setProduct] = React.useState<Product | null>(null);
 
-  if (!product) {
-    return {
-      title: "Product Not Found",
-    };
-  }
+  React.useEffect(() => {
+    async function fetchProduct() {
+      try {
+        const data = await getProduct(slug);
+        setProduct(data as unknown as Product);
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      }
+    }
 
-  return {
-    title: product.title,
-    description: product.description,
-  };
+    fetchProduct();
+  }, [slug]);
+
+  return product;
 }
+
+// Fix the metadata function to properly await params
+// export async function generateMetadata({ params }: ProductPageProps) {
+//   // Await the params before accessing slug
+//   const resolvedParams = await params;
+//   const product = await getProduct(resolvedParams.slug);
+
+//   if (!product) {
+//     return {
+//       title: "Product Not Found",
+//     };
+//   }
+
+//   return {
+//     title: product.title,
+//     description: product.description,
+//   };
+// }
