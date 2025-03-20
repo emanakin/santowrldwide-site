@@ -1,10 +1,13 @@
-import type { Metadata } from "next";
+import React from "react";
+import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
-import "./globals.css";
+import LoginPanel from "@/components/auth/LoginPanel";
+import SignupPanel from "@/components/auth/SignupPanel";
 import { CartProvider } from "@/context/CartContext";
+import "./globals.css";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "SantoWrldWide",
   description: "Toronto based streetwear",
 };
@@ -17,11 +20,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <CartProvider>
-          <Navbar />
-          {children}
-          <Footer />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Navbar />
+            <main style={{ minHeight: "100vh" }}>{children}</main>
+            <Footer />
+            <LoginPanel />
+            <SignupPanel />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
