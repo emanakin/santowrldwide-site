@@ -4,6 +4,7 @@ import Navbar from "@/components/home/Navbar";
 import Footer from "@/components/home/Footer";
 import LoginPanel from "@/components/auth/LoginPanel";
 import SignupPanel from "@/components/auth/SignupPanel";
+import ResetPasswordPanel from "@/components/auth/ResetPasswordPanel";
 import { CartProvider } from "@/context/CartContext";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({
             <Footer />
             <LoginPanel />
             <SignupPanel />
+            <ResetPasswordPanel />
           </CartProvider>
         </AuthProvider>
       </body>

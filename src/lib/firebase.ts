@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, signOut } from "firebase/auth";
 import {
   signInWithPopup,
@@ -6,7 +6,9 @@ import {
   FacebookAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -19,12 +21,13 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const googleProvider = new GoogleAuthProvider();
 const facebookProvider = new FacebookAuthProvider();
 
-export { auth };
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export default app;
 
 export const signInWithGoogle = async () => {
   try {
@@ -69,3 +72,29 @@ export const logoutUser = async () => {
     throw error;
   }
 };
+
+// Reset password function
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get Google auth token
+export async function getGoogleAuthToken() {
+  const result = await signInWithPopup(auth, googleProvider);
+  // Get credential from result
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  return credential?.idToken;
+}
+
+// Get Facebook auth token
+export async function getFacebookAuthToken() {
+  const result = await signInWithPopup(auth, facebookProvider);
+  // Get credential from result
+  const credential = FacebookAuthProvider.credentialFromResult(result);
+  return credential?.accessToken;
+}

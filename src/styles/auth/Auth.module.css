@@ -205,3 +205,48 @@
     max-width: 100%;
   }
 }
+
+/* Add or update these styles */
+.authOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.slidePanel {
+  background-color: white;
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  position: relative;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.slidePanel.open {
+  transform: translateX(0);
+}
+
+/* Make sure other styles for content are defined */
+.authContent {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.successMessage {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.successMessage p {
+  margin-bottom: 1rem;
+}

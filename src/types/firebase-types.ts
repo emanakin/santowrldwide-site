@@ -29,6 +29,12 @@ export enum FirebaseAuthErrorCode {
   USER_DISABLED = "auth/user-disabled",
   TOO_MANY_REQUESTS = "auth/too-many-requests",
   REQUIRES_RECENT_LOGIN = "auth/requires-recent-login",
+  MISSING_CONTINUE_URI = "auth/missing-continue-uri",
+  INVALID_CONTINUE_URI = "auth/invalid-continue-uri",
+  MISSING_ANDROID_PACKAGE_NAME = "auth/missing-android-pkg-name",
+  UNAUTHORIZED_CONTINUE_URI = "auth/unauthorized-continue-uri",
+  INVALID_ACTION_CODE = "auth/invalid-action-code",
+  EXPIRED_ACTION_CODE = "auth/expired-action-code",
 }
 
 // API response error type

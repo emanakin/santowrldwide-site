@@ -15,7 +15,7 @@ export default function AccountDetailsPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/auth/login");
+      router.push("/login");
     } else if (user) {
       setEmail(user.email || "");
       setDisplayName(user.displayName || "");

@@ -3,17 +3,9 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/styles/auth/Auth.module.css";
-import {
-  signupWithEmail,
-  signInWithGoogle,
-  signInWithFacebook,
-} from "@/lib/firebase";
+import { signInWithGoogle, signInWithFacebook } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import {
-  FirebaseAuthErrorCode,
-  FirebaseAuthError,
-  SocialProvider,
-} from "@/types/firebase-types";
+import { FirebaseAuthErrorCode, SocialProvider } from "@/types/firebase-types";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 
 export default function SignupPanel() {
@@ -46,25 +38,40 @@ export default function SignupPanel() {
     try {
       setLoading(true);
 
-      await signupWithEmail(email, password);
+      // Use the API route instead of direct Firebase call
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Close signup panel and open login panel or redirect
-      setShowSignupPanel(false);
+      const data = await response.json();
 
-      // Option 1: Show login panel
-      setShowLoginPanel(true);
-
-      // Option 2: Redirect to account (if auto-login after signup)
-      // router.push("/account");
-    } catch (error: unknown) {
-      const apiError = handleFirebaseAuthError(error);
-
-      // If we have a field-specific error, set it
-      if (apiError.field) {
-        setFieldErrors({ [apiError.field]: apiError.error });
-      } else {
-        setError(apiError.error);
+      if (!response.ok) {
+        // API already uses handleFirebaseAuthError, so data is already in ApiError format
+        if (data.field) {
+          setFieldErrors({ [data.field]: data.error });
+        } else {
+          setError(data.error);
+        }
+        return;
       }
+
+      // Automatically sign in the user after successful signup
+      const { signInWithEmailAndPassword } = await import("firebase/auth");
+      const { auth } = await import("@/lib/firebase");
+
+      await signInWithEmailAndPassword(auth, email, password);
+
+      // Close signup panel and redirect to account page
+      setShowSignupPanel(false);
+      router.push("/account/orders");
+    } catch (error: unknown) {
+      // Handle network errors
+      const apiError = handleFirebaseAuthError(error);
+      setError(apiError.error);
     } finally {
       setLoading(false);
     }
@@ -81,14 +88,15 @@ export default function SignupPanel() {
       setShowSignupPanel(false);
       router.push("/account");
     } catch (error: unknown) {
-      const firebaseError = error as FirebaseAuthError;
+      // Use the handleFirebaseAuthError utility for consistent error handling
+      const apiError = handleFirebaseAuthError(error);
 
-      if (firebaseError.code === FirebaseAuthErrorCode.POPUP_CLOSED_BY_USER) {
-        // User closed the popup, no need to show error
+      // Special case for popup closed
+      if (apiError.code === FirebaseAuthErrorCode.POPUP_CLOSED_BY_USER) {
         return;
       }
 
-      setError(firebaseError.message || `Error signing up with ${provider}`);
+      setError(apiError.error);
     } finally {
       setLoading(false);
     }

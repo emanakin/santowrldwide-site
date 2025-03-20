@@ -1,7 +1,5 @@
 import React, { ReactNode } from "react";
-import { redirect } from "next/navigation";
 import AccountNav from "@/components/account/AccountNav";
-import { auth } from "@/lib/firebase";
 import styles from "@/styles/account/Account.module.css";
 
 interface AccountLayoutProps {

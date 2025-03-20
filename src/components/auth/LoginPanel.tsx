@@ -3,17 +3,9 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/styles/auth/Auth.module.css";
-import {
-  loginWithEmail,
-  signInWithGoogle,
-  signInWithFacebook,
-} from "@/lib/firebase";
+import { getGoogleAuthToken, getFacebookAuthToken } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import {
-  FirebaseAuthErrorCode,
-  FirebaseAuthError,
-  SocialProvider,
-} from "@/types/firebase-types";
+import { FirebaseAuthErrorCode, SocialProvider } from "@/types/firebase-types";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 
 export default function LoginPanel() {
@@ -23,7 +15,12 @@ export default function LoginPanel() {
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { showLoginPanel, setShowLoginPanel, setShowSignupPanel } = useAuth();
+  const {
+    showLoginPanel,
+    setShowLoginPanel,
+    setShowSignupPanel,
+    setShowResetPanel,
+  } = useAuth();
 
   const handleClose = () => {
     setShowLoginPanel(false);
@@ -39,20 +36,38 @@ export default function LoginPanel() {
     try {
       setLoading(true);
 
-      await loginWithEmail(email, password);
+      // First get the Firebase auth token from server
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.field) {
+          setFieldErrors({ [data.field]: data.error });
+        } else {
+          setError(data.error);
+        }
+        return;
+      }
+
+      // Now sign in on the client-side to update auth state
+      const { signInWithEmailAndPassword } = await import("firebase/auth");
+      const { auth } = await import("@/lib/firebase");
+
+      await signInWithEmailAndPassword(auth, email, password);
 
       // Close panel and redirect to account page
       setShowLoginPanel(false);
-      router.push("/account");
+      router.push("/account/orders");
     } catch (error: unknown) {
       const apiError = handleFirebaseAuthError(error);
-
-      // If we have a field-specific error, set it
-      if (apiError.field) {
-        setFieldErrors({ [apiError.field]: apiError.error });
-      } else {
-        setError(apiError.error);
-      }
+      setError(apiError.error);
     } finally {
       setLoading(false);
     }
@@ -61,19 +76,50 @@ export default function LoginPanel() {
   const handleSocialLogin = async (provider: SocialProvider) => {
     try {
       setLoading(true);
+
+      let idToken;
+
+      // Get the authentication token from the provider
       if (provider === "google") {
-        await signInWithGoogle();
+        idToken = await getGoogleAuthToken();
       } else {
-        await signInWithFacebook();
+        idToken = await getFacebookAuthToken();
       }
+
+      if (!idToken) {
+        setError("Authentication failed. Please try again.");
+        return;
+      }
+
+      // Call our API route with the token
+      const response = await fetch("/api/auth/social-auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ provider, idToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.field) {
+          setFieldErrors({ [data.field]: data.error });
+        } else {
+          setError(data.error);
+        }
+        return;
+      }
+
+      // Close panel and redirect
       setShowLoginPanel(false);
-      router.push("/account");
+      router.push("/account/orders");
     } catch (error: unknown) {
+      // Use the handleFirebaseAuthError utility for consistent error handling
       const apiError = handleFirebaseAuthError(error);
 
-      // Special case for popup closed - don't show as error
-      const firebaseError = error as FirebaseAuthError;
-      if (firebaseError.code === FirebaseAuthErrorCode.POPUP_CLOSED_BY_USER) {
+      // Special case for popup closed
+      if (apiError.code === FirebaseAuthErrorCode.POPUP_CLOSED_BY_USER) {
         return;
       }
 
@@ -182,7 +228,15 @@ export default function LoginPanel() {
         </div>
 
         <div className={styles.authLinks}>
-          <a href="#" className={styles.authLink}>
+          <a
+            href="#"
+            className={styles.authLink}
+            onClick={(e) => {
+              e.preventDefault();
+              setShowLoginPanel(false);
+              setShowResetPanel(true);
+            }}
+          >
             Reset password
           </a>
         </div>

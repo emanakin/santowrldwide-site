@@ -251,7 +251,7 @@ export default function Navbar() {
 
           {/* Secondary utility links */}
           <div className={styles.mobileUtilityLinks}>
-            <Link href="/auth/login" className={styles.mobileUtilityLink}>
+            <Link href="/login" className={styles.mobileUtilityLink}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"

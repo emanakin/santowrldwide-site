@@ -15,7 +15,7 @@ export default function AddressesPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/auth/login");
+      router.push("/login");
     } else if (user) {
       // Fetch user addresses here
       // For now, just using empty array

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { getUserFromFirestore, saveUserToFirestore } from "@/lib/firestore";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 
 export async function POST(request: Request) {
@@ -11,8 +12,21 @@ export async function POST(request: Request) {
       email,
       password
     );
+    const userId = userCredential.user.uid;
 
-    return NextResponse.json({ user: userCredential.user });
+    // Fetch additional user details from Firestore
+    let userData = await getUserFromFirestore(userId);
+
+    // If user doesn't exist in Firestore, create them
+    if (!userData) {
+      console.log("🆕 Creating missing user in Firestore:", userId);
+      await saveUserToFirestore(userId, userCredential.user.email || "");
+
+      // Get the newly created user data
+      userData = await getUserFromFirestore(userId);
+    }
+
+    return NextResponse.json({ user: userCredential.user, metadata: userData });
   } catch (error: unknown) {
     const formattedError = handleFirebaseAuthError(error);
     return NextResponse.json(formattedError, { status: 400 });

@@ -48,6 +48,21 @@ export function getFirebaseAuthErrorMessage(
         field: "password",
       };
     case FirebaseAuthErrorCode.USER_NOT_FOUND:
+      if (
+        error.message?.includes("password") ||
+        error.message?.includes("reset")
+      ) {
+        return {
+          error:
+            "If an account exists with this email, a password reset link will be sent.",
+          code: errorCode,
+        };
+      } else {
+        return {
+          error: "Invalid email or password.",
+          code: errorCode,
+        };
+      }
     case FirebaseAuthErrorCode.WRONG_PASSWORD:
       return {
         error: "Invalid email or password.",

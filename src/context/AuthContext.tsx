@@ -9,8 +9,10 @@ type AuthContextType = {
   loading: boolean;
   showLoginPanel: boolean;
   showSignupPanel: boolean;
+  showResetPanel: boolean;
   setShowLoginPanel: (show: boolean) => void;
   setShowSignupPanel: (show: boolean) => void;
+  setShowResetPanel: (show: boolean) => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,8 +20,10 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   showLoginPanel: false,
   showSignupPanel: false,
+  showResetPanel: false,
   setShowLoginPanel: () => {},
   setShowSignupPanel: () => {},
+  setShowResetPanel: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -31,10 +35,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [showLoginPanel, setShowLoginPanel] = useState(false);
   const [showSignupPanel, setShowSignupPanel] = useState(false);
+  const [showResetPanel, setShowResetPanel] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setLoading(false);
     });
 
@@ -52,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Control body scroll when panels are open
   useEffect(() => {
-    if (showLoginPanel || showSignupPanel) {
+    if (showLoginPanel || showSignupPanel || showResetPanel) {
       document.body.classList.add("no-scroll");
     } else {
       document.body.classList.remove("no-scroll");
@@ -61,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       document.body.classList.remove("no-scroll");
     };
-  }, [showLoginPanel, showSignupPanel]);
+  }, [showLoginPanel, showSignupPanel, showResetPanel]);
 
   return (
     <AuthContext.Provider
@@ -70,8 +75,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         loading,
         showLoginPanel,
         showSignupPanel,
+        showResetPanel,
         setShowLoginPanel,
         setShowSignupPanel,
+        setShowResetPanel,
       }}
     >
       {children}
