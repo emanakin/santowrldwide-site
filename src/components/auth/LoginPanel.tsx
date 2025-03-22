@@ -1,12 +1,13 @@
+// /components/auth/LoginPanel.tsx
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/styles/auth/Auth.module.css";
-import { getGoogleAuthToken, getFacebookAuthToken } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { FirebaseAuthErrorCode, SocialProvider } from "@/types/firebase-types";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
+import { SocialProvider } from "@/types/firebase-types";
+import { loginWithEmailService, socialLoginService } from "@/services/auth";
 
 export default function LoginPanel() {
   const [email, setEmail] = useState("");
@@ -28,45 +29,16 @@ export default function LoginPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Clear previous errors
     setError("");
     setFieldErrors({});
 
     try {
       setLoading(true);
-
-      // First get the Firebase auth token from server
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.field) {
-          setFieldErrors({ [data.field]: data.error });
-        } else {
-          setError(data.error);
-        }
-        return;
-      }
-
-      // Now sign in on the client-side to update auth state
-      const { signInWithEmailAndPassword } = await import("firebase/auth");
-      const { auth } = await import("@/lib/firebase");
-
-      await signInWithEmailAndPassword(auth, email, password);
-
-      // Close panel and redirect to account page
+      await loginWithEmailService(email, password);
       setShowLoginPanel(false);
       router.push("/account/orders");
-    } catch (error: unknown) {
-      const apiError = handleFirebaseAuthError(error);
+    } catch (err: unknown) {
+      const apiError = handleFirebaseAuthError(err);
       setError(apiError.error);
     } finally {
       setLoading(false);
@@ -76,63 +48,20 @@ export default function LoginPanel() {
   const handleSocialLogin = async (provider: SocialProvider) => {
     try {
       setLoading(true);
-
-      let idToken;
-
-      // Get the authentication token from the provider
-      if (provider === "google") {
-        idToken = await getGoogleAuthToken();
-      } else {
-        idToken = await getFacebookAuthToken();
-      }
-
-      if (!idToken) {
-        setError("Authentication failed. Please try again.");
-        return;
-      }
-
-      // Call our API route with the token
-      const response = await fetch("/api/auth/social-auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ provider, idToken }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (data.field) {
-          setFieldErrors({ [data.field]: data.error });
-        } else {
-          setError(data.error);
-        }
-        return;
-      }
-
-      // Close panel and redirect
+      await socialLoginService(provider);
       setShowLoginPanel(false);
       router.push("/account/orders");
-    } catch (error: unknown) {
-      // Use the handleFirebaseAuthError utility for consistent error handling
-      const apiError = handleFirebaseAuthError(error);
-
+    } catch (err: unknown) {
+      const apiError = handleFirebaseAuthError(err);
       // Special case for popup closed
-      if (apiError.code === FirebaseAuthErrorCode.POPUP_CLOSED_BY_USER) {
-        return;
-      }
-
+      if (apiError.code === "auth/popup-closed-by-user") return;
       setError(apiError.error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Show panel only when it's visible
-  if (!showLoginPanel) {
-    return null;
-  }
+  if (!showLoginPanel) return null;
 
   return (
     <div
@@ -146,11 +75,8 @@ export default function LoginPanel() {
         <button className={styles.closeButton} onClick={handleClose}>
           ×
         </button>
-
         <h1 className={styles.authTitle}>LOG IN</h1>
-
         {error && <div className={styles.authError}>{error}</div>}
-
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
             <input
@@ -167,7 +93,6 @@ export default function LoginPanel() {
               <div className={styles.fieldError}>{fieldErrors.email}</div>
             )}
           </div>
-
           <div className={styles.formGroup}>
             <input
               type="password"
@@ -183,7 +108,6 @@ export default function LoginPanel() {
               <div className={styles.fieldError}>{fieldErrors.password}</div>
             )}
           </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -192,7 +116,6 @@ export default function LoginPanel() {
             {loading ? "LOGGING IN..." : "LOG IN"}
           </button>
         </form>
-
         <div className={styles.socialSection}>
           <p className={styles.socialText}>Register using Google or Facebook</p>
           <div className={styles.socialButtons}>
@@ -212,7 +135,6 @@ export default function LoginPanel() {
             </button>
           </div>
         </div>
-
         <div className={styles.authLinks}>
           <a
             href="#"
@@ -226,7 +148,6 @@ export default function LoginPanel() {
             Register new account
           </a>
         </div>
-
         <div className={styles.authLinks}>
           <a
             href="#"

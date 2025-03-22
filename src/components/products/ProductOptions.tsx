@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import styles from "@/styles/products/ProductOptions.module.css";
-import { ProductOption, ProductVariant } from "@/types/product";
+import { ProductOption, ProductVariant } from "@/types/product-types";
 
 type ProductOptionsProps = {
   options?: ProductOption[];

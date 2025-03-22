@@ -1,17 +1,20 @@
+// /components/auth/SignupPanel.tsx
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "@/styles/auth/Auth.module.css";
-import { signInWithGoogle, signInWithFacebook } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import { FirebaseAuthErrorCode, SocialProvider } from "@/types/firebase-types";
+import { SocialProvider } from "@/types/firebase-types";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
+import { signupWithEmailService, socialSignupService } from "@/services/auth";
 
 export default function SignupPanel() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [error, setError] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -24,12 +27,9 @@ export default function SignupPanel() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Clear previous errors
     setError("");
     setFieldErrors({});
 
-    // Client-side validation
     if (password !== confirmPassword) {
       setFieldErrors({ confirmPassword: "Passwords do not match" });
       return;
@@ -37,40 +37,11 @@ export default function SignupPanel() {
 
     try {
       setLoading(true);
-
-      // Use the API route instead of direct Firebase call
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // API already uses handleFirebaseAuthError, so data is already in ApiError format
-        if (data.field) {
-          setFieldErrors({ [data.field]: data.error });
-        } else {
-          setError(data.error);
-        }
-        return;
-      }
-
-      // Automatically sign in the user after successful signup
-      const { signInWithEmailAndPassword } = await import("firebase/auth");
-      const { auth } = await import("@/lib/firebase");
-
-      await signInWithEmailAndPassword(auth, email, password);
-
-      // Close signup panel and redirect to account page
+      await signupWithEmailService(email, password, firstName, lastName);
       setShowSignupPanel(false);
       router.push("/account/orders");
-    } catch (error: unknown) {
-      // Handle network errors
-      const apiError = handleFirebaseAuthError(error);
+    } catch (err: unknown) {
+      const apiError = handleFirebaseAuthError(err);
       setError(apiError.error);
     } finally {
       setLoading(false);
@@ -80,32 +51,20 @@ export default function SignupPanel() {
   const handleSocialLogin = async (provider: SocialProvider) => {
     try {
       setLoading(true);
-      if (provider === "google") {
-        await signInWithGoogle();
-      } else {
-        await signInWithFacebook();
-      }
+      await socialSignupService(provider);
       setShowSignupPanel(false);
-      router.push("/account");
-    } catch (error: unknown) {
-      // Use the handleFirebaseAuthError utility for consistent error handling
-      const apiError = handleFirebaseAuthError(error);
-
+      router.push("/account/orders");
+    } catch (err: unknown) {
+      const apiError = handleFirebaseAuthError(err);
       // Special case for popup closed
-      if (apiError.code === FirebaseAuthErrorCode.POPUP_CLOSED_BY_USER) {
-        return;
-      }
-
+      if (apiError.code === "auth/popup-closed-by-user") return;
       setError(apiError.error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Show panel only when it's visible
-  if (!showSignupPanel) {
-    return null;
-  }
+  if (!showSignupPanel) return null;
 
   return (
     <div
@@ -119,12 +78,41 @@ export default function SignupPanel() {
         <button className={styles.closeButton} onClick={handleClose}>
           ×
         </button>
-
         <h1 className={styles.authTitle}>SIGN UP</h1>
-
         {error && <div className={styles.authError}>{error}</div>}
-
         <form onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <input
+              id="firstName"
+              type="text"
+              placeholder="First Name *"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className={`${styles.authInput} ${
+                fieldErrors.firstName ? styles.inputError : ""
+              }`}
+              disabled={loading}
+            />
+            {fieldErrors.firstName && (
+              <div className={styles.errorText}>{fieldErrors.firstName}</div>
+            )}
+          </div>
+          <div className={styles.formGroup}>
+            <input
+              id="lastName"
+              type="text"
+              placeholder="Last Name *"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className={`${styles.authInput} ${
+                fieldErrors.lastName ? styles.inputError : ""
+              }`}
+              disabled={loading}
+            />
+            {fieldErrors.lastName && (
+              <div className={styles.errorText}>{fieldErrors.lastName}</div>
+            )}
+          </div>
           <div className={styles.formGroup}>
             <input
               type="email"
@@ -140,7 +128,6 @@ export default function SignupPanel() {
               <div className={styles.fieldError}>{fieldErrors.email}</div>
             )}
           </div>
-
           <div className={styles.formGroup}>
             <input
               type="password"
@@ -156,7 +143,6 @@ export default function SignupPanel() {
               <div className={styles.fieldError}>{fieldErrors.password}</div>
             )}
           </div>
-
           <div className={styles.formGroup}>
             <input
               type="password"
@@ -174,7 +160,6 @@ export default function SignupPanel() {
               </div>
             )}
           </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -183,7 +168,6 @@ export default function SignupPanel() {
             {loading ? "REGISTERING..." : "REGISTER"}
           </button>
         </form>
-
         <div className={styles.socialSection}>
           <p className={styles.socialText}>Register using Google or Facebook</p>
           <div className={styles.socialButtons}>
@@ -203,7 +187,6 @@ export default function SignupPanel() {
             </button>
           </div>
         </div>
-
         <div className={styles.authLinks}>
           <a
             href="#"

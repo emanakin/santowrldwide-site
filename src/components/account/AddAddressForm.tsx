@@ -1,235 +1,198 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { Address } from "@/types/user-types";
 import styles from "@/styles/account/Account.module.css";
 
-const countries = [
-  { code: "US", name: "United States" },
-  { code: "CA", name: "Canada" },
-  { code: "UK", name: "United Kingdom" },
-  // Add more countries as needed
-];
-
-interface AddressFormProps {
-  onSave: (addressData: any) => void;
+type AddressFormProps = {
+  onSave: (address: Omit<Address, "id" | "isDefault">) => void;
   onCancel: () => void;
-  initialData?: any;
-}
+  initialData: Address | null;
+};
 
 export default function AddAddressForm({
   onSave,
   onCancel,
   initialData,
 }: AddressFormProps) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [company, setCompany] = useState("");
-  const [streetAddress, setStreetAddress] = useState("");
-  const [country, setCountry] = useState("");
-  const [city, setCity] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [phone, setPhone] = useState("");
-  const [isDefaultBilling, setIsDefaultBilling] = useState(false);
-  const [isDefaultShipping, setIsDefaultShipping] = useState(false);
+  const [formData, setFormData] = useState({
+    address1: initialData?.address1 || "",
+    address2: initialData?.address2 || "",
+    city: initialData?.city || "",
+    province: initialData?.province || "",
+    country: initialData?.country || "",
+    zip: initialData?.zip || "",
+    phone: initialData?.phone || "",
+  });
 
-  useEffect(() => {
-    if (initialData) {
-      setFirstName(initialData.firstName || "");
-      setLastName(initialData.lastName || "");
-      setCompany(initialData.company || "");
-      setStreetAddress(initialData.streetAddress || "");
-      setCountry(initialData.country || "");
-      setCity(initialData.city || "");
-      setPostalCode(initialData.postalCode || "");
-      setPhone(initialData.phone || "");
-      setIsDefaultBilling(initialData.isDefaultBilling || false);
-      setIsDefaultShipping(initialData.isDefaultShipping || false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: "",
+      });
     }
-  }, [initialData]);
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.address1.trim()) {
+      newErrors.address1 = "Address is required";
+    }
+
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required";
+    }
+
+    if (!formData.province.trim()) {
+      newErrors.province = "State/Province is required";
+    }
+
+    if (!formData.country.trim()) {
+      newErrors.country = "Country is required";
+    }
+
+    if (!formData.zip.trim()) {
+      newErrors.zip = "Postal/Zip code is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const addressData = {
-      firstName,
-      lastName,
-      company,
-      streetAddress,
-      country,
-      city,
-      postalCode,
-      phone,
-      isDefaultBilling,
-      isDefaultShipping,
-    };
-    onSave(addressData);
+
+    if (validateForm()) {
+      onSave(formData);
+    }
   };
 
   return (
-    <div className={styles.addressFormContainer}>
-      <h2 className={styles.formTitle}>Add an address</h2>
+    <form onSubmit={handleSubmit} className={styles.addressForm}>
+      <h2>{initialData ? "Edit Address" : "Add New Address"}</h2>
 
-      <form onSubmit={handleSubmit} className={styles.addressForm}>
-        <div className={styles.formGroup}>
-          <label htmlFor="firstName" className={styles.formLabel}>
-            First name
-          </label>
-          <input
-            type="text"
-            id="firstName"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className={styles.formInput}
-            required
-          />
-        </div>
+      <div className={styles.formGroup}>
+        <label htmlFor="address1">Address *</label>
+        <input
+          type="text"
+          id="address1"
+          name="address1"
+          value={formData.address1}
+          onChange={handleChange}
+          className={errors.address1 ? styles.inputError : ""}
+        />
+        {errors.address1 && (
+          <p className={styles.errorText}>{errors.address1}</p>
+        )}
+      </div>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="lastName" className={styles.formLabel}>
-            Last name
-          </label>
-          <input
-            type="text"
-            id="lastName"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className={styles.formInput}
-            required
-          />
-        </div>
+      <div className={styles.formField}>
+        <label htmlFor="address2">Apartment, suite, etc.</label>
+        <input
+          type="text"
+          id="address2"
+          name="address2"
+          value={formData.address2}
+          onChange={handleChange}
+        />
+      </div>
 
-        <div className={styles.formGroup}>
-          <label htmlFor="company" className={styles.formLabel}>
-            Company
-          </label>
-          <input
-            type="text"
-            id="company"
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            className={styles.formInput}
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="streetAddress" className={styles.formLabel}>
-            Street address
-          </label>
-          <input
-            type="text"
-            id="streetAddress"
-            value={streetAddress}
-            onChange={(e) => setStreetAddress(e.target.value)}
-            className={styles.formInput}
-            required
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="country" className={styles.formLabel}>
-            Country / Region
-          </label>
-          <select
-            id="country"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className={styles.formSelect}
-            required
-          >
-            <option value="">Select</option>
-            {countries.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="city" className={styles.formLabel}>
-            City
-          </label>
+      <div className={styles.formRow}>
+        <div className={styles.formField}>
+          <label htmlFor="city">City *</label>
           <input
             type="text"
             id="city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className={styles.formInput}
-            required
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            className={errors.city ? styles.inputError : ""}
           />
+          {errors.city && <p className={styles.errorText}>{errors.city}</p>}
         </div>
 
-        <div className={styles.formRow}>
-          <div className={`${styles.formGroup} ${styles.halfWidth}`}>
-            <label htmlFor="postalCode" className={styles.formLabel}>
-              Postal code
-            </label>
-            <input
-              type="text"
-              id="postalCode"
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
-              className={styles.formInput}
-              required
-            />
-          </div>
+        <div className={styles.formField}>
+          <label htmlFor="province">State/Province *</label>
+          <input
+            type="text"
+            id="province"
+            name="province"
+            value={formData.province}
+            onChange={handleChange}
+            className={errors.province ? styles.inputError : ""}
+          />
+          {errors.province && (
+            <p className={styles.errorText}>{errors.province}</p>
+          )}
+        </div>
+      </div>
 
-          <div className={`${styles.formGroup} ${styles.halfWidth}`}>
-            <label htmlFor="phone" className={styles.formLabel}>
-              Phone
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className={styles.formInput}
-            />
-          </div>
+      <div className={styles.formRow}>
+        <div className={styles.formField}>
+          <label htmlFor="country">Country *</label>
+          <input
+            type="text"
+            id="country"
+            name="country"
+            value={formData.country}
+            onChange={handleChange}
+            className={errors.country ? styles.inputError : ""}
+          />
+          {errors.country && (
+            <p className={styles.errorText}>{errors.country}</p>
+          )}
         </div>
 
-        <div className={styles.formGroup}>
-          <div className={styles.checkboxGroup}>
-            <input
-              type="checkbox"
-              id="defaultBilling"
-              checked={isDefaultBilling}
-              onChange={(e) => setIsDefaultBilling(e.target.checked)}
-              className={styles.checkbox}
-            />
-            <label htmlFor="defaultBilling">
-              Set as default billing address
-            </label>
-          </div>
+        <div className={styles.formField}>
+          <label htmlFor="zip">Postal/Zip Code *</label>
+          <input
+            type="text"
+            id="zip"
+            name="zip"
+            value={formData.zip}
+            onChange={handleChange}
+            className={styles.formInput}
+            placeholder="Postal/Zip Code *"
+          />
+          {errors.zip && <p className={styles.errorText}>{errors.zip}</p>}
         </div>
+      </div>
 
-        <div className={styles.formGroup}>
-          <div className={styles.checkboxGroup}>
-            <input
-              type="checkbox"
-              id="defaultShipping"
-              checked={isDefaultShipping}
-              onChange={(e) => setIsDefaultShipping(e.target.checked)}
-              className={styles.checkbox}
-            />
-            <label htmlFor="defaultShipping">
-              Set as default shipping address
-            </label>
-          </div>
-        </div>
+      <div className={styles.formGroup}>
+        <input
+          type="tel"
+          placeholder="Phone *"
+          id="phone"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          className={styles.formInput}
+        />
+      </div>
 
-        <div className={styles.formActions}>
-          <button
-            type="button"
-            onClick={onCancel}
-            className={styles.cancelButton}
-          >
-            CANCEL
-          </button>
-          <button type="submit" className={styles.saveButton}>
-            SAVE
-          </button>
-        </div>
-      </form>
-    </div>
+      <div className={styles.formActions}>
+        <button
+          type="button"
+          onClick={onCancel}
+          className={styles.cancelButton}
+        >
+          Cancel
+        </button>
+        <button type="submit" className={styles.saveButton}>
+          Save Address
+        </button>
+      </div>
+    </form>
   );
 }

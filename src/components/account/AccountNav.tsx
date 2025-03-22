@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { logoutUser } from "@/lib/firebase";
+import { logoutUser } from "@/lib/firebase/auth";
 import styles from "@/styles/account/Account.module.css";
 
 export default function AccountNav() {

@@ -16,8 +16,10 @@ export interface ProductVariant {
   price: string;
   available: boolean;
   options: string[];
-  availableForSale?: boolean;
-  selectedOptions?: {
+  availableForSale: boolean;
+  quantityAvailable: number;
+  priceV2: ProductPrice;
+  selectedOptions: {
     name: string;
     value: string;
   }[];
@@ -46,4 +48,49 @@ export interface CartItem {
   price: string;
   imageUrl?: string;
   size?: string;
+}
+
+// Define types for product data
+
+export interface ProductPrice {
+  amount: string;
+  currencyCode: string;
+}
+
+export interface ShopifyProduct {
+  id: string;
+  title: string;
+  handle: string;
+  description: string;
+  descriptionHtml?: string;
+  priceRange: {
+    minVariantPrice: ProductPrice;
+  };
+  images: {
+    edges: {
+      node: ProductImage;
+    }[];
+  };
+  options?: {
+    id: string;
+    name: string;
+    values: string[];
+  }[];
+  variants?: {
+    edges: {
+      node: ProductVariant;
+    }[];
+  };
+}
+
+export interface ProductsResponse {
+  products: {
+    edges: {
+      node: ShopifyProduct;
+    }[];
+  };
+}
+
+export interface ProductResponse {
+  productByHandle: ShopifyProduct | null;
 }

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase/firebaseApp";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { getUserFromFirestore, saveUserToFirestore } from "@/lib/firestore";
+import {
+  getUserFromFirestore,
+  saveUserToFirestore,
+} from "@/lib/firebase/firestore";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 
 export async function POST(request: Request) {
@@ -17,10 +20,12 @@ export async function POST(request: Request) {
     // Fetch additional user details from Firestore
     let userData = await getUserFromFirestore(userId);
 
-    // If user doesn't exist in Firestore, create them
+    // If user doesn't exist in Firestore (first time login with social provider), create them
     if (!userData) {
       console.log("🆕 Creating missing user in Firestore:", userId);
-      await saveUserToFirestore(userId, userCredential.user.email || "");
+      await saveUserToFirestore(userId, {
+        email: userCredential.user.email || "",
+      });
 
       // Get the newly created user data
       userData = await getUserFromFirestore(userId);

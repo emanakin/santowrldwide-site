@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useRouter } from "next/navigation";
 import styles from "@/styles/products/AddToCartButton.module.css";
-import { Product, CartItem } from "@/types/product";
+import { Product, CartItem } from "@/types/product-types";
 
 type AddToCartButtonProps = {
   product: Product;

@@ -1,34 +1,16 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, signOut } from "firebase/auth";
+// lib/firebase/auth.ts
 import {
   signInWithPopup,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  signOut,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { auth, googleProvider, facebookProvider } from "./firebaseApp";
 
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-};
-
-// Initialize Firebase
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const googleProvider = new GoogleAuthProvider();
-const facebookProvider = new FacebookAuthProvider();
-
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export default app;
-
+// Sign in with Google
 export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
@@ -38,6 +20,7 @@ export const signInWithGoogle = async () => {
   }
 };
 
+// Sign in with Facebook
 export const signInWithFacebook = async () => {
   try {
     const result = await signInWithPopup(auth, facebookProvider);
@@ -47,6 +30,7 @@ export const signInWithFacebook = async () => {
   }
 };
 
+// Email and password login
 export const loginWithEmail = async (email: string, password: string) => {
   try {
     const result = await signInWithEmailAndPassword(auth, email, password);
@@ -56,6 +40,7 @@ export const loginWithEmail = async (email: string, password: string) => {
   }
 };
 
+// Email and password signup
 export const signupWithEmail = async (email: string, password: string) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
@@ -65,6 +50,7 @@ export const signupWithEmail = async (email: string, password: string) => {
   }
 };
 
+// Log out user
 export const logoutUser = async () => {
   try {
     await signOut(auth);
@@ -86,7 +72,6 @@ export const resetPassword = async (email: string) => {
 // Get Google auth token
 export async function getGoogleAuthToken() {
   const result = await signInWithPopup(auth, googleProvider);
-  // Get credential from result
   const credential = GoogleAuthProvider.credentialFromResult(result);
   return credential?.idToken;
 }
@@ -94,7 +79,6 @@ export async function getGoogleAuthToken() {
 // Get Facebook auth token
 export async function getFacebookAuthToken() {
   const result = await signInWithPopup(auth, facebookProvider);
-  // Get credential from result
   const credential = FacebookAuthProvider.credentialFromResult(result);
   return credential?.accessToken;
 }

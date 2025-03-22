@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase/firebaseApp";
 import {
   GoogleAuthProvider,
   FacebookAuthProvider,
   signInWithCredential,
 } from "firebase/auth";
-import { saveUserToFirestore, getUserFromFirestore } from "@/lib/firestore";
+import {
+  saveUserToFirestore,
+  getUserFromFirestore,
+} from "@/lib/firebase/firestore";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 
 export async function POST(request: Request) {
@@ -36,7 +39,7 @@ export async function POST(request: Request) {
     // If user doesn't exist in Firestore, create them
     if (!userData) {
       console.log("🆕 Creating new social user in Firestore:", userId);
-      await saveUserToFirestore(userId, email);
+      await saveUserToFirestore(userId, { email });
 
       // Get the newly created user data
       userData = await getUserFromFirestore(userId);

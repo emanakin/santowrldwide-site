@@ -8,10 +8,10 @@ import AddToCartButton from "@/components/products/AddToCartButton";
 import ProductDescription from "@/components/products/ProductDescription";
 import ShippingInfo from "@/components/products/ShippingInfo";
 import Breadcrumb from "@/components/products/Breadcrumb";
-import { getProduct } from "@/lib/shopify";
+import { getProduct } from "@/lib/shopify/storefront/products";
 import styles from "../../../styles/products/ProductDetail.module.css";
 import { useParams } from "next/navigation";
-import { Product } from "@/types/product";
+import { Product } from "@/types/product-types";
 
 export default function ProductPage() {
   const [activeIndex, setActiveIndex] = useState(0);

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { auth } from "@/lib/firebase/firebaseApp";
+import { onAuthStateChanged } from "firebase/auth";
+import { User, mapFirebaseUserToUser } from "@/types/user-types";
 
 type AuthContextType = {
   user: User | null;
@@ -38,8 +39,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showResetPanel, setShowResetPanel] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      // Convert Firebase Auth User to our custom User type
+      setUser(mapFirebaseUserToUser(firebaseUser));
       setLoading(false);
     });
 

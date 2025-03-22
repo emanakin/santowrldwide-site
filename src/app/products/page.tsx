@@ -1,7 +1,7 @@
 import React from "react";
 import ProductGrid from "@/components/products/ProductGrid";
 import Breadcrumb from "@/components/products/Breadcrumb";
-import { getProducts } from "@/lib/shopify";
+import { getProducts } from "@/lib/shopify/storefront/products";
 import styles from "../../styles/products/Products.module.css";
 
 // Fallback data in case the API fails

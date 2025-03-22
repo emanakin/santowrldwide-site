@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import styles from "@/styles/account/Account.module.css";
-
 export default function AccountDetailsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();

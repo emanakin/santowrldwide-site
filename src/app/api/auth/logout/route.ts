@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase/firebaseApp";
 import { signOut } from "firebase/auth";
-import { FirebaseAuthError, getFirebaseAuthErrorMessage } from "@/lib/errors";
+import { getFirebaseAuthErrorMessage } from "@/utils/error-utils";
+import { FirebaseAuthError } from "@/types/firebase-types";
 
 export async function POST() {
   try {
