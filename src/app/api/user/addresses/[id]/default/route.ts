@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/firebaseApp";
-import { getUserFromFirestore } from "@/lib/firebase/firestore";
+import { getUserFromFirestore } from "@/lib/firebase/client/firestore";
+import { verifyAuthToken } from "@/lib/firebase/admin/auth";
+import { initializeFirebaseAdmin } from "@/lib/firebase/admin/firebaseAdmin";
 import { setDefaultCustomerAddress } from "@/lib/shopify/admin/customer";
+
+// Initialize Firebase Admin if not already done
+initializeFirebaseAdmin();
 
 // PUT to set an address as default
 export async function PUT(
@@ -9,15 +13,17 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authUser = auth.currentUser;
-    if (!authUser) {
+    const userId = await verifyAuthToken(request);
+    if (!userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const addressId = params.id;
+    const param = await params;
+    const addressId = param.id;
+    const cleanAddressId = addressId.split("?")[0];
 
     // Get the user document to retrieve the Shopify customer ID
-    const userData = await getUserFromFirestore(authUser.uid);
+    const userData = await getUserFromFirestore(userId);
 
     if (!userData || !userData.shopifyCustomerId) {
       return NextResponse.json(
@@ -29,7 +35,7 @@ export async function PUT(
     // Set as default in Shopify
     const success = await setDefaultCustomerAddress(
       userData.shopifyCustomerId,
-      addressId
+      cleanAddressId
     );
 
     if (!success) {

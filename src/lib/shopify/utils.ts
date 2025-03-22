@@ -1,5 +1,8 @@
 import { GraphQLClient } from "graphql-request";
 import { ShopifyProduct, ProductsResponse } from "@/types/product-types";
+import { ShopifyAddress } from "@/types/shopify-types";
+import { Address } from "@/types/user-types";
+import { MailingAddressInput } from "@/types/shopify-types";
 
 export async function shopifyRequest<T>(
   query: string,
@@ -59,4 +62,62 @@ export function formatProduct(product: ShopifyProduct) {
       selectedOptions: node.selectedOptions,
     })),
   };
+}
+
+/**
+ * Transforms Shopify addresses to our app format
+ */
+export function transformShopifyAddresses(
+  shopifyAddresses: ShopifyAddress[],
+  defaultAddressId?: string
+): Address[] {
+  return shopifyAddresses.map((addr) => {
+    // Remove only the prefix but keep any query parameters
+    const cleanId = addr.id.replace("gid://shopify/MailingAddress/", "");
+    return {
+      id: cleanId,
+      address1: addr.address1,
+      address2: addr.address2 || "",
+      city: addr.city,
+      province: addr.province,
+      country: addr.country,
+      zip: addr.zip,
+      phone: addr.phone || "",
+      isDefault: defaultAddressId ? addr.id === defaultAddressId : false,
+      // Store the original full ID to use when updating
+      originalId: addr.id,
+    };
+  });
+}
+
+export function prepareAddressForShopifyUpdate(
+  addr: Address
+): MailingAddressInput {
+  // If we have the original ID stored, use it directly
+  const id = addr.originalId || `gid://shopify/MailingAddress/${addr.id}`;
+
+  return {
+    id,
+    address1: addr.address1,
+    address2: addr.address2,
+    city: addr.city,
+    province: addr.province,
+    country: addr.country,
+    zip: addr.zip,
+    phone: addr.phone,
+  };
+}
+
+// Helper: Updates one address in an array of addresses
+export function updateAddressInList(
+  addresses: Address[],
+  addressId: string,
+  updated: Omit<Address, "isDefault">
+): Address[] {
+  return addresses.map((addr) => {
+    if (addr.id === addressId) {
+      return { ...addr, ...updated };
+    }
+    return addr;
+  });
 }

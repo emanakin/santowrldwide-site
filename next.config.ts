@@ -5,7 +5,12 @@ console.log("Loading Next.js config...");
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["cdn.shopify.com"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.shopify.com",
+      },
+    ],
   },
   cssModules: true,
   webpack: (config) => {

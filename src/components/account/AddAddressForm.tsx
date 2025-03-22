@@ -79,100 +79,136 @@ export default function AddAddressForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.addressForm}>
-      <h2>{initialData ? "Edit Address" : "Add New Address"}</h2>
+    <form onSubmit={handleSubmit} className={styles.accountForm}>
+      <h2 className={styles.formTitle}>
+        {initialData ? "Edit Address" : "Add New Address"}
+      </h2>
 
       <div className={styles.formGroup}>
-        <label htmlFor="address1">Address *</label>
+        <label htmlFor="address1" className={styles.formLabel}>
+          Address *
+        </label>
         <input
           type="text"
           id="address1"
           name="address1"
           value={formData.address1}
           onChange={handleChange}
-          className={errors.address1 ? styles.inputError : ""}
+          className={
+            errors.address1
+              ? `${styles.formInput} ${styles.inputError}`
+              : styles.formInput
+          }
         />
         {errors.address1 && (
-          <p className={styles.errorText}>{errors.address1}</p>
+          <p className={styles.formHelp}>{errors.address1}</p>
         )}
       </div>
 
-      <div className={styles.formField}>
-        <label htmlFor="address2">Apartment, suite, etc.</label>
+      <div className={styles.formGroup}>
+        <label htmlFor="address2" className={styles.formLabel}>
+          Apartment, suite, etc.
+        </label>
         <input
           type="text"
           id="address2"
           name="address2"
           value={formData.address2}
           onChange={handleChange}
+          className={styles.formInput}
         />
       </div>
 
       <div className={styles.formRow}>
-        <div className={styles.formField}>
-          <label htmlFor="city">City *</label>
+        <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+          <label htmlFor="city" className={styles.formLabel}>
+            City *
+          </label>
           <input
             type="text"
             id="city"
             name="city"
             value={formData.city}
             onChange={handleChange}
-            className={errors.city ? styles.inputError : ""}
+            className={
+              errors.city
+                ? `${styles.formInput} ${styles.inputError}`
+                : styles.formInput
+            }
           />
-          {errors.city && <p className={styles.errorText}>{errors.city}</p>}
+          {errors.city && <p className={styles.formHelp}>{errors.city}</p>}
         </div>
 
-        <div className={styles.formField}>
-          <label htmlFor="province">State/Province *</label>
+        <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+          <label htmlFor="province" className={styles.formLabel}>
+            State/Province *
+          </label>
           <input
             type="text"
             id="province"
             name="province"
             value={formData.province}
             onChange={handleChange}
-            className={errors.province ? styles.inputError : ""}
+            className={
+              errors.province
+                ? `${styles.formInput} ${styles.inputError}`
+                : styles.formInput
+            }
           />
           {errors.province && (
-            <p className={styles.errorText}>{errors.province}</p>
+            <p className={styles.formHelp}>{errors.province}</p>
           )}
         </div>
       </div>
 
       <div className={styles.formRow}>
-        <div className={styles.formField}>
-          <label htmlFor="country">Country *</label>
+        <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+          <label htmlFor="country" className={styles.formLabel}>
+            Country *
+          </label>
           <input
             type="text"
             id="country"
             name="country"
             value={formData.country}
             onChange={handleChange}
-            className={errors.country ? styles.inputError : ""}
+            className={
+              errors.country
+                ? `${styles.formInput} ${styles.inputError}`
+                : styles.formInput
+            }
           />
           {errors.country && (
-            <p className={styles.errorText}>{errors.country}</p>
+            <p className={styles.formHelp}>{errors.country}</p>
           )}
         </div>
 
-        <div className={styles.formField}>
-          <label htmlFor="zip">Postal/Zip Code *</label>
+        <div className={`${styles.formGroup} ${styles.halfWidth}`}>
+          <label htmlFor="zip" className={styles.formLabel}>
+            Postal/Zip Code *
+          </label>
           <input
             type="text"
             id="zip"
             name="zip"
             value={formData.zip}
             onChange={handleChange}
-            className={styles.formInput}
-            placeholder="Postal/Zip Code *"
+            className={
+              errors.zip
+                ? `${styles.formInput} ${styles.inputError}`
+                : styles.formInput
+            }
           />
-          {errors.zip && <p className={styles.errorText}>{errors.zip}</p>}
+          {errors.zip && <p className={styles.formHelp}>{errors.zip}</p>}
         </div>
       </div>
 
       <div className={styles.formGroup}>
+        <label htmlFor="phone" className={styles.formLabel}>
+          Phone
+        </label>
         <input
           type="tel"
-          placeholder="Phone *"
           id="phone"
           name="phone"
           value={formData.phone}

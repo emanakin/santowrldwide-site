@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/firebaseApp";
-import { getUserFromFirestore } from "@/lib/firebase/firestore";
+import { getUserFromFirestore } from "@/lib/firebase/client/firestore";
+import { verifyAuthToken } from "@/lib/firebase/admin/auth";
 import {
   getCustomerAddresses,
   createCustomerAddress,
 } from "@/lib/shopify/admin/customer";
+import { initializeFirebaseAdmin } from "@/lib/firebase/admin/firebaseAdmin";
+
+initializeFirebaseAdmin();
 
 // GET all addresses for the current user
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const authUser = auth.currentUser;
-    if (!authUser) {
+    const userId = await verifyAuthToken(request);
+    if (!userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Get the user document to retrieve the Shopify customer ID
-    const userData = await getUserFromFirestore(authUser.uid);
+    const userData = await getUserFromFirestore(userId);
 
     if (!userData || !userData.shopifyCustomerId) {
       return NextResponse.json(
@@ -40,15 +43,15 @@ export async function GET() {
 // POST to create a new address
 export async function POST(request: Request) {
   try {
-    const authUser = auth.currentUser;
-    if (!authUser) {
+    const userId = await verifyAuthToken(request);
+    if (!userId) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const addressData = await request.json();
 
     // Get the user document to retrieve the Shopify customer ID
-    const userData = await getUserFromFirestore(authUser.uid);
+    const userData = await getUserFromFirestore(userId);
 
     if (!userData || !userData.shopifyCustomerId) {
       return NextResponse.json(

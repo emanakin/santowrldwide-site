@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/firebaseApp";
+import { auth } from "@/lib/firebase/client/firebaseApp";
 import {
   GoogleAuthProvider,
   FacebookAuthProvider,
@@ -8,7 +8,7 @@ import {
 import {
   saveUserToFirestore,
   getUserFromFirestore,
-} from "@/lib/firebase/firestore";
+} from "@/lib/firebase/client/firestore";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 
 export async function POST(request: Request) {

@@ -1,22 +1,20 @@
 import { adminClient } from "./client";
 import {
   ShopifyCustomer,
-  ShopifyAddress,
   CustomerCreateResponse,
-  CustomerAddressCreateResponse,
-  CustomerAddressUpdateResponse,
-  CustomerAddressDeleteResponse,
-  CustomerDefaultAddressUpdateResponse,
+  CustomerUpdateResponse,
 } from "@/types/shopify-types";
 import { Address } from "@/types/user-types";
 import {
   CREATE_CUSTOMER_MUTATION,
   GET_CUSTOMER_QUERY,
-  CREATE_ADDRESS_MUTATION,
-  UPDATE_ADDRESS_MUTATION,
-  DELETE_ADDRESS_MUTATION,
-  SET_DEFAULT_ADDRESS_MUTATION,
+  CUSTOMER_UPDATE_MUTATION,
 } from "./queries/customerQueries";
+import {
+  prepareAddressForShopifyUpdate,
+  transformShopifyAddresses,
+  updateAddressInList,
+} from "../utils";
 
 /**
  * Creates a new customer in Shopify
@@ -80,43 +78,42 @@ export async function getShopifyCustomer(
 }
 
 /**
- * Transforms Shopify addresses to our app format
- */
-export function transformShopifyAddresses(
-  shopifyAddresses: ShopifyAddress[],
-  defaultAddressId?: string
-): Address[] {
-  return shopifyAddresses.map((addr) => ({
-    id: addr.id.replace("gid://shopify/MailingAddress/", ""),
-    address1: addr.address1,
-    address2: addr.address2 || "",
-    city: addr.city,
-    province: addr.province,
-    country: addr.country,
-    zip: addr.zip,
-    phone: addr.phone || "",
-    isDefault: defaultAddressId ? addr.id === defaultAddressId : false,
-  }));
-}
-
-/**
  * Gets all addresses for a customer
  */
 export async function getCustomerAddresses(
   customerId: string
 ): Promise<Address[]> {
   try {
-    const customer = await getShopifyCustomer(customerId);
+    const variables = {
+      id: `gid://shopify/Customer/${customerId}`,
+    };
+
+    const data = await adminClient.request<{ customer: ShopifyCustomer }>(
+      GET_CUSTOMER_QUERY,
+      variables
+    );
+
+    const customer = data.customer;
 
     if (!customer || !customer.addresses) {
+      console.log("No customer or addresses found");
       return [];
     }
 
-    // Handle the edges structure from the Shopify API
-    const addresses = customer.addresses.edges.map((edge) => edge.node);
+    // The addresses are directly an array, not edges/nodes structure
+    const addresses = Array.isArray(customer.addresses)
+      ? customer.addresses
+      : [];
     const defaultAddressId = customer.defaultAddress?.id;
 
-    return transformShopifyAddresses(addresses, defaultAddressId);
+    console.log("Default address ID:", defaultAddressId);
+
+    const transformedAddresses = transformShopifyAddresses(
+      addresses,
+      defaultAddressId
+    );
+
+    return transformedAddresses;
   } catch (error) {
     console.error("Error fetching customer addresses:", error);
     return [];
@@ -131,33 +128,38 @@ export async function createCustomerAddress(
   address: Omit<Address, "id" | "isDefault">
 ): Promise<Address | null> {
   try {
+    const existingAddresses = await getCustomerAddresses(customerId);
+
+    // Clean and transform each address to match Shopify expectations
+    const cleanedShopifyAddresses = existingAddresses.map(
+      prepareAddressForShopifyUpdate
+    );
+
     const variables = {
-      customerId: `gid://shopify/Customer/${customerId}`,
-      address: {
-        address1: address.address1,
-        address2: address.address2,
-        city: address.city,
-        province: address.province,
-        country: address.country,
-        zip: address.zip,
-        phone: address.phone,
+      input: {
+        id: `gid://shopify/Customer/${customerId}`,
+        addresses: [...cleanedShopifyAddresses, address], // Add new one last
       },
     };
 
-    const data = await adminClient.request<CustomerAddressCreateResponse>(
-      CREATE_ADDRESS_MUTATION,
+    const data = await adminClient.request<CustomerUpdateResponse>(
+      CUSTOMER_UPDATE_MUTATION,
       variables
     );
 
-    if (data.customerAddressCreate.customerUserErrors.length > 0) {
-      console.error(
-        "Address creation errors:",
-        data.customerAddressCreate.customerUserErrors
-      );
+    if (data.customerUpdate.userErrors.length > 0) {
+      console.error("Address creation errors:", data.customerUpdate.userErrors);
       return null;
     }
 
-    const newAddress = data.customerAddressCreate.customerAddress;
+    const addresses = data.customerUpdate.customer?.addresses;
+    const newAddress = addresses?.[addresses.length - 1];
+
+    if (!newAddress) {
+      console.error("No new address created");
+      return null;
+    }
+
     return {
       id: newAddress.id.replace("gid://shopify/MailingAddress/", ""),
       address1: newAddress.address1,
@@ -181,48 +183,61 @@ export async function createCustomerAddress(
 export async function updateCustomerAddress(
   customerId: string,
   addressId: string,
-  address: Omit<Address, "id" | "isDefault">
+  updated: Omit<Address, "isDefault">
 ): Promise<Address | null> {
   try {
+    // 1. Fetch all addresses
+    const existingAddresses = await getCustomerAddresses(customerId);
+
+    // 2. Create a new array with the updated address data
+    const updatedAddressesList = updateAddressInList(
+      existingAddresses,
+      addressId,
+      updated
+    );
+
+    // 3. Convert addresses to Shopify's MailingAddressInput format
+    const mailingAddressInputs = updatedAddressesList.map(
+      prepareAddressForShopifyUpdate
+    );
+
+    // 4. Prepare variables for mutation
     const variables = {
-      customerId: `gid://shopify/Customer/${customerId}`,
-      id: `gid://shopify/MailingAddress/${addressId}`,
-      address: {
-        address1: address.address1,
-        address2: address.address2,
-        city: address.city,
-        province: address.province,
-        country: address.country,
-        zip: address.zip,
-        phone: address.phone,
+      input: {
+        id: `gid://shopify/Customer/${customerId}`,
+        addresses: mailingAddressInputs,
       },
     };
 
-    const data = await adminClient.request<CustomerAddressUpdateResponse>(
-      UPDATE_ADDRESS_MUTATION,
+    // 5. Send the update mutation
+    const data = await adminClient.request<CustomerUpdateResponse>(
+      CUSTOMER_UPDATE_MUTATION,
       variables
     );
 
-    if (data.customerAddressUpdate.customerUserErrors.length > 0) {
-      console.error(
-        "Address update errors:",
-        data.customerAddressUpdate.customerUserErrors
-      );
+    if (data.customerUpdate.userErrors.length > 0) {
+      console.error("Address update errors:", data.customerUpdate.userErrors);
       return null;
     }
 
-    const updatedAddress = data.customerAddressUpdate.customerAddress;
-    return {
-      id: updatedAddress.id.replace("gid://shopify/MailingAddress/", ""),
-      address1: updatedAddress.address1,
-      address2: updatedAddress.address2 || "",
-      city: updatedAddress.city,
-      province: updatedAddress.province,
-      country: updatedAddress.country,
-      zip: updatedAddress.zip,
-      phone: updatedAddress.phone || "",
-      isDefault: false, // We don't know this from the update response
-    };
+    // 6. Find the updated address in the response
+    const updatedAddress = data.customerUpdate.customer?.addresses.find((a) =>
+      a.id.endsWith(addressId)
+    );
+
+    return updatedAddress
+      ? {
+          id: updatedAddress.id.replace("gid://shopify/MailingAddress/", ""),
+          address1: updatedAddress.address1,
+          address2: updatedAddress.address2 || "",
+          city: updatedAddress.city,
+          province: updatedAddress.province,
+          country: updatedAddress.country,
+          zip: updatedAddress.zip,
+          phone: updatedAddress.phone || "",
+          isDefault: false,
+        }
+      : null;
   } catch (error) {
     console.error("Error updating address:", error);
     return null;
@@ -237,21 +252,35 @@ export async function deleteCustomerAddress(
   addressId: string
 ): Promise<boolean> {
   try {
+    const existingAddresses = await getCustomerAddresses(customerId);
+
+    const filtered = existingAddresses
+      .filter((a) => a.id !== addressId)
+      .map((a) => ({
+        id: `gid://shopify/MailingAddress/${a.id}`,
+        address1: a.address1,
+        address2: a.address2,
+        city: a.city,
+        province: a.province,
+        country: a.country,
+        zip: a.zip,
+        phone: a.phone,
+      }));
+
     const variables = {
-      customerId: `gid://shopify/Customer/${customerId}`,
-      id: `gid://shopify/MailingAddress/${addressId}`,
+      input: {
+        id: `gid://shopify/Customer/${customerId}`,
+        addresses: filtered,
+      },
     };
 
-    const data = await adminClient.request<CustomerAddressDeleteResponse>(
-      DELETE_ADDRESS_MUTATION,
+    const data = await adminClient.request<CustomerUpdateResponse>(
+      CUSTOMER_UPDATE_MUTATION,
       variables
     );
 
-    if (data.customerAddressDelete.customerUserErrors.length > 0) {
-      console.error(
-        "Address deletion errors:",
-        data.customerAddressDelete.customerUserErrors
-      );
+    if (data.customerUpdate.userErrors.length > 0) {
+      console.error("Address deletion errors:", data.customerUpdate.userErrors);
       return false;
     }
 
@@ -270,21 +299,48 @@ export async function setDefaultCustomerAddress(
   addressId: string
 ): Promise<boolean> {
   try {
+    // Fetch existing addresses
+    const addresses = await getCustomerAddresses(customerId);
+
+    if (!addresses || addresses.length === 0) {
+      console.error("No addresses found for customer");
+      return false;
+    }
+
+    // Reorder addresses so that the addressId becomes the first element
+    const reordered = addresses
+      .sort((a, b) => {
+        if (a.id === addressId) return -1;
+        if (b.id === addressId) return 1;
+        return 0;
+      })
+      .map((a) => ({
+        id: `gid://shopify/MailingAddress/${a.id}`,
+        address1: a.address1,
+        address2: a.address2,
+        city: a.city,
+        province: a.province,
+        country: a.country,
+        zip: a.zip,
+        phone: a.phone,
+      }));
+
     const variables = {
-      customerId: `gid://shopify/Customer/${customerId}`,
-      addressId: `gid://shopify/MailingAddress/${addressId}`,
+      input: {
+        id: `gid://shopify/Customer/${customerId}`,
+        addresses: reordered,
+      },
     };
 
-    const data =
-      await adminClient.request<CustomerDefaultAddressUpdateResponse>(
-        SET_DEFAULT_ADDRESS_MUTATION,
-        variables
-      );
+    const data = await adminClient.request<CustomerUpdateResponse>(
+      CUSTOMER_UPDATE_MUTATION,
+      variables
+    );
 
-    if (data.customerDefaultAddressUpdate.customerUserErrors.length > 0) {
+    if (data.customerUpdate.userErrors.length > 0) {
       console.error(
         "Set default address errors:",
-        data.customerDefaultAddressUpdate.customerUserErrors
+        data.customerUpdate.userErrors
       );
       return false;
     }

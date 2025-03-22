@@ -1,11 +1,11 @@
-import { auth } from "@/lib/firebase/firebaseApp";
+import { auth } from "@/lib/firebase/client/firebaseApp";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import {
   getGoogleAuthToken,
   getFacebookAuthToken,
   signInWithGoogle,
   signInWithFacebook,
-} from "@/lib/firebase/auth";
+} from "@/lib/firebase/client/auth";
 import { SocialProvider } from "@/types/firebase-types";
 
 /**

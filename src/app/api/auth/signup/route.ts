@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/firebaseApp";
+import { auth } from "@/lib/firebase/client/firebaseApp";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { saveUserToFirestore } from "@/lib/firebase/firestore";
+import { saveUserToFirestore } from "@/lib/firebase/client/firestore";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 import { createShopifyCustomer } from "@/lib/shopify/admin/customer";
 

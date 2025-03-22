@@ -147,15 +147,17 @@ export default function AddressesPage() {
   if (!user) return null;
 
   return (
-    <div className={styles.addressesContainer}>
+    <div className={styles.accountContainer}>
       <h1 className={styles.pageTitle}>Addresses</h1>
 
       {showAddForm ? (
-        <AddAddressForm
-          onSave={handleSaveAddress}
-          onCancel={handleCancelAdd}
-          initialData={editingAddress}
-        />
+        <div className={styles.addressFormContainer}>
+          <AddAddressForm
+            onSave={handleSaveAddress}
+            onCancel={handleCancelAdd}
+            initialData={editingAddress}
+          />
+        </div>
       ) : (
         <>
           {addresses.length === 0 ? (
@@ -166,42 +168,54 @@ export default function AddressesPage() {
               </button>
             </div>
           ) : (
-            <div className={styles.addressList}>
-              {addresses.map((address) => (
-                <div key={address.id} className={styles.addressCard}>
-                  {address.isDefault && (
-                    <span className={styles.defaultBadge}>Default</span>
-                  )}
-                  <div className={styles.addressInfo}>
-                    <p>{address.address1}</p>
-                    {address.address2 && <p>{address.address2}</p>}
-                    <p>
-                      {address.city}, {address.province} {address.zip}
-                    </p>
-                    <p>{address.country}</p>
-                    {address.phone && <p>{address.phone}</p>}
-                  </div>
-                  <div className={styles.addressActions}>
-                    <button onClick={() => handleEdit(address)}>Edit</button>
-                    {!address.isDefault && (
-                      <>
-                        <button onClick={() => handleSetDefault(address.id)}>
-                          Make Default
-                        </button>
-                        <button
-                          onClick={() => handleDelete(address.id)}
-                          className={styles.deleteButton}
-                        >
-                          Delete
-                        </button>
-                      </>
+            <div>
+              <div className={styles.addressList}>
+                {addresses.map((address) => (
+                  <div key={address.id} className={styles.addressCard}>
+                    {address.isDefault && (
+                      <span className={styles.defaultBadge}>Default</span>
                     )}
+                    <div className={styles.addressInfo}>
+                      <p>{address.address1}</p>
+                      {address.address2 && <p>{address.address2}</p>}
+                      <p>
+                        {address.city}, {address.province} {address.zip}
+                      </p>
+                      <p>{address.country}</p>
+                      {address.phone && <p>{address.phone}</p>}
+                    </div>
+                    <div className={styles.addressCardActions}>
+                      <button
+                        onClick={() => handleEdit(address)}
+                        className={styles.addressCardAction}
+                      >
+                        Edit
+                      </button>
+                      {!address.isDefault && (
+                        <>
+                          <button
+                            onClick={() => handleSetDefault(address.id)}
+                            className={styles.addressCardAction}
+                          >
+                            Make Default
+                          </button>
+                          <button
+                            onClick={() => handleDelete(address.id)}
+                            className={styles.addressCardAction}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-              <button onClick={handleAddNew} className={styles.addButton}>
-                Add New Address
-              </button>
+                ))}
+              </div>
+              <div className={styles.formActions}>
+                <button onClick={handleAddNew} className={styles.addButton}>
+                  Add New Address
+                </button>
+              </div>
             </div>
           )}
         </>

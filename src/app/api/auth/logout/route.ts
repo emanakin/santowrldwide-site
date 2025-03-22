@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/firebaseApp";
+import { auth } from "@/lib/firebase/client/firebaseApp";
 import { signOut } from "firebase/auth";
 import { getFirebaseAuthErrorMessage } from "@/utils/error-utils";
 import { FirebaseAuthError } from "@/types/firebase-types";

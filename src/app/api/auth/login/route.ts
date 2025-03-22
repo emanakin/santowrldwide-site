@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/firebaseApp";
+import { auth } from "@/lib/firebase/client/firebaseApp";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import {
   getUserFromFirestore,
   saveUserToFirestore,
-} from "@/lib/firebase/firestore";
+} from "@/lib/firebase/client/firestore";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 
 export async function POST(request: Request) {

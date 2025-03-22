@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import styles from "@/styles/auth/Auth.module.css";
-import { resetPassword } from "@/lib/firebase/auth";
+import { resetPassword } from "@/lib/firebase/client/auth";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
 import { useAuth } from "@/context/AuthContext";
 

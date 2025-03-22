@@ -61,4 +61,5 @@ export interface Address {
   zip: string;
   phone?: string;
   isDefault?: boolean;
+  originalId?: string;
 }
