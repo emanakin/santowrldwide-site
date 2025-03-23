@@ -1,18 +1,26 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/firebase/client/firebaseApp";
-import { signOut } from "firebase/auth";
-import { getFirebaseAuthErrorMessage } from "@/utils/error-utils";
-import { FirebaseAuthError } from "@/types/firebase-types";
 
 export async function POST() {
   try {
-    await signOut(auth);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    // Cast the error to our FirebaseAuthError type
-    const firebaseError = error as FirebaseAuthError;
-    const formattedError = getFirebaseAuthErrorMessage(firebaseError);
+    // Note: Firebase signOut happens client-side
+    // Here we just clear the Shopify cookie
 
-    return NextResponse.json(formattedError, { status: 400 });
+    // Create a response that indicates success
+    const response = NextResponse.json({ success: true });
+
+    // Clear the Shopify customer token cookie
+    response.cookies.set({
+      name: "shopify_customer_token",
+      value: "",
+      expires: new Date(0), // Expire immediately
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return response;
+  } catch (error) {
+    console.error("❌ Error in logout:", error);
+    return NextResponse.json({ error: "Logout failed" }, { status: 400 });
   }
 }

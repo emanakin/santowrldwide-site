@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
-import { getUserFromFirestore } from "@/lib/firebase/client/firestore";
-import { verifyAuthToken } from "@/lib/firebase/admin/auth";
-import { initializeFirebaseAdmin } from "@/lib/firebase/admin/firebaseAdmin";
+import { cookies } from "next/headers";
 import {
   updateCustomerAddress,
   deleteCustomerAddress,
-} from "@/lib/shopify/admin/customer";
+} from "@/lib/shopify/customers";
 
-// Initialize Firebase Admin if not already done
-initializeFirebaseAdmin();
+/**
+ * Decode the address ID coming from the URL
+ */
+function decodeAddressId(encodedId: string): string {
+  try {
+    return decodeURIComponent(encodedId);
+  } catch (error) {
+    console.warn("Error decoding address ID:", error);
+    return encodedId; // Return as-is if decoding fails
+  }
+}
 
 // PUT to update an address
 export async function PUT(
@@ -16,52 +23,44 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await verifyAuthToken(request);
-    if (!userId) {
+    // Get the Shopify customer token from cookies
+    const cookieStore = await cookies();
+    const shopifyToken = cookieStore.get("shopify_customer_token")?.value;
+
+    if (!shopifyToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Add error handling for JSON parsing
-    let addressData;
-    try {
-      addressData = await request.json();
-    } catch (error) {
-      return NextResponse.json(
-        { error: "Invalid JSON payload" },
-        { status: 400 }
-      );
-    }
+    // Decode the address ID from URL
+    const addressId = decodeAddressId(params.id);
+    const addressData = await request.json();
 
-    // Sanitize the address ID by removing the query parameter
-    const param = await params;
-    const addressId = param.id;
-    const cleanAddressId = addressId.split("?")[0];
-
-    // Get the user document to retrieve the Shopify customer ID
-    const userData = await getUserFromFirestore(userId);
-
-    if (!userData || !userData.shopifyCustomerId) {
-      return NextResponse.json(
-        { error: "User not found or no Shopify ID" },
-        { status: 404 }
-      );
-    }
+    console.log("Updating address with ID:", addressId);
 
     // Update the address in Shopify
-    const updatedAddress = await updateCustomerAddress(
-      userData.shopifyCustomerId,
-      cleanAddressId,
+    const updateResponse = await updateCustomerAddress(
+      shopifyToken,
+      addressId,
       addressData
     );
 
-    if (!updatedAddress) {
+    if (!updateResponse?.customerAddressUpdate?.customerAddress) {
+      console.error(
+        "Update response errors:",
+        updateResponse?.customerAddressUpdate?.customerUserErrors
+      );
       return NextResponse.json(
-        { error: "Failed to update address" },
+        {
+          error: "Failed to update address",
+          details: updateResponse?.customerAddressUpdate?.customerUserErrors,
+        },
         { status: 400 }
       );
     }
 
-    return NextResponse.json(updatedAddress);
+    return NextResponse.json(
+      updateResponse.customerAddressUpdate.customerAddress
+    );
   } catch (error) {
     console.error("Error updating address:", error);
     return NextResponse.json(
@@ -77,35 +76,31 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await verifyAuthToken(request);
-    if (!userId) {
+    // Get the Shopify customer token from cookies
+    const cookieStore = await cookies();
+    const shopifyToken = cookieStore.get("shopify_customer_token")?.value;
+
+    if (!shopifyToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Sanitize the address ID by removing the query parameter
-    const param = await params;
-    const addressId = param.id;
-    const cleanAddressId = addressId.split("?")[0];
-
-    // Get the user document to retrieve the Shopify customer ID
-    const userData = await getUserFromFirestore(userId);
-
-    if (!userData || !userData.shopifyCustomerId) {
-      return NextResponse.json(
-        { error: "User not found or no Shopify ID" },
-        { status: 404 }
-      );
-    }
+    // Decode the address ID from URL
+    const addressId = decodeAddressId(params.id);
+    console.log("Deleting address with ID:", addressId);
 
     // Delete the address in Shopify
-    const success = await deleteCustomerAddress(
-      userData.shopifyCustomerId,
-      cleanAddressId
-    );
+    const deleteResponse = await deleteCustomerAddress(shopifyToken, addressId);
 
-    if (!success) {
+    if (!deleteResponse?.customerAddressDelete?.deletedCustomerAddressId) {
+      console.error(
+        "Delete response errors:",
+        deleteResponse?.customerAddressDelete?.customerUserErrors
+      );
       return NextResponse.json(
-        { error: "Failed to delete address" },
+        {
+          error: "Failed to delete address",
+          details: deleteResponse?.customerAddressDelete?.customerUserErrors,
+        },
         { status: 400 }
       );
     }

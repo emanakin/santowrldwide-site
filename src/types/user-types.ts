@@ -18,18 +18,20 @@ export interface User {
   lastName?: string | null;
   addresses?: Address[];
   defaultAddressId?: string | null;
+  shopifyPassword?: string | null;
   // Add any other custom fields your application needs
 }
 
 // Type for creating/saving a user
 export interface UserData {
-  email: string;
+  email: string | null;
   displayName?: string | null;
   photoURL?: string | null;
   emailVerified?: boolean;
   shopifyCustomerId?: string | null;
   firstName?: string | null;
   lastName?: string | null;
+  shopifyPassword?: string | null;
 }
 
 // Helper function to convert Firebase Auth User to our custom User type
@@ -47,6 +49,7 @@ export function mapFirebaseUserToUser(
     createdAt: null, // These will come from Firestore, not Auth
     lastLoginAt: null, // These will come from Firestore, not Auth
     shopifyCustomerId: null, // Assuming shopifyCustomerId is not available in Firebase Auth
+    shopifyPassword: null, // Assuming shopifyPassword is not available in Firebase Auth
   };
 }
 

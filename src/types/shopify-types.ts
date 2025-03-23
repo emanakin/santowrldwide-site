@@ -79,17 +79,6 @@ export interface CustomerAccessTokenResponse {
   };
 }
 
-export interface CustomerQueryResponse {
-  customers: {
-    edges: Array<{
-      node: ShopifyCustomer;
-    }>;
-  };
-}
-
-// Address API responses
-// Customer API responses
-
 export interface CustomerCreateResponse {
   customerCreate: {
     customer: ShopifyCustomer | null;
@@ -127,14 +116,6 @@ export interface CustomerAccessTokenResponse {
   };
 }
 
-export interface CustomerQueryResponse {
-  customers: {
-    edges: Array<{
-      node: ShopifyCustomer;
-    }>;
-  };
-}
-
 export interface CustomerAddressesResponse {
   customer: {
     addresses: {
@@ -144,6 +125,157 @@ export interface CustomerAddressesResponse {
     };
     defaultAddress?: {
       id: string;
+    };
+  } | null;
+}
+
+export interface CustomerAccessTokenRenewResponse {
+  customerAccessTokenRenew: {
+    customerAccessToken: {
+      accessToken: string;
+      expiresAt: string;
+    } | null;
+    customerUserErrors: Array<{
+      code: string;
+      field: string[] | null;
+      message: string;
+    }>;
+  };
+}
+
+export interface CustomerQueryResponse {
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string | null;
+    displayName: string | null;
+    defaultAddress: ShopifyAddress | null;
+    addresses: {
+      edges: Array<{
+        node: ShopifyAddress;
+      }>;
+    };
+  } | null;
+}
+
+export interface CustomerAddressCreateResponse {
+  customerAddressCreate: {
+    customerAddress: {
+      id: string;
+    } | null;
+    customerUserErrors: Array<{
+      code: string;
+      field: string[] | null;
+      message: string;
+    }>;
+  };
+}
+
+export interface CustomerAddressUpdateResponse {
+  customerAddressUpdate: {
+    customerAddress: {
+      id: string;
+    } | null;
+    customerUserErrors: Array<{
+      code: string;
+      field: string[] | null;
+      message: string;
+    }>;
+  };
+}
+
+export interface CustomerAddressDeleteResponse {
+  customerAddressDelete: {
+    deletedCustomerAddressId: string | null;
+    customerUserErrors: Array<{
+      code: string;
+      field: string[] | null;
+      message: string;
+    }>;
+  };
+}
+
+export interface CustomerDefaultAddressUpdateResponse {
+  customerDefaultAddressUpdate: {
+    customer: {
+      id: string;
+      defaultAddress: {
+        id: string;
+      } | null;
+    } | null;
+    customerUserErrors: Array<{
+      code: string;
+      field: string[] | null;
+      message: string;
+    }>;
+  };
+}
+
+export interface CustomerRecoverResponse {
+  customerRecover: {
+    customerUserErrors: Array<{
+      code: string;
+      field: string[] | null;
+      message: string;
+    }>;
+  };
+}
+
+export interface CustomerResetResponse {
+  customerReset: {
+    customer: {
+      id: string;
+    } | null;
+    customerAccessToken: {
+      accessToken: string;
+      expiresAt: string;
+    } | null;
+    customerUserErrors: Array<{
+      code: string;
+      field: string[] | null;
+      message: string;
+    }>;
+  };
+}
+
+export interface CustomerOrdersResponse {
+  customer: {
+    orders: {
+      edges: Array<{
+        node: {
+          id: string;
+          orderNumber: number;
+          processedAt: string;
+          financialStatus: string;
+          fulfillmentStatus: string;
+          totalPrice: {
+            amount: string;
+            currencyCode: string;
+          };
+          lineItems: {
+            edges: Array<{
+              node: {
+                title: string;
+                quantity: number;
+                variant: {
+                  id: string;
+                  title: string;
+                  price: {
+                    amount: string;
+                    currencyCode: string;
+                  };
+                  image: {
+                    url: string;
+                    altText: string | null;
+                  } | null;
+                } | null;
+              };
+            }>;
+          };
+        };
+      }>;
     };
   } | null;
 }

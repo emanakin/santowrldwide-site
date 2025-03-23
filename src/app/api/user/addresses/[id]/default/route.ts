@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { getUserFromFirestore } from "@/lib/firebase/client/firestore";
-import { verifyAuthToken } from "@/lib/firebase/admin/auth";
-import { initializeFirebaseAdmin } from "@/lib/firebase/admin/firebaseAdmin";
-import { setDefaultCustomerAddress } from "@/lib/shopify/admin/customer";
+import { cookies } from "next/headers";
+import { setDefaultCustomerAddress } from "@/lib/shopify/customers";
 
-// Initialize Firebase Admin if not already done
-initializeFirebaseAdmin();
+/**
+ * Decode the address ID coming from the URL
+ */
+function decodeAddressId(encodedId: string): string {
+  try {
+    return decodeURIComponent(encodedId);
+  } catch (error) {
+    console.warn("Error decoding address ID:", error);
+    return encodedId; // Return as-is if decoding fails
+  }
+}
 
 // PUT to set an address as default
 export async function PUT(
@@ -13,34 +20,35 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await verifyAuthToken(request);
-    if (!userId) {
+    // Get the Shopify customer token from cookies
+    const cookieStore = await cookies();
+    const shopifyToken = cookieStore.get("shopify_customer_token")?.value;
+
+    if (!shopifyToken) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const param = await params;
-    const addressId = param.id;
-    const cleanAddressId = addressId.split("?")[0];
-
-    // Get the user document to retrieve the Shopify customer ID
-    const userData = await getUserFromFirestore(userId);
-
-    if (!userData || !userData.shopifyCustomerId) {
-      return NextResponse.json(
-        { error: "User not found or no Shopify ID" },
-        { status: 404 }
-      );
-    }
+    // Decode the address ID from URL
+    const addressId = decodeAddressId(params.id);
+    console.log("Setting default address with ID:", addressId);
 
     // Set as default in Shopify
-    const success = await setDefaultCustomerAddress(
-      userData.shopifyCustomerId,
-      cleanAddressId
+    const defaultResponse = await setDefaultCustomerAddress(
+      shopifyToken,
+      addressId
     );
 
-    if (!success) {
+    if (!defaultResponse?.customerDefaultAddressUpdate?.customer) {
+      console.error(
+        "Default address response errors:",
+        defaultResponse?.customerDefaultAddressUpdate?.customerUserErrors
+      );
       return NextResponse.json(
-        { error: "Failed to set default address" },
+        {
+          error: "Failed to set default address",
+          details:
+            defaultResponse?.customerDefaultAddressUpdate?.customerUserErrors,
+        },
         { status: 400 }
       );
     }

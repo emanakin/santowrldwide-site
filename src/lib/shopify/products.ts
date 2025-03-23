@@ -1,10 +1,8 @@
-// lib/shopify/products.ts
-
 import {
   GET_PRODUCTS_QUERY,
   GET_PRODUCT_BY_HANDLE_QUERY,
 } from "./queries/productQueries";
-import { shopifyRequest, formatProduct, formatProductList } from "../utils";
+import { shopifyRequest, formatProduct, formatProductList } from "./utils";
 import { ProductsResponse, ProductResponse } from "@/types/product-types";
 import { storefrontClient } from "./client";
 

@@ -1,8 +1,6 @@
 import { GraphQLClient } from "graphql-request";
 import { ShopifyProduct, ProductsResponse } from "@/types/product-types";
 import { ShopifyAddress } from "@/types/shopify-types";
-import { Address } from "@/types/user-types";
-import { MailingAddressInput } from "@/types/shopify-types";
 
 export async function shopifyRequest<T>(
   query: string,
@@ -65,59 +63,61 @@ export function formatProduct(product: ShopifyProduct) {
 }
 
 /**
- * Transforms Shopify addresses to our app format
+ * Extracts the expiration date from a Shopify customer token
  */
-export function transformShopifyAddresses(
-  shopifyAddresses: ShopifyAddress[],
-  defaultAddressId?: string
-): Address[] {
-  return shopifyAddresses.map((addr) => {
-    // Remove only the prefix but keep any query parameters
-    const cleanId = addr.id.replace("gid://shopify/MailingAddress/", "");
-    return {
-      id: cleanId,
-      address1: addr.address1,
-      address2: addr.address2 || "",
-      city: addr.city,
-      province: addr.province,
-      country: addr.country,
-      zip: addr.zip,
-      phone: addr.phone || "",
-      isDefault: defaultAddressId ? addr.id === defaultAddressId : false,
-      // Store the original full ID to use when updating
-      originalId: addr.id,
-    };
-  });
+export function getTokenExpirationDate(expiresAt: string): Date {
+  return new Date(expiresAt);
 }
 
-export function prepareAddressForShopifyUpdate(
-  addr: Address
-): MailingAddressInput {
-  // If we have the original ID stored, use it directly
-  const id = addr.originalId || `gid://shopify/MailingAddress/${addr.id}`;
+/**
+ * Checks if a token is expiring soon (within the next hour)
+ */
+export function isTokenExpiringSoon(expiresAt: string): boolean {
+  const expiration = getTokenExpirationDate(expiresAt);
+  const now = new Date();
 
-  return {
-    id,
-    address1: addr.address1,
-    address2: addr.address2,
-    city: addr.city,
-    province: addr.province,
-    country: addr.country,
-    zip: addr.zip,
-    phone: addr.phone,
-  };
+  // Check if token expires in less than 1 hour
+  const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+  return expiration < oneHourFromNow;
 }
 
-// Helper: Updates one address in an array of addresses
-export function updateAddressInList(
-  addresses: Address[],
-  addressId: string,
-  updated: Omit<Address, "isDefault">
-): Address[] {
-  return addresses.map((addr) => {
-    if (addr.id === addressId) {
-      return { ...addr, ...updated };
-    }
-    return addr;
-  });
+/**
+ * Formats customer address for display
+ */
+export function formatCustomerAddress(address: ShopifyAddress): string {
+  const parts = [
+    address.address1,
+    address.address2,
+    address.city,
+    address.province,
+    address.country,
+    address.zip,
+  ].filter(Boolean);
+
+  return parts.join(", ");
+}
+
+/**
+ * Extracts ID from Shopify GID format
+ * Example: "gid://shopify/Customer/1234567890" -> "1234567890"
+ */
+export function extractIdFromGid(gid: string): string {
+  const parts = gid.split("/");
+  return parts[parts.length - 1];
+}
+
+/**
+ * Generates a secure random password for Shopify customers
+ * Shopify has a 40 character maximum password length
+ */
+export function generateSecurePassword(): string {
+  // Create a shorter, but still secure password
+  // This will be ~20 characters which is plenty secure but under Shopify's limit
+  const randomBytes = new Uint8Array(15);
+  crypto.getRandomValues(randomBytes);
+
+  // Convert to base64 (~ 20 chars) and remove non-alphanumeric characters
+  return btoa(String.fromCharCode(...randomBytes))
+    .replace(/[+/=]/g, "") // Remove chars that might cause issues
+    .substring(0, 20); // Ensure we're well under the 40 char limit
 }

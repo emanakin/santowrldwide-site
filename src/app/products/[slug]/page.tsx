@@ -8,7 +8,7 @@ import AddToCartButton from "@/components/products/AddToCartButton";
 import ProductDescription from "@/components/products/ProductDescription";
 import ShippingInfo from "@/components/products/ShippingInfo";
 import Breadcrumb from "@/components/products/Breadcrumb";
-import { getProduct } from "@/lib/shopify/storefront/products";
+import { getProduct } from "@/lib/shopify/products";
 import styles from "../../../styles/products/ProductDetail.module.css";
 import { useParams } from "next/navigation";
 import { Product } from "@/types/product-types";

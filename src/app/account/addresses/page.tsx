@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import React, { useEffect, useState } from "react";
 import AddAddressForm from "@/components/account/AddAddressForm";
+import Addresses from "@/components/account/Addresses";
 import { Address } from "@/types/user-types";
-import styles from "@/styles/account/Account.module.css";
 import {
   getUserAddresses,
   createAddress,
@@ -13,210 +11,161 @@ import {
   deleteAddress,
   setDefaultAddress,
 } from "@/services/addresses";
+import styles from "@/styles/account/Account.module.css";
 
 export default function AddressesPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Add a refresh key for forcing re-renders
 
-  const fetchAddresses = useCallback(async () => {
-    if (!user) return;
+  // Force a refresh of the component
+  const refreshAddresses = () => {
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
 
-    setIsLoading(true);
-    try {
-      const fetchedAddresses = await getUserAddresses();
-      setAddresses(fetchedAddresses);
-    } catch (error) {
-      console.error("Error fetching addresses:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
+  // Fetch addresses
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    } else if (user) {
-      fetchAddresses();
-    }
-  }, [user, loading, router, fetchAddresses]);
+    const fetchAddresses = async () => {
+      try {
+        setLoading(true);
+        const data = await getUserAddresses();
+        setAddresses(data);
+        setError("");
+      } catch (err) {
+        console.error("Error fetching addresses:", err);
+        setError("Failed to load your addresses. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleAddNew = () => {
-    setEditingAddress(null);
-    setShowAddForm(true);
-  };
+    fetchAddresses();
+  }, [refreshKey]); // Re-fetch when refreshKey changes
 
-  const handleEdit = (address: Address) => {
-    setEditingAddress(address);
-    setShowAddForm(true);
-  };
-
-  const handleSaveAddress = async (
+  // Handle adding address
+  const handleAddAddress = async (
     addressData: Omit<Address, "id" | "isDefault">
   ) => {
-    if (!user) return;
-
-    setIsLoading(true);
     try {
-      let savedAddress: Address;
-
-      if (editingAddress) {
-        // Update existing address
-        savedAddress = await updateAddress(editingAddress.id, addressData);
-
-        // Update addresses state
-        setAddresses(
-          addresses.map((addr) =>
-            addr.id === editingAddress.id ? savedAddress : addr
-          )
-        );
-      } else {
-        // Add new address
-        savedAddress = await createAddress(addressData);
-
-        // Add to addresses state
-        setAddresses([...addresses, savedAddress]);
-      }
-
+      setLoading(true);
+      await createAddress(addressData);
+      refreshAddresses(); // Force refresh after creation
       setShowAddForm(false);
-    } catch (error) {
-      console.error("Error saving address:", error);
-      alert("There was a problem saving your address. Please try again.");
+    } catch (err) {
+      console.error("Error adding address:", err);
+      setError("Failed to add address. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleSetDefault = async (addressId: string) => {
-    if (!user) return;
-
-    setIsLoading(true);
+  // Handle updating address
+  const handleUpdateAddress = async (
+    id: string,
+    addressData: Omit<Address, "id" | "isDefault">
+  ) => {
     try {
-      await setDefaultAddress(addressId);
-
-      // Update the addresses state to reflect the new default
-      const updatedAddresses = addresses.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === addressId,
-      }));
-
-      setAddresses(updatedAddresses);
-    } catch (error) {
-      console.error("Error setting default address:", error);
-      alert(
-        "There was a problem setting your default address. Please try again."
-      );
+      setLoading(true);
+      await updateAddress(id, addressData);
+      refreshAddresses(); // Force refresh after update
+      setEditingAddress(null);
+    } catch (err) {
+      console.error("Error updating address:", err);
+      setError("Failed to update address. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleDelete = async (addressId: string) => {
-    if (!user || !confirm("Are you sure you want to delete this address?"))
-      return;
-
-    setIsLoading(true);
+  // Handle deleting address
+  const handleDeleteAddress = async (id: string) => {
     try {
-      await deleteAddress(addressId);
-
-      // Remove from addresses state
-      const updatedAddresses = addresses.filter(
-        (addr) => addr.id !== addressId
-      );
-      setAddresses(updatedAddresses);
-    } catch (error) {
-      console.error("Error deleting address:", error);
-      alert("There was a problem deleting your address. Please try again.");
+      setLoading(true);
+      await deleteAddress(id);
+      refreshAddresses(); // Force refresh after deletion
+    } catch (err) {
+      console.error("Error deleting address:", err);
+      setError("Failed to delete address. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleCancelAdd = () => {
+  // Handle setting default address
+  const handleSetDefaultAddress = async (id: string) => {
+    try {
+      setLoading(true);
+      await setDefaultAddress(id);
+      refreshAddresses(); // Force refresh after setting default
+    } catch (err) {
+      console.error("Error setting default address:", err);
+      setError("Failed to set default address. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Start editing an address
+  const handleEditAddress = (address: Address) => {
+    setEditingAddress(address);
+    setShowAddForm(false);
+  };
+
+  // Cancel add/edit form
+  const handleCancel = () => {
     setShowAddForm(false);
     setEditingAddress(null);
   };
 
-  if (loading || isLoading) {
-    return <div className={styles.loading}>Loading...</div>;
-  }
+  // Show add form
+  const handleShowAddForm = () => {
+    setShowAddForm(true);
+    setEditingAddress(null);
+  };
 
-  if (!user) return null;
+  // Form submission handler (add or update)
+  const handleFormSubmit = (addressData: Omit<Address, "id" | "isDefault">) => {
+    if (editingAddress) {
+      handleUpdateAddress(editingAddress.id, addressData);
+    } else {
+      handleAddAddress(addressData);
+    }
+  };
 
   return (
     <div className={styles.accountContainer}>
-      <h1 className={styles.pageTitle}>Addresses</h1>
+      <h1 className={styles.pageTitle}>Your Addresses</h1>
 
-      {showAddForm ? (
-        <div className={styles.addressFormContainer}>
-          <AddAddressForm
-            onSave={handleSaveAddress}
-            onCancel={handleCancelAdd}
-            initialData={editingAddress}
-          />
-        </div>
+      {error && <div className={styles.formError}>{error}</div>}
+
+      {loading && !showAddForm && !editingAddress ? (
+        <div className={styles.loading}>Loading your addresses...</div>
       ) : (
         <>
-          {addresses.length === 0 ? (
-            <div className={styles.emptyState}>
-              <p>You haven&apos;t saved any addresses yet.</p>
-              <button onClick={handleAddNew} className={styles.addButton}>
-                Add New Address
+          {!showAddForm && !editingAddress && (
+            <div style={{ marginBottom: "1.5rem" }}>
+              <button onClick={handleShowAddForm} className={styles.addButton}>
+                Add a New Address
               </button>
             </div>
+          )}
+
+          {showAddForm || editingAddress ? (
+            <AddAddressForm
+              onSave={handleFormSubmit}
+              onCancel={handleCancel}
+              initialData={editingAddress}
+            />
           ) : (
-            <div>
-              <div className={styles.addressList}>
-                {addresses.map((address) => (
-                  <div key={address.id} className={styles.addressCard}>
-                    {address.isDefault && (
-                      <span className={styles.defaultBadge}>Default</span>
-                    )}
-                    <div className={styles.addressInfo}>
-                      <p>{address.address1}</p>
-                      {address.address2 && <p>{address.address2}</p>}
-                      <p>
-                        {address.city}, {address.province} {address.zip}
-                      </p>
-                      <p>{address.country}</p>
-                      {address.phone && <p>{address.phone}</p>}
-                    </div>
-                    <div className={styles.addressCardActions}>
-                      <button
-                        onClick={() => handleEdit(address)}
-                        className={styles.addressCardAction}
-                      >
-                        Edit
-                      </button>
-                      {!address.isDefault && (
-                        <>
-                          <button
-                            onClick={() => handleSetDefault(address.id)}
-                            className={styles.addressCardAction}
-                          >
-                            Make Default
-                          </button>
-                          <button
-                            onClick={() => handleDelete(address.id)}
-                            className={styles.addressCardAction}
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.formActions}>
-                <button onClick={handleAddNew} className={styles.addButton}>
-                  Add New Address
-                </button>
-              </div>
-            </div>
+            <Addresses
+              addresses={addresses}
+              onEdit={handleEditAddress}
+              onDelete={handleDeleteAddress}
+              onSetDefault={handleSetDefaultAddress}
+            />
           )}
         </>
       )}
