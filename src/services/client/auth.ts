@@ -1,5 +1,11 @@
 import { auth } from "@/lib/firebase/client/firebaseApp";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signOut,
+} from "firebase/auth";
 import {
   getGoogleAuthToken,
   getFacebookAuthToken,
@@ -39,24 +45,27 @@ export async function loginWithEmailService(
 export async function socialLoginService(
   provider: SocialProvider
 ): Promise<void> {
-  let idToken: string | undefined;
-
-  // Get the idToken from the appropriate provider
+  // Create the auth provider
+  let authProvider;
   if (provider === "google") {
-    idToken = await getGoogleAuthToken();
+    authProvider = new GoogleAuthProvider();
   } else if (provider === "facebook") {
-    idToken = await getFacebookAuthToken();
+    authProvider = new FacebookAuthProvider();
+  } else {
+    throw new Error("Unsupported provider");
   }
 
-  if (!idToken) {
-    throw new Error("Authentication failed. Please try again.");
-  }
+  // Sign in with popup
+  const result = await signInWithPopup(auth, authProvider);
 
-  // Call your API endpoint for social auth
+  // Get the Firebase ID token
+  const idToken = await result.user.getIdToken();
+
+  // Call your API endpoint
   const response = await fetch("/api/auth/social-auth", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, idToken }),
+    body: JSON.stringify({ idToken }),
   });
 
   const data = await response.json();
@@ -127,4 +136,24 @@ export async function socialSignupService(
   if (!response.ok) {
     throw new Error(data.error || "Social authentication failed");
   }
+}
+
+/**
+ * Handles the complete logout process.
+ * Clears both Firebase auth state and server-side cookies.
+ */
+export async function logoutService(): Promise<void> {
+  // Call the server logout endpoint to clear cookies
+  const response = await fetch("/api/auth/logout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || "Server logout failed");
+  }
+
+  // Sign out from Firebase
+  await signOut(auth);
 }

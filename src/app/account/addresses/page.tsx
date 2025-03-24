@@ -10,7 +10,7 @@ import {
   updateAddress,
   deleteAddress,
   setDefaultAddress,
-} from "@/services/addresses";
+} from "@/services/client/addresses";
 import styles from "@/styles/account/Account.module.css";
 
 export default function AddressesPage() {
@@ -137,22 +137,12 @@ export default function AddressesPage() {
 
   return (
     <div className={styles.accountContainer}>
-      <h1 className={styles.pageTitle}>Your Addresses</h1>
-
       {error && <div className={styles.formError}>{error}</div>}
 
       {loading && !showAddForm && !editingAddress ? (
         <div className={styles.loading}>Loading your addresses...</div>
       ) : (
         <>
-          {!showAddForm && !editingAddress && (
-            <div style={{ marginBottom: "1.5rem" }}>
-              <button onClick={handleShowAddForm} className={styles.addButton}>
-                Add a New Address
-              </button>
-            </div>
-          )}
-
           {showAddForm || editingAddress ? (
             <AddAddressForm
               onSave={handleFormSubmit}
@@ -166,6 +156,13 @@ export default function AddressesPage() {
               onDelete={handleDeleteAddress}
               onSetDefault={handleSetDefaultAddress}
             />
+          )}
+          {!showAddForm && !editingAddress && (
+            <div style={{ marginBottom: "1.5rem" }}>
+              <button onClick={handleShowAddForm} className={styles.addButton}>
+                Add a New Address
+              </button>
+            </div>
           )}
         </>
       )}

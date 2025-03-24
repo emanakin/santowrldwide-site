@@ -4,16 +4,19 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { logoutUser } from "@/lib/firebase/client/auth";
 import styles from "@/styles/account/Account.module.css";
+import { useAuth } from "@/context/AuthContext";
+import { logoutService } from "@/services/client/auth";
 
 export default function AccountNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const { setUser } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await logoutUser();
+      await logoutService();
+      setUser(null);
       router.push("/");
     } catch (error) {
       console.error("Error logging out:", error);
@@ -25,7 +28,11 @@ export default function AccountNav() {
   };
 
   return (
-    <nav className={styles.accountNav}>
+    <nav
+      className={styles.accountNav}
+      style={{ position: "relative", zIndex: 10 }}
+    >
+      <div className={styles.accountNavHeader}>Account</div>
       <Link
         href="/account/orders"
         className={`${styles.accountNavLink} ${

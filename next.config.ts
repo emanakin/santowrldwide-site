@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  cssModules: true,
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -20,8 +19,7 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
+  serverExternalPackages: ["firebase-admin"],
 };
-
-console.log("Next.js config loaded with image domains:", nextConfig.images);
 
 export default nextConfig;

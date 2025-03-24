@@ -94,7 +94,7 @@ export default function Navbar() {
       {/* Right-aligned icons - visible on desktop */}
       <div className={styles.desktopLinks}>
         {user ? (
-          <Link href="/account" className={styles.link}>
+          <Link href="/account/orders" className={styles.link}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"

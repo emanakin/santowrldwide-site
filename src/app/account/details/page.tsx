@@ -34,8 +34,6 @@ export default function AccountDetailsPage() {
 
   return (
     <div className={styles.accountDetailsContainer}>
-      <h1 className={styles.pageTitle}>Account Details</h1>
-
       <form onSubmit={handleUpdateProfile} className={styles.accountForm}>
         {error && <div className={styles.formError}>{error}</div>}
 

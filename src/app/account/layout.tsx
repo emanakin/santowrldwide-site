@@ -15,7 +15,6 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
     <div className={styles.accountContainer}>
       <div className={styles.accountContent}>
         <div className={styles.accountSidebar}>
-          <h2 className={styles.accountTitle}>Account</h2>
           <AccountNav />
         </div>
         <div className={styles.accountMain}>{children}</div>

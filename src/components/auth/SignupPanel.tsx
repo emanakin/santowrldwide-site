@@ -7,7 +7,10 @@ import styles from "@/styles/auth/Auth.module.css";
 import { useAuth } from "@/context/AuthContext";
 import { SocialProvider } from "@/types/firebase-types";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
-import { signupWithEmailService, socialSignupService } from "@/services/auth";
+import {
+  signupWithEmailService,
+  socialSignupService,
+} from "@/services/client/auth";
 
 export default function SignupPanel() {
   const [email, setEmail] = useState("");

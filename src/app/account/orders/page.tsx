@@ -30,8 +30,6 @@ export default function OrdersPage() {
 
   return (
     <div className={styles.ordersContainer}>
-      <h1 className={styles.pageTitle}>Order History</h1>
-
       {orders.length === 0 ? (
         <div className={styles.emptyState}>
           <p>You haven&apos;t placed any orders yet.</p>

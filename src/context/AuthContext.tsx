@@ -11,6 +11,7 @@ type AuthContextType = {
   showLoginPanel: boolean;
   showSignupPanel: boolean;
   showResetPanel: boolean;
+  setUser: (user: User | null) => void;
   setShowLoginPanel: (show: boolean) => void;
   setShowSignupPanel: (show: boolean) => void;
   setShowResetPanel: (show: boolean) => void;
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   showLoginPanel: false,
   showSignupPanel: false,
   showResetPanel: false,
+  setUser: () => {},
   setShowLoginPanel: () => {},
   setShowSignupPanel: () => {},
   setShowResetPanel: () => {},
@@ -78,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         showLoginPanel,
         showSignupPanel,
         showResetPanel,
+        setUser,
         setShowLoginPanel,
         setShowSignupPanel,
         setShowResetPanel,

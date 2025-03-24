@@ -4,7 +4,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signOut,
   GoogleAuthProvider,
   FacebookAuthProvider,
 } from "firebase/auth";
@@ -45,15 +44,6 @@ export const signupWithEmail = async (email: string, password: string) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     return result.user;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Log out user
-export const logoutUser = async () => {
-  try {
-    await signOut(auth);
   } catch (error) {
     throw error;
   }
