@@ -12,6 +12,9 @@ export default function LockedPage() {
   const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const router = useRouter();
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     // Autoplay video when component mounts
@@ -34,8 +37,6 @@ export default function LockedPage() {
     e.preventDefault();
 
     try {
-      // Here you would add code to submit the email to your subscription service
-      // For example, using API routes to connect to your email provider
       const response = await fetch("/api/subscribe", {
         method: "POST",
         headers: {
@@ -44,15 +45,25 @@ export default function LockedPage() {
         body: JSON.stringify({ email }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        alert("Thanks for subscribing!");
+        setSubscriptionStatus(data.message || "Thanks for subscribing!");
         setEmail("");
+        // Clear the status message after 5 seconds
+        setTimeout(() => setSubscriptionStatus(null), 5000);
       } else {
-        alert("Something went wrong. Please try again.");
+        setSubscriptionStatus(
+          data.error || "Something went wrong. Please try again."
+        );
+        // Clear error message after 3 seconds
+        setTimeout(() => setSubscriptionStatus(null), 3000);
       }
     } catch (error) {
       console.error("Error subscribing:", error);
-      alert("Something went wrong. Please try again.");
+      setSubscriptionStatus("Something went wrong. Please try again.");
+      // Clear error message after 3 seconds
+      setTimeout(() => setSubscriptionStatus(null), 3000);
     }
   };
 
@@ -152,6 +163,11 @@ export default function LockedPage() {
               access website?
             </button>
           </div>
+
+          {/* Subscription status message */}
+          {subscriptionStatus && (
+            <div className={styles.statusMessage}>{subscriptionStatus}</div>
+          )}
         </div>
 
         {/* Password modal */}
