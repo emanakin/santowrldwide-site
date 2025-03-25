@@ -14,20 +14,12 @@ export default function LockedPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Disable scrolling when component mounts
-    document.body.style.overflow = "hidden";
-
     // Autoplay video when component mounts
     if (videoRef.current) {
       videoRef.current.play().catch((error) => {
         console.error("Video autoplay failed:", error);
       });
     }
-
-    // Re-enable scrolling when component unmounts
-    return () => {
-      document.body.style.overflow = "auto";
-    };
   }, []);
 
   const toggleMute = () => {
@@ -125,10 +117,10 @@ export default function LockedPage() {
           {/* Logo */}
           <div className={styles.logoContainer}>
             <Image
-              src="/images/santo-logo-white.png"
+              src="/images/white-cross-logo.png"
               alt="SANTOWRLDWIDE"
               width={200}
-              height={100}
+              height={200}
               priority
             />
           </div>
