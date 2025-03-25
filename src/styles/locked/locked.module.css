@@ -1,11 +1,13 @@
 .lockedContainer {
   position: relative;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
+  height: 100%;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
+  background-color: #000;
 }
 
 .backgroundVideo {
@@ -159,11 +161,11 @@
 }
 
 .muteButton {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 40px;
-  height: 40px;
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom, 20px));
+  right: max(20px, env(safe-area-inset-right, 20px));
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background-color: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -182,4 +184,17 @@
 
 .muteIcon {
   font-size: 18px;
+}
+
+@media (max-width: 768px) {
+  .muteButton {
+    bottom: max(30px, env(safe-area-inset-bottom, 30px));
+    right: max(20px, env(safe-area-inset-right, 20px));
+  }
+
+  .contentContainer {
+    padding: 1rem;
+    max-width: 100%;
+    width: 100%;
+  }
 }

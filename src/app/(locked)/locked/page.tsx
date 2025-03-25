@@ -14,12 +14,20 @@ export default function LockedPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Disable scrolling when component mounts
+    document.body.style.overflow = "hidden";
+
     // Autoplay video when component mounts
     if (videoRef.current) {
       videoRef.current.play().catch((error) => {
         console.error("Video autoplay failed:", error);
       });
     }
+
+    // Re-enable scrolling when component unmounts
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, []);
 
   const toggleMute = () => {
@@ -82,110 +90,112 @@ export default function LockedPage() {
   };
 
   return (
-    <div className={styles.lockedContainer}>
-      {/* Background video */}
-      <video
-        ref={videoRef}
-        className={styles.backgroundVideo}
-        loop
-        muted={isMuted}
-        playsInline
-      >
-        <source src="/videos/background.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
-
-      {/* Mute/Unmute button */}
-      <button
-        onClick={toggleMute}
-        className={styles.muteButton}
-        aria-label={isMuted ? "Unmute" : "Mute"}
-      >
-        {isMuted ? (
-          <span className={styles.muteIcon}>🔇</span>
-        ) : (
-          <span className={styles.muteIcon}>🔊</span>
-        )}
-      </button>
-
-      {/* Dark overlay */}
-      <div className={styles.overlay}></div>
-
-      {/* Content container */}
-      <div className={styles.contentContainer}>
-        {/* Logo */}
-        <div className={styles.logoContainer}>
-          <Image
-            src="/images/santo-logo-white.png"
-            alt="SANTOWRLDWIDE"
-            width={200}
-            height={100}
-            priority
-          />
-        </div>
-
-        {/* Message */}
-        <p className={styles.message}>always stay in the loop when we drop</p>
-
-        {/* Email subscription form */}
-        <form onSubmit={handleSubscribe} className={styles.subscribeForm}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="enter your email here..."
-            className={styles.emailInput}
-            required
-          />
-          <button type="submit" className={styles.subscribeButton}>
-            subscribe
-          </button>
-        </form>
-
-        {/* Access website link */}
-        <div className={styles.accessLink}>
-          <button
-            onClick={() => setShowPasswordModal(true)}
-            className={styles.accessButton}
-          >
-            access website?
-          </button>
-        </div>
-      </div>
-
-      {/* Password modal */}
-      {showPasswordModal && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => setShowPasswordModal(false)}
+    <>
+      <div className={styles.lockedContainer}>
+        {/* Background video */}
+        <video
+          ref={videoRef}
+          className={styles.backgroundVideo}
+          loop
+          muted={isMuted}
+          playsInline
         >
-          <div
-            className={styles.passwordModal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2>Enter Password</h2>
-            <form onSubmit={handleUnlock}>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className={styles.passwordInput}
-                required
-              />
-              <button type="submit" className={styles.unlockButton}>
-                Unlock Website
-              </button>
-            </form>
+          <source src="/videos/background.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+
+        {/* Mute/Unmute button */}
+        <button
+          onClick={toggleMute}
+          className={styles.muteButton}
+          aria-label={isMuted ? "Unmute" : "Mute"}
+        >
+          {isMuted ? (
+            <span className={styles.muteIcon}>🔇</span>
+          ) : (
+            <span className={styles.muteIcon}>🔊</span>
+          )}
+        </button>
+
+        {/* Dark overlay */}
+        <div className={styles.overlay}></div>
+
+        {/* Content container */}
+        <div className={styles.contentContainer}>
+          {/* Logo */}
+          <div className={styles.logoContainer}>
+            <Image
+              src="/images/santo-logo-white.png"
+              alt="SANTOWRLDWIDE"
+              width={200}
+              height={100}
+              priority
+            />
+          </div>
+
+          {/* Message */}
+          <p className={styles.message}>always stay in the loop when we drop</p>
+
+          {/* Email subscription form */}
+          <form onSubmit={handleSubscribe} className={styles.subscribeForm}>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="enter your email here..."
+              className={styles.emailInput}
+              required
+            />
+            <button type="submit" className={styles.subscribeButton}>
+              subscribe
+            </button>
+          </form>
+
+          {/* Access website link */}
+          <div className={styles.accessLink}>
             <button
-              className={styles.closeButton}
-              onClick={() => setShowPasswordModal(false)}
+              onClick={() => setShowPasswordModal(true)}
+              className={styles.accessButton}
             >
-              Cancel
+              access website?
             </button>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Password modal */}
+        {showPasswordModal && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowPasswordModal(false)}
+          >
+            <div
+              className={styles.passwordModal}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2>Enter Password</h2>
+              <form onSubmit={handleUnlock}>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  className={styles.passwordInput}
+                  required
+                />
+                <button type="submit" className={styles.unlockButton}>
+                  Unlock Website
+                </button>
+              </form>
+              <button
+                className={styles.closeButton}
+                onClick={() => setShowPasswordModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
