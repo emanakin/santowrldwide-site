@@ -17,7 +17,7 @@ function decodeAddressId(encodedId: string): string {
 // PUT to set an address as default
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get the Shopify customer token from cookies
@@ -29,7 +29,8 @@ export async function PUT(
     }
 
     // Decode the address ID from URL
-    const addressId = decodeAddressId(params.id);
+    const id = (await params).id;
+    const addressId = decodeAddressId(id);
     console.log("Setting default address with ID:", addressId);
 
     // Set as default in Shopify

@@ -20,7 +20,7 @@ function decodeAddressId(encodedId: string): string {
 // PUT to update an address
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get the Shopify customer token from cookies
@@ -32,7 +32,8 @@ export async function PUT(
     }
 
     // Decode the address ID from URL
-    const addressId = decodeAddressId(params.id);
+    const id = (await params).id;
+    const addressId = decodeAddressId(id);
     const addressData = await request.json();
 
     console.log("Updating address with ID:", addressId);
@@ -73,7 +74,7 @@ export async function PUT(
 // DELETE to remove an address
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Get the Shopify customer token from cookies
@@ -85,7 +86,8 @@ export async function DELETE(
     }
 
     // Decode the address ID from URL
-    const addressId = decodeAddressId(params.id);
+    const id = (await params).id;
+    const addressId = decodeAddressId(id);
     console.log("Deleting address with ID:", addressId);
 
     // Delete the address in Shopify
