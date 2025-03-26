@@ -15,6 +15,16 @@ const fallbackProducts = [
       altText: "V Turning Top",
     },
     price: "150.00",
+    images: {
+      edges: [
+        {
+          node: {
+            url: "/images/products/placeholder.png",
+            altText: "V Turning Top",
+          },
+        },
+      ],
+    },
   },
   {
     id: "2",
@@ -25,6 +35,16 @@ const fallbackProducts = [
       altText: "Santo Tee",
     },
     price: "120.00",
+    images: {
+      edges: [
+        {
+          node: {
+            url: "/images/products/placeholder.png",
+            altText: "Santo Tee",
+          },
+        },
+      ],
+    },
   },
 ];
 

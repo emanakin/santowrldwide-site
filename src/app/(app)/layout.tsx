@@ -13,25 +13,21 @@ export const metadata = {
   description: "Toronto based streetwear",
 };
 
-export default function RootLayout({
+export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <AuthProvider>
-          <CartProvider>
-            <Navbar />
-            <main style={{ minHeight: "100vh" }}>{children}</main>
-            <Footer />
-            <LoginPanel />
-            <SignupPanel />
-            <ResetPasswordPanel />
-          </CartProvider>
-        </AuthProvider>
-      </body>
-    </html>
+    <AuthProvider>
+      <CartProvider>
+        <Navbar />
+        <main style={{ minHeight: "100vh" }}>{children}</main>
+        <Footer />
+        <LoginPanel />
+        <SignupPanel />
+        <ResetPasswordPanel />
+      </CartProvider>
+    </AuthProvider>
   );
 }

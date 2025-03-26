@@ -33,6 +33,14 @@ export function formatProductList(
       url: node.images.edges[0]?.node.url || "/placeholder.png",
       altText: node.images.edges[0]?.node.altText || node.title,
     },
+    images: {
+      edges: node.images.edges.map((edge) => ({
+        node: {
+          url: edge.node.url,
+          altText: edge.node.altText || node.title,
+        },
+      })),
+    },
   }));
 }
 
