@@ -1,0 +1,239 @@
+.container {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 40px 20px;
+  font-family: "Inter", sans-serif;
+}
+
+/* Top Section */
+.topSection {
+  display: flex;
+  margin-bottom: 40px;
+}
+
+.titleCol {
+  flex: 0 0 45%;
+  padding-right: 20px;
+}
+
+.mainTitle {
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.1;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.descriptionCol {
+  flex: 0 0 55%;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Founders Section */
+.foundersSection {
+  margin-bottom: 60px;
+  position: relative;
+}
+
+.imagesRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.imageContainer {
+  width: 39%;
+  height: 350px; /* Fixed height for all images */
+  overflow: hidden;
+  position: relative;
+}
+
+.imageContainerSmaller {
+  width: 20%;
+  height: 350px; /* Fixed height for all images */
+  overflow: hidden;
+  position: relative;
+}
+
+.founderImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Corner element */
+.cornerElement {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 50px;
+  height: 50px;
+  z-index: 2;
+}
+
+.foundersInfo {
+  display: flex;
+  margin-top: 5px;
+  align-items: flex-start;
+}
+
+.officeInfo {
+  flex: 0 0 45%;
+  padding-right: 20px;
+}
+
+.foundedInfo {
+  flex: 0 0 55%;
+}
+
+.infoLabel {
+  font-size: 12px;
+  font-weight: 400;
+  margin: 0 0 5px 0;
+  color: #666;
+}
+
+.infoText {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  padding-left: 20px; /* Indent the location text */
+  text-transform: uppercase;
+}
+
+.founderNames {
+  margin: 0;
+  padding-left: 20px; /* Indent the founder names */
+}
+
+.founderName {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 2px 0;
+  text-transform: uppercase;
+}
+
+/* Vision Section */
+.visionSection {
+  display: flex;
+  margin-bottom: 60px;
+}
+
+.visionImageCol {
+  flex: 0 0 30%;
+  padding-right: 40px;
+}
+
+.visionImage {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.visionTextCol {
+  flex: 0 0 70%;
+  padding-top: 20px;
+}
+
+.visionTitle {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0 0 20px 0;
+}
+
+.visionText {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 15px 0;
+}
+
+/* Community Section */
+.communitySection {
+  position: relative;
+  padding-left: 40px;
+  margin-bottom: 60px;
+}
+
+.quoteSymbol {
+  position: absolute;
+  top: -10px;
+  left: 0;
+  font-size: 60px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1;
+  font-family: serif;
+}
+
+.communityTitle {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0 0 20px 0;
+}
+
+.communityText {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 15px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .topSection,
+  .visionSection {
+    flex-direction: column;
+  }
+
+  .titleCol,
+  .descriptionCol,
+  .visionImageCol,
+  .visionTextCol {
+    flex: 0 0 100%;
+    padding-right: 0;
+  }
+
+  .titleCol {
+    margin-bottom: 20px;
+  }
+
+  .visionImageCol {
+    margin-bottom: 20px;
+    max-width: 100%;
+  }
+
+  .imagesRow {
+    flex-direction: column;
+  }
+
+  .imageContainer {
+    width: 100%;
+    margin-bottom: 15px;
+    height: auto;
+  }
+
+  .foundersInfo {
+    flex-direction: column;
+  }
+
+  .officeInfo {
+    margin-bottom: 20px;
+    flex: 0 0 100%;
+    padding-right: 0;
+  }
+
+  .mainTitle {
+    font-size: 28px;
+  }
+
+  .infoText,
+  .founderNames {
+    padding-left: 10px;
+  }
+}
