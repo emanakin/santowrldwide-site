@@ -94,3 +94,20 @@ export interface ProductsResponse {
 export interface ProductResponse {
   productByHandle: ShopifyProduct | null;
 }
+
+export type ProductCardProps = {
+  product: {
+    handle: string;
+    title: string;
+    featuredImage: {
+      url: string;
+      altText: string;
+    };
+    price: string;
+    images: {
+      edges: {
+        node: ProductImage;
+      }[];
+    };
+  };
+};

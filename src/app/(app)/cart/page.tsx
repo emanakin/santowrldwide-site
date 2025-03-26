@@ -34,8 +34,6 @@ export default function CartPage() {
     <div className={styles.container}>
       <div className={styles.cartPageContainer}>
         <div className={styles.cartSection}>
-          <h1 className={styles.heading}>SHOPPING BAG</h1>
-
           <div className={styles.cartHeader}>
             <div className={styles.itemColumn}>ITEM</div>
             <div className={styles.totalColumn}>TOTAL</div>

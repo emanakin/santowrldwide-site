@@ -3,18 +3,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "@/styles/products/ProductCard.module.css";
-
-type ProductCardProps = {
-  product: {
-    handle: string;
-    title: string;
-    featuredImage: {
-      url: string;
-      altText: string;
-    };
-    price: string;
-  };
-};
+import { ProductCardProps } from "@/types/product-types";
 
 export default function ProductCard({ product }: ProductCardProps) {
   // Add error handling for image loading

@@ -242,3 +242,171 @@
 .mobileLink.activeLink::after {
   bottom: -8px;
 }
+
+/* Search overlay */
+.searchOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 999;
+}
+
+.searchDropdownWrapper {
+  position: absolute;
+  top: 500%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 1000; /* Higher than the overlay */
+}
+
+.searchDropdown {
+  background-color: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 0;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #eeeeee;
+  position: relative;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 40px 10px 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+}
+
+.searchButton {
+  position: absolute;
+  right: 25px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchResults {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.searchResultItem {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eeeeee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.searchResultItem:hover {
+  background-color: #f9f9f9;
+}
+
+.searchResultImage {
+  flex: 0 0 40px;
+  height: 50px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchResultInfo {
+  flex: 1;
+}
+
+.searchResultTitle {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 3px;
+  color: #000;
+}
+
+.searchResultCategory {
+  font-size: 12px;
+  color: #757575;
+}
+
+.searchResultPrice {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000;
+  margin-left: 10px;
+}
+
+.searchLoading,
+.noSearchResults {
+  padding: 20px;
+  text-align: center;
+  color: #757575;
+  font-size: 14px;
+}
+
+/* Media query for mobile */
+@media (max-width: 768px) {
+  .searchDropdownWrapper {
+    position: fixed;
+    top: 60px;
+    padding: 0 10px;
+  }
+
+  .searchDropdown {
+    max-width: 100%;
+  }
+
+  .searchResults {
+    max-height: calc(80vh - 60px);
+  }
+}
+
+/* Add these styles to your existing CSS file */
+
+.searchLoading {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.loadingGradient {
+  height: 50px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loadingAnimation 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes loadingAnimation {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.imagePlaceholder {
+  width: 40px;
+  height: 50px;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+}

@@ -1,17 +1,24 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import styles from "@/styles/Navbar.module.css";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { fetchProductsBySearch } from "@/services/client/products";
+import { ProductCardProps } from "@/types/product-types";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchResults, setSearchResults] = useState<ProductCardProps[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const { cartCount } = useCart();
   const pathname = usePathname();
+  const router = useRouter();
   const { user, setShowLoginPanel } = useAuth();
 
   // Check if we're on the home page
@@ -26,14 +33,85 @@ export default function Navbar() {
   // Toggle menu state
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+    // Close search when menu is toggled
+    if (showSearch) setShowSearch(false);
   };
 
-  // Handle search submission
+  // Close menu
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
+  // Toggle search bar visibility
+  const toggleSearch = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowSearch(!showSearch);
+    // Close menu when search is opened
+    if (isMenuOpen) setIsMenuOpen(false);
+    // Focus on search input when opened
+    setTimeout(() => {
+      const searchInput = document.getElementById("navbar-search-input");
+      if (searchInput && showSearch) {
+        searchInput.focus();
+      }
+    }, 100);
+  };
+
+  // Fetch search results
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.trim().length >= 2) {
+        setIsSearching(true);
+        try {
+          const results = await fetchProductsBySearch(searchQuery);
+          setSearchResults(results);
+        } catch (error) {
+          console.error("Search error:", error);
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  // Close search dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSearch(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Handle search input change
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle search submission - prevent redirection
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
-    // Implement search functionality here
+    // Just prevent the default form submission
+    // No navigation - only show filtered results in dropdown
+  };
+
+  // Handle product selection
+  const handleProductSelect = (handle: string) => {
+    router.push(`/products/${handle}`);
     setSearchQuery("");
+    setShowSearch(false);
   };
 
   return (
@@ -135,13 +213,11 @@ export default function Navbar() {
             LOGIN
           </a>
         )}
-        <Link
+        <a
           href="#"
           className={styles.link}
-          onClick={(e) => {
-            e.preventDefault();
-            toggleMenu();
-          }}
+          onClick={toggleSearch}
+          aria-label="Search"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -157,24 +233,117 @@ export default function Navbar() {
             />
           </svg>
           SEARCH
-        </Link>
+        </a>
         <Link href="/cart" className={styles.link}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            className={styles.icon}
-          >
-            <path
-              d="M13.3636 4H10.6591V3.68C10.6591 1.648 9.02045 0 7 0C4.97955 0 3.34091 1.648 3.34091 3.68V4H0.636364C0.284375 4 0 4.286 0 4.64V15.36C0 15.714 0.284375 16 0.636364 16H13.3636C13.7156 16 14 15.714 14 15.36V4.64C14 4.286 13.7156 4 13.3636 4ZM4.77273 3.68C4.77273 2.442 5.76903 1.44 7 1.44C8.23097 1.44 9.22727 2.442 9.22727 3.68V4H4.77273V3.68ZM12.5682 14.56H1.43182V5.44H3.34091V7.2C3.34091 7.288 3.4125 7.36 3.5 7.36H4.61364C4.70114 7.36 4.77273 7.288 4.77273 7.2V5.44H9.22727V7.2C9.22727 7.288 9.29886 7.36 9.38636 7.36H10.5C10.5875 7.36 10.6591 7.288 10.6591 7.2V5.44H12.5682V14.56Z"
-              fill="black"
-            />
-          </svg>
-          BAG ( {cartCount} )
+          <div className={styles.cartIcon}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={styles.icon}
+            >
+              <path
+                d="M13.3636 4H10.6591V3.68C10.6591 1.648 9.02045 0 7 0C4.97955 0 3.34091 1.648 3.34091 3.68V4H0.636364C0.284375 4 0 4.286 0 4.64V15.36C0 15.714 0.284375 16 0.636364 16H13.3636C13.7156 16 14 15.714 14 15.36V4.64C14 4.286 13.7156 4 13.3636 4ZM4.77273 3.68C4.77273 2.442 5.76903 1.44 7 1.44C8.23097 1.44 9.22727 2.442 9.22727 3.68V4H4.77273V3.68ZM12.5682 14.56H1.43182V5.44H3.34091V7.2C3.34091 7.288 3.4125 7.36 3.5 7.36H4.61364C4.70114 7.36 4.77273 7.288 4.77273 7.2V5.44H9.22727V7.2C9.22727 7.288 9.29886 7.36 9.38636 7.36H10.5C10.5875 7.36 10.6591 7.288 10.6591 7.2V5.44H12.5682V14.56Z"
+                fill="black"
+              />
+            </svg>
+            BAG
+            {cartCount > 0 && (
+              <span className={styles.cartCount}>{cartCount}</span>
+            )}
+          </div>
         </Link>
       </div>
+
+      {/* Search dropdown overlay */}
+      {showSearch && (
+        <>
+          {/* Black overlay */}
+          <div
+            className={styles.searchOverlay}
+            onClick={() => setShowSearch(false)}
+          ></div>
+
+          <div className={styles.searchDropdownWrapper} ref={searchRef}>
+            <div className={styles.searchDropdown}>
+              <form onSubmit={handleSearch} className={styles.searchForm}>
+                <input
+                  id="navbar-search-input"
+                  type="text"
+                  value={searchQuery}
+                  onChange={handleSearchInputChange}
+                  placeholder="Search products..."
+                  className={styles.searchInput}
+                  autoComplete="off"
+                />
+                <button type="submit" className={styles.searchButton}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                  >
+                    <path
+                      d="M11.4351 10.0629H10.7124L10.4563 9.81589C11.3838 8.74014 11.8936 7.36669 11.8925 5.94626C11.8925 4.7702 11.5438 3.62055 10.8904 2.6427C10.237 1.66484 9.30832 0.902692 8.22179 0.452634C7.13525 0.00257642 5.93966 -0.115179 4.7862 0.114258C3.63274 0.343696 2.57322 0.910021 1.74162 1.74162C0.910021 2.57322 0.343696 3.63274 0.114258 4.7862C-0.115179 5.93966 0.00257642 7.13525 0.452634 8.22179C0.902692 9.30832 1.66484 10.237 2.6427 10.8904C3.62055 11.5438 4.7702 11.8925 5.94626 11.8925C7.4191 11.8925 8.77301 11.3528 9.81589 10.4563L10.0629 10.7124V11.4351L14.6369 16L16 14.6369L11.4351 10.0629ZM5.94626 10.0629C3.66838 10.0629 1.82962 8.22413 1.82962 5.94626C1.82962 3.66838 3.66838 1.82962 5.94626 1.82962C8.22413 1.82962 10.0629 3.66838 10.0629 5.94626C10.0629 8.22413 8.22413 10.0629 5.94626 10.0629Z"
+                      fill="black"
+                    />
+                  </svg>
+                </button>
+              </form>
+
+              {/* Search results */}
+              <div className={styles.searchResults}>
+                {isSearching ? (
+                  <div className={styles.searchLoading}>Searching...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((productCard) => {
+                    // Safe checking for all properties
+                    const handle = productCard?.product?.handle || "";
+                    const title = productCard?.product?.title || "Product";
+                    const price = productCard?.product?.price || "0.00";
+                    const imageUrl =
+                      productCard?.product?.featuredImage?.url ||
+                      "/placeholder.jpg";
+                    const imageAlt =
+                      productCard?.product?.featuredImage?.altText || title;
+
+                    return (
+                      <div
+                        key={handle}
+                        className={styles.searchResultItem}
+                        onClick={() => handleProductSelect(handle)}
+                      >
+                        <div className={styles.searchResultImage}>
+                          <Image
+                            src={imageUrl}
+                            alt={imageAlt}
+                            width={40}
+                            height={50}
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                        <div className={styles.searchResultInfo}>
+                          <div className={styles.searchResultTitle}>
+                            {title}
+                          </div>
+                        </div>
+                        <div className={styles.searchResultPrice}>${price}</div>
+                      </div>
+                    );
+                  })
+                ) : searchQuery.trim().length >= 2 ? (
+                  <div className={styles.noSearchResults}>
+                    No products found
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Hamburger button - visible on mobile */}
       <button
@@ -190,37 +359,13 @@ export default function Navbar() {
       {/* Mobile menu overlay - full screen */}
       <div className={`${styles.mobileMenu} ${isMenuOpen ? styles.open : ""}`}>
         <div className={styles.mobileMenuContent}>
-          {/* Search bar */}
-          <form className={styles.searchContainer} onSubmit={handleSearch}>
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button type="submit" className={styles.searchButton}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 16 16"
-                fill="none"
-              >
-                <path
-                  d="M11.4351 10.0629H10.7124L10.4563 9.81589C11.3838 8.74014 11.8936 7.36669 11.8925 5.94626C11.8925 4.7702 11.5438 3.62055 10.8904 2.6427C10.237 1.66484 9.30832 0.902692 8.22179 0.452634C7.13525 0.00257642 5.93966 -0.115179 4.7862 0.114258C3.63274 0.343696 2.57322 0.910021 1.74162 1.74162C0.910021 2.57322 0.343696 3.63274 0.114258 4.7862C-0.115179 5.93966 0.00257642 7.13525 0.452634 8.22179C0.902692 9.30832 1.66484 10.237 2.6427 10.8904C3.62055 11.5438 4.7702 11.8925 5.94626 11.8925C7.4191 11.8925 8.77301 11.3528 9.81589 10.4563L10.0629 10.7124V11.4351L14.6369 16L16 14.6369L11.4351 10.0629ZM5.94626 10.0629C3.66838 10.0629 1.82962 8.22413 1.82962 5.94626C1.82962 3.66838 3.66838 1.82962 5.94626 1.82962C8.22413 1.82962 10.0629 3.66838 10.0629 5.94626C10.0629 8.22413 8.22413 10.0629 5.94626 10.0629Z"
-                  fill="#555"
-                />
-              </svg>
-            </button>
-          </form>
-
           {/* Primary navigation links */}
           <Link
             href="/"
             className={`${styles.mobileLink} ${
               isActiveLink("/") ? styles.activeLink : ""
             }`}
+            onClick={closeMenu}
           >
             HOME
           </Link>
@@ -229,6 +374,7 @@ export default function Navbar() {
             className={`${styles.mobileLink} ${
               isActiveLink("/products") ? styles.activeLink : ""
             }`}
+            onClick={closeMenu}
           >
             DROP
           </Link>
@@ -237,6 +383,7 @@ export default function Navbar() {
             className={`${styles.mobileLink} ${
               isActiveLink("/about") ? styles.activeLink : ""
             }`}
+            onClick={closeMenu}
           >
             ABOUT
           </Link>
@@ -245,13 +392,18 @@ export default function Navbar() {
             className={`${styles.mobileLink} ${
               isActiveLink("/contact") ? styles.activeLink : ""
             }`}
+            onClick={closeMenu}
           >
             CONTACT
           </Link>
 
           {/* Secondary utility links */}
           <div className={styles.mobileUtilityLinks}>
-            <Link href="/login" className={styles.mobileUtilityLink}>
+            <Link
+              href="/login"
+              className={styles.mobileUtilityLink}
+              onClick={closeMenu}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -267,7 +419,11 @@ export default function Navbar() {
               </svg>
               LOGIN
             </Link>
-            <Link href="/cart" className={styles.mobileUtilityLink}>
+            <Link
+              href="/cart"
+              className={styles.mobileUtilityLink}
+              onClick={closeMenu}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -287,22 +443,46 @@ export default function Navbar() {
 
           {/* Tertiary footer links */}
           <div className={styles.mobileFooterLinks}>
-            <Link href="/contact" className={styles.mobileFooterLink}>
+            <Link
+              href="/contact"
+              className={styles.mobileFooterLink}
+              onClick={closeMenu}
+            >
               Contact
             </Link>
-            <Link href="/shipping-returns" className={styles.mobileFooterLink}>
+            <Link
+              href="/shipping-returns"
+              className={styles.mobileFooterLink}
+              onClick={closeMenu}
+            >
               Shipping & Return
             </Link>
-            <Link href="#newsletter" className={styles.mobileFooterLink}>
+            <Link
+              href="#newsletter"
+              className={styles.mobileFooterLink}
+              onClick={closeMenu}
+            >
               Newsletter
             </Link>
-            <Link href="/policy" className={styles.mobileFooterLink}>
+            <Link
+              href="/policy"
+              className={styles.mobileFooterLink}
+              onClick={closeMenu}
+            >
               Terms & Conditions
             </Link>
-            <Link href="/policy" className={styles.mobileFooterLink}>
+            <Link
+              href="/policy"
+              className={styles.mobileFooterLink}
+              onClick={closeMenu}
+            >
               Privacy & Cookie Policy
             </Link>
-            <Link href="/faq" className={styles.mobileFooterLink}>
+            <Link
+              href="/faq"
+              className={styles.mobileFooterLink}
+              onClick={closeMenu}
+            >
               FAQ
             </Link>
           </div>
