@@ -19,11 +19,26 @@ export default function LockedPage() {
   useEffect(() => {
     // Autoplay video when component mounts
     if (videoRef.current) {
-      videoRef.current.play().catch((error) => {
-        console.error("Video autoplay failed:", error);
-      });
+      // Create a promise to handle mobile browsers' autoplay restrictions
+      const playPromise = videoRef.current.play();
+
+      // If the browser doesn't support the promise API, this will be undefined
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.error("Video autoplay failed:", error);
+          // Set muted to true as a fallback, since muted videos have better
+          // autoplay support on mobile
+          if (!isMuted) {
+            setIsMuted(true);
+            // Try playing again with muted
+            videoRef.current
+              ?.play()
+              .catch((e) => console.error("Even muted autoplay failed:", e));
+          }
+        });
+      }
     }
-  }, []);
+  }, [isMuted]);
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -102,6 +117,8 @@ export default function LockedPage() {
           loop
           muted={isMuted}
           playsInline
+          autoPlay
+          poster="/images/video-poster.jpg"
         >
           <source src="/videos/background.mp4" type="video/mp4" />
           Your browser does not support the video tag.

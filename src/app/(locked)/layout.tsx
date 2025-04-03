@@ -11,17 +11,26 @@ export default function LockedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Remove the html and body tags
   return (
-    <div
-      style={{
-        margin: 0,
-        padding: 0,
-        backgroundColor: "#000",
-        minHeight: "100vh",
-      }}
-    >
-      {children}
-    </div>
+    <>
+      <head>
+        <link
+          rel="preload"
+          as="video"
+          href="/videos/background.mp4"
+          type="video/mp4"
+        />
+      </head>
+      <div
+        style={{
+          margin: 0,
+          padding: 0,
+          backgroundColor: "#000",
+          minHeight: "100vh",
+        }}
+      >
+        {children}
+      </div>
+    </>
   );
 }
