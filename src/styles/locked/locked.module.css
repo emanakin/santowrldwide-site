@@ -217,3 +217,12 @@
     opacity: 1;
   }
 }
+
+.backgroundVideo::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+
+.backgroundVideo::-webkit-media-controls {
+  display: none !important;
+}

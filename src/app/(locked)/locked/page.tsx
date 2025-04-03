@@ -17,28 +17,44 @@ export default function LockedPage() {
   );
 
   useEffect(() => {
-    // Autoplay video when component mounts
-    if (videoRef.current) {
-      // Create a promise to handle mobile browsers' autoplay restrictions
-      const playPromise = videoRef.current.play();
+    // Always start with muted=true for better autoplay success
+    setIsMuted(true);
 
-      // If the browser doesn't support the promise API, this will be undefined
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
+    // Function to attempt video play with retries
+    const attemptPlay = async () => {
+      if (videoRef.current) {
+        try {
+          // Force hide controls
+          videoRef.current.controls = false;
+
+          // Try to play
+          await videoRef.current.play();
+        } catch (error) {
           console.error("Video autoplay failed:", error);
-          // Set muted to true as a fallback, since muted videos have better
-          // autoplay support on mobile
-          if (!isMuted) {
-            setIsMuted(true);
-            // Try playing again with muted
-            videoRef.current
-              ?.play()
-              .catch((e) => console.error("Even muted autoplay failed:", e));
-          }
-        });
+
+          // On mobile, try again with a slight delay (sometimes helps)
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current
+                .play()
+                .catch((e) => console.error("Retry autoplay failed:", e));
+            }
+          }, 300);
+        }
       }
-    }
-  }, [isMuted]);
+    };
+
+    // Try playing immediately
+    attemptPlay();
+
+    // Also try playing on window focus events (helps with some mobile browsers)
+    window.addEventListener("focus", attemptPlay);
+    document.addEventListener("touchstart", attemptPlay, { once: true });
+
+    return () => {
+      window.removeEventListener("focus", attemptPlay);
+    };
+  }, []);
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -118,7 +134,7 @@ export default function LockedPage() {
           muted={isMuted}
           playsInline
           autoPlay
-          poster="/images/video-poster.jpg"
+          controls={false}
         >
           <source src="/videos/background.mp4" type="video/mp4" />
           Your browser does not support the video tag.
