@@ -1,6 +1,6 @@
 # SANTOWRLDWIDE E-commerce
 
-A modern e-commerce platform built with Next.js, Firebase, and Shopify integration.
+https://www.santowrldwide.com e-commerce platform built with Next.js, Firebase, and Shopify integration.
 
 ## Overview
 
