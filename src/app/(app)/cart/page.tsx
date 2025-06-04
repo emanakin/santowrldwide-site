@@ -3,11 +3,15 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import styles from "@/styles/cart/CartPage.module.css";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
   const { cartItems, removeItem, subtotal, tax, shipping, total } = useCart();
-  const [email, setEmail] = useState("");
+  const { user, setShowLoginPanel } = useAuth();
+  const [email, setEmail] = useState(user?.email || "");
+  const router = useRouter();
 
   // Recommendations - would be replaced with actual data in a real implementation
   const recommendations = [
@@ -26,8 +30,19 @@ export default function CartPage() {
 
   const handleProceedToCheckout = (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement checkout logic
-    console.log("Proceeding to checkout with email:", email);
+
+    if (cartItems.length === 0) {
+      return; // Don't proceed if cart is empty
+    }
+
+    // If user is not logged in and we want to force login, show login panel
+    // Otherwise just go to checkout page
+    if (!user && false) {
+      // Set to true if you want to force login
+      setShowLoginPanel(true);
+    } else {
+      router.push("/checkout");
+    }
   };
 
   return (
@@ -107,24 +122,45 @@ export default function CartPage() {
 
         <div className={styles.checkoutSection}>
           <h2 className={styles.checkoutHeading}>CHECKOUT</h2>
-          <p className={styles.checkoutText}>
-            Enter your email to login or continue to checkout
-          </p>
-          <form onSubmit={handleProceedToCheckout}>
-            <div className={styles.emailField}>
-              <label htmlFor="email">Email address</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          {user ? (
+            // User is logged in
+            <div>
+              <p className={styles.checkoutText}>Logged in as {user.email}</p>
+              <button
+                onClick={handleProceedToCheckout}
+                className={styles.checkoutButton}
+                disabled={cartItems.length === 0}
+              >
+                PROCEED TO CHECKOUT
+              </button>
             </div>
-            <button type="submit" className={styles.checkoutButton}>
-              PROCEED TO CHECKOUT
-            </button>
-          </form>
+          ) : (
+            // User is not logged in
+            <>
+              <p className={styles.checkoutText}>
+                Enter your email to login or continue to checkout
+              </p>
+              <form onSubmit={handleProceedToCheckout}>
+                <div className={styles.emailField}>
+                  <label htmlFor="email">Email address</label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className={styles.checkoutButton}
+                  disabled={cartItems.length === 0}
+                >
+                  PROCEED TO CHECKOUT
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
 
