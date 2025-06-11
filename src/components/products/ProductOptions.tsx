@@ -1,24 +1,44 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import styles from "@/styles/products/ProductOptions.module.css";
 import { ProductOption, ProductVariant } from "@/types/product-types";
 
 type ProductOptionsProps = {
   options?: ProductOption[];
   variants?: ProductVariant[];
+  selectedOptions: Record<string, string>;
+  onOptionChange: (options: Record<string, string>) => void;
 };
 
-export default function ProductOptions({ options }: ProductOptionsProps) {
-  const [selectedOptions, setSelectedOptions] = useState<
-    Record<string, string>
-  >({});
-
+export default function ProductOptions({
+  options,
+  variants,
+  selectedOptions,
+  onOptionChange,
+}: ProductOptionsProps) {
   // Handle option selection
   const handleOptionChange = (optionName: string, value: string) => {
-    setSelectedOptions((prev) => ({
-      ...prev,
+    const newOptions = {
+      ...selectedOptions,
       [optionName]: value,
-    }));
+    };
+    onOptionChange(newOptions);
+  };
+
+  // Check if an option value creates a valid/available variant
+  const isOptionValueAvailable = (optionName: string, value: string) => {
+    if (!variants) return true;
+
+    const testOptions = { ...selectedOptions, [optionName]: value };
+
+    return variants.some((variant) => {
+      const matches = variant.selectedOptions.every(
+        (option) =>
+          testOptions[option.name] === undefined ||
+          testOptions[option.name] === option.value
+      );
+      return matches && variant.availableForSale;
+    });
   };
 
   if (!options || options.length === 0) {
@@ -31,30 +51,36 @@ export default function ProductOptions({ options }: ProductOptionsProps) {
         <div key={option.id} className={styles.optionContainer}>
           <h3 className={styles.optionName}>{option.name}</h3>
           <div className={styles.optionValues}>
-            {option.values.map((value) => (
-              <button
-                key={`${option.name}-${value}`}
-                className={`${styles.optionValue} ${
-                  selectedOptions[option.name] === value ? styles.selected : ""
-                }`}
-                onClick={() => handleOptionChange(option.name, value)}
-              >
-                {option.name.toLowerCase() === "color" ? (
-                  <span
-                    className={styles.colorSwatch}
-                    style={{
-                      backgroundColor: value.toLowerCase().includes("black")
-                        ? "#000"
-                        : value.toLowerCase().includes("white")
-                        ? "#fff"
-                        : value.toLowerCase(),
-                    }}
-                  />
-                ) : (
-                  value
-                )}
-              </button>
-            ))}
+            {option.values.map((value) => {
+              const isAvailable = isOptionValueAvailable(option.name, value);
+              const isSelected = selectedOptions[option.name] === value;
+
+              return (
+                <button
+                  key={`${option.name}-${value}`}
+                  className={`${styles.optionValue} ${
+                    isSelected ? styles.selected : ""
+                  } ${!isAvailable ? styles.unavailable : ""}`}
+                  onClick={() => handleOptionChange(option.name, value)}
+                  disabled={!isAvailable}
+                >
+                  {option.name.toLowerCase() === "color" ? (
+                    <span
+                      className={styles.colorSwatch}
+                      style={{
+                        backgroundColor: value.toLowerCase().includes("black")
+                          ? "#000"
+                          : value.toLowerCase().includes("white")
+                            ? "#fff"
+                            : value.toLowerCase(),
+                      }}
+                    />
+                  ) : (
+                    value
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}

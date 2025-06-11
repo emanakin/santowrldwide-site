@@ -18,7 +18,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.featuredImage.altText || product.title}
             fill
             sizes="(max-width: 768px) 100vw, 300px"
-            style={{ objectFit: "cover" }}
+            style={{ objectFit: "contain" }}
             onError={() => setImgError(true)}
             priority
           />

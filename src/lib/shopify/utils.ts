@@ -1,5 +1,9 @@
 import { GraphQLClient } from "graphql-request";
-import { ShopifyProduct, ProductsResponse } from "@/types/product-types";
+import {
+  ShopifyProduct,
+  ProductsResponse,
+  ProductListItem,
+} from "@/types/product-types";
 import { ShopifyAddress } from "@/types/shopify-types";
 
 export async function shopifyRequest<T>(
@@ -21,7 +25,7 @@ export async function shopifyRequest<T>(
 
 export function formatProductList(
   edges: ProductsResponse["products"]["edges"]
-) {
+): ProductListItem[] {
   return edges.map(({ node }) => ({
     id: node.id,
     title: node.title,

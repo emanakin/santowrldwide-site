@@ -1,13 +1,13 @@
 "use client";
 import React, { useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import styles from "@/styles/products/AddToCartButton.module.css";
 import { Product, CartItem } from "@/types/product-types";
 
 type AddToCartButtonProps = {
   product: Product;
-  selectedVariantId?: string;
+  selectedVariantId?: string | null;
   selectedSize?: string;
   selectedColor?: string;
   quantity?: number;
@@ -22,7 +22,7 @@ export default function AddToCartButton({
 }: AddToCartButtonProps) {
   const { addItem, openCart } = useCart();
   const [isAdding, setIsAdding] = useState(false);
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleAddToCart = async () => {
     if (!selectedVariantId) {
@@ -41,6 +41,12 @@ export default function AddToCartButton({
         return;
       }
 
+      // Check if variant is available
+      if (!variant.availableForSale) {
+        console.error("Selected variant is not available for sale");
+        return;
+      }
+
       // Create cart item
       const cartItem: CartItem = {
         id: `${selectedVariantId}-${Date.now()}`, // Temporary ID, will be replaced by Shopify
@@ -48,7 +54,7 @@ export default function AddToCartButton({
         quantity,
         title: product.title,
         price: variant.price,
-        imageUrl: product.featuredImage?.url,
+        imageUrl: product.images?.[0]?.url,
         size: selectedSize,
         color: selectedColor,
       };
@@ -65,14 +71,26 @@ export default function AddToCartButton({
     }
   };
 
+  // Check if the selected variant is available
+  const selectedVariant = product.variants.find(
+    (v) => v.id === selectedVariantId
+  );
+  const isVariantAvailable = selectedVariant?.availableForSale ?? false;
+
   return (
     <div className={styles.container}>
       <button
         className={styles.addToCartButton}
         onClick={handleAddToCart}
-        disabled={isAdding || !selectedVariantId}
+        disabled={isAdding || !selectedVariantId || !isVariantAvailable}
       >
-        {isAdding ? "Adding..." : "Add to Cart"}
+        {isAdding
+          ? "Adding..."
+          : !selectedVariantId
+            ? "Select Options"
+            : !isVariantAvailable
+              ? "Out of Stock"
+              : "Add to Cart"}
       </button>
 
       <button className={styles.wishlistButton}>♡</button>

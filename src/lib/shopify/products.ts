@@ -3,11 +3,15 @@ import {
   GET_PRODUCT_BY_HANDLE_QUERY,
 } from "./queries/productQueries";
 import { shopifyRequest, formatProduct, formatProductList } from "./utils";
-import { ProductsResponse, ProductResponse } from "@/types/product-types";
+import {
+  ProductsResponse,
+  ProductResponse,
+  ProductListItem,
+} from "@/types/product-types";
 import { storefrontClient } from "./client";
 
-// Get multiple products
-export async function getProducts(limit = 20) {
+// Get multiple products - returns ProductListItem[] for consistency
+export async function getProducts(limit = 20): Promise<ProductListItem[]> {
   const data = await shopifyRequest<ProductsResponse>(
     GET_PRODUCTS_QUERY,
     storefrontClient,

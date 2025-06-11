@@ -20,7 +20,7 @@ export async function loginWithEmailService(
   email: string,
   password: string
 ): Promise<void> {
-  // Call your API endpoint to get the Firebase auth token (or perform extra validation)
+  // Call your API endpoint first to validate and get user data
   const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,8 +30,12 @@ export async function loginWithEmailService(
   const data = await response.json();
 
   if (!response.ok) {
-    // You can throw an error with a proper message
     throw new Error(data.error || "Login failed");
+  }
+
+  // Store the additional user metadata temporarily
+  if (data.metadata) {
+    localStorage.setItem("userData", JSON.stringify(data.metadata));
   }
 
   // Sign in with Firebase to update client-side auth state
@@ -55,7 +59,7 @@ export async function socialLoginService(
     throw new Error("Unsupported provider");
   }
 
-  // Sign in with popup
+  // Sign in with popup first
   const result = await signInWithPopup(auth, authProvider);
 
   // Get the Firebase ID token
@@ -72,6 +76,11 @@ export async function socialLoginService(
 
   if (!response.ok) {
     throw new Error(data.error || "Social login failed");
+  }
+
+  // Store the additional user metadata
+  if (data.metadata) {
+    localStorage.setItem("userData", JSON.stringify(data.metadata));
   }
 }
 
@@ -94,8 +103,12 @@ export async function signupWithEmailService(
   const data = await response.json();
 
   if (!response.ok) {
-    // Throw an error; the component can catch this to show field or general errors
     throw new Error(data.error || "Signup failed");
+  }
+
+  // Store user metadata if provided
+  if (data.metadata) {
+    localStorage.setItem("userData", JSON.stringify(data.metadata));
   }
 
   // Automatically sign in the user with Firebase
@@ -136,6 +149,11 @@ export async function socialSignupService(
   if (!response.ok) {
     throw new Error(data.error || "Social authentication failed");
   }
+
+  // Store user metadata if provided
+  if (data.metadata) {
+    localStorage.setItem("userData", JSON.stringify(data.metadata));
+  }
 }
 
 /**
@@ -153,6 +171,9 @@ export async function logoutService(): Promise<void> {
     const data = await response.json();
     throw new Error(data.error || "Server logout failed");
   }
+
+  // Clear local storage
+  localStorage.removeItem("userData");
 
   // Sign out from Firebase
   await signOut(auth);

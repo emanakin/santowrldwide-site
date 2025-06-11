@@ -69,3 +69,13 @@
     height: 20px;
   }
 }
+
+/* Add this to your existing CSS */
+.optionValue.unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.optionValue.unavailable:hover {
+  background-color: transparent;
+}
