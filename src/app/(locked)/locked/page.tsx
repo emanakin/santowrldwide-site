@@ -7,6 +7,7 @@ import styles from "@/styles/locked/locked.module.css";
 
 export default function LockedPage() {
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -73,7 +74,10 @@ export default function LockedPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          phone: phone.trim() || undefined, // Only send phone if provided
+        }),
       });
 
       const data = await response.json();
@@ -81,6 +85,7 @@ export default function LockedPage() {
       if (response.ok) {
         setSubscriptionStatus(data.message || "Thanks for subscribing!");
         setEmail("");
+        setPhone("");
         // Clear the status message after 5 seconds
         setTimeout(() => setSubscriptionStatus(null), 5000);
       } else {
@@ -178,9 +183,16 @@ export default function LockedPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="enter your email here..."
+              placeholder="example@email.com"
               className={styles.emailInput}
               required
+            />
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 (555) 123-4567"
+              className={styles.phoneInput}
             />
             <button type="submit" className={styles.subscribeButton}>
               subscribe

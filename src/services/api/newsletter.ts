@@ -3,6 +3,16 @@ import {
   isAdminSDKAvailable,
 } from "@/lib/firebase/admin/firebaseAdmin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import {
+  sendWelcomeEmail,
+  sendAdminNotification,
+  WelcomeEmailData,
+} from "@/services/email/emailService";
+import {
+  sendWelcomeSMS,
+  sendAdminSMSNotification,
+  SMSData,
+} from "@/services/sms/smsService";
 
 export interface SubscriberData {
   email: string;
@@ -13,6 +23,7 @@ export interface SubscriberData {
   version: number;
   ipAddress?: string; // Store IP for rate limiting
   verified?: boolean; // Track if email is verified
+  phone?: string; // Optional phone number
 }
 
 // Define proper types for rate limiting data
@@ -39,7 +50,8 @@ const RATE_LIMIT = {
 export async function addSubscriber(
   email: string,
   source = "website",
-  ipAddress?: string
+  ipAddress?: string,
+  phone?: string
 ): Promise<{
   success: boolean;
   error?: string;
@@ -79,11 +91,18 @@ export async function addSubscriber(
       if (!emailDocs.empty) {
         // Email already exists, update the timestamp and ensure status is active
         const docId = emailDocs.docs[0].id;
-        transaction.update(subscribersRef.doc(docId), {
+        const updateData: Partial<SubscriberData> = {
           updatedAt: Timestamp.now(),
           status: "active",
           source: source,
-        });
+        };
+
+        // Only update phone if provided
+        if (phone && phone.trim()) {
+          updateData.phone = phone.trim();
+        }
+
+        transaction.update(subscribersRef.doc(docId), updateData);
 
         console.log(`Subscriber updated: ${normalizedEmail}`);
         return { success: true, exists: true };
@@ -100,11 +119,66 @@ export async function addSubscriber(
         ipAddress: ipAddress,
       };
 
+      // Only add phone field if it has a value
+      if (phone && phone.trim()) {
+        newSubscriber.phone = phone.trim();
+      }
+
       // Create a new document reference
       const newDocRef = subscribersRef.doc();
       transaction.set(newDocRef, newSubscriber);
 
       console.log(`New subscriber added: ${normalizedEmail}`);
+
+      // Send welcome email and admin notification asynchronously (don't block the response)
+      setImmediate(async () => {
+        const emailData: WelcomeEmailData = {
+          email: normalizedEmail,
+          phone: phone,
+        };
+
+        // Send welcome email to subscriber
+        const welcomeResult = await sendWelcomeEmail(emailData);
+        if (!welcomeResult.success) {
+          console.error("Failed to send welcome email:", welcomeResult.error);
+        }
+
+        // Send notification to admin
+        const adminResult = await sendAdminNotification(emailData);
+        if (!adminResult.success) {
+          console.error(
+            "Failed to send admin notification:",
+            adminResult.error
+          );
+        }
+
+        // Send SMS if phone number provided
+        if (phone && phone.trim()) {
+          const smsData: SMSData = {
+            email: normalizedEmail,
+            phone: phone.trim(),
+          };
+
+          // Send welcome SMS to subscriber
+          const welcomeSMSResult = await sendWelcomeSMS(smsData);
+          if (!welcomeSMSResult.success) {
+            console.error(
+              "Failed to send welcome SMS:",
+              welcomeSMSResult.error
+            );
+          }
+
+          // Send admin SMS notification
+          const adminSMSResult = await sendAdminSMSNotification(smsData);
+          if (!adminSMSResult.success) {
+            console.error(
+              "Failed to send admin SMS notification:",
+              adminSMSResult.error
+            );
+          }
+        }
+      });
+
       return { success: true, exists: false };
     });
   } catch (error) {
