@@ -54,17 +54,20 @@ export default function ProductOptions({
             {option.values.map((value) => {
               const isAvailable = isOptionValueAvailable(option.name, value);
               const isSelected = selectedOptions[option.name] === value;
+              const isColorOption = option.name.toLowerCase() === "color";
 
               return (
                 <button
                   key={`${option.name}-${value}`}
                   className={`${styles.optionValue} ${
                     isSelected ? styles.selected : ""
-                  } ${!isAvailable ? styles.unavailable : ""}`}
+                  } ${!isAvailable ? styles.unavailable : ""} ${
+                    isColorOption && isSelected ? styles.colorOption : ""
+                  }`}
                   onClick={() => handleOptionChange(option.name, value)}
                   disabled={!isAvailable}
                 >
-                  {option.name.toLowerCase() === "color" ? (
+                  {isColorOption ? (
                     <span
                       className={styles.colorSwatch}
                       style={{

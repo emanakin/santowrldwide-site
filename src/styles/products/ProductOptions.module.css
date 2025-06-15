@@ -3,79 +3,161 @@
 }
 
 .optionContainer {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
 
 .optionName {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  color: #333;
 }
 
 .optionValues {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 
 .optionValue {
-  min-width: 40px;
-  height: 40px;
-  padding: 0 12px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #ddd;
-  background: none;
+  border: 2px solid #e5e5e5;
+  background: #fff;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .optionValue:hover {
   border-color: #999;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .optionValue.selected {
   border-color: #000;
   background-color: #000;
   color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* For color swatches */
+/* Enhanced color swatches - keep background clean when selected */
 .colorSwatch {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1px solid #ddd;
+  border: 2px solid #ddd;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.colorSwatch::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  transition: border-color 0.25s ease;
+}
+
+.optionValue:hover .colorSwatch {
+  transform: scale(1.1);
+  border-color: #999;
+}
+
+/* Special handling for color options when selected */
+.optionValue.selected.colorOption {
+  background-color: #fff; /* Keep background white for color swatches */
+  color: #333; /* Keep text dark */
+  border-color: #000;
 }
 
 .selected .colorSwatch {
   border-color: #000;
+  transform: scale(1.1);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #000;
+}
+
+.selected .colorSwatch::after {
+  border-color: #000;
 }
 
 @media (max-width: 768px) {
+  .optionContainer {
+    margin-bottom: 16px;
+  }
+
+  .optionName {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .optionValues {
+    gap: 10px;
+  }
+
   .optionValue {
-    min-width: 36px;
-    height: 36px;
-    padding: 0 10px;
-    font-size: 13px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    font-size: 12px;
   }
 
   .colorSwatch {
-    width: 20px;
-    height: 20px;
+    width: 28px;
+    height: 28px;
   }
 }
 
-/* Add this to your existing CSS */
+/* Enhanced unavailable state */
 .optionValue.unavailable {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  background-color: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #999;
+  position: relative;
+}
+
+.optionValue.unavailable::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background-color: #999;
+  transform: rotate(-45deg);
 }
 
 .optionValue.unavailable:hover {
-  background-color: transparent;
+  transform: none;
+  box-shadow: none;
+  border-color: #e0e0e0;
+}
+
+.optionValue.unavailable .colorSwatch {
+  opacity: 0.5;
+  filter: grayscale(50%);
+}
+
+.optionValue.unavailable:hover .colorSwatch {
+  transform: none;
 }

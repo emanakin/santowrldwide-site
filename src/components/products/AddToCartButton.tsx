@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useCart } from "@/context/CartContext";
 // import { useRouter } from "next/navigation";
+import WishlistButton from "./WishlistButton";
 import styles from "@/styles/products/AddToCartButton.module.css";
 import { Product, CartItem } from "@/types/product-types";
 
@@ -93,7 +94,7 @@ export default function AddToCartButton({
               : "Add to Cart"}
       </button>
 
-      <button className={styles.wishlistButton}>♡</button>
+      <WishlistButton product={product} size="medium" />
     </div>
   );
 }

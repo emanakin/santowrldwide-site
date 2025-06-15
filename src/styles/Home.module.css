@@ -27,6 +27,11 @@
   padding: 5px 0;
 }
 
+.logo img {
+  mix-blend-mode: exclusion;
+  filter: invert(1);
+}
+
 .section {
   display: flex;
   width: 100%;

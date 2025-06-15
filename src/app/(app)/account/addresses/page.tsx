@@ -136,7 +136,7 @@ export default function AddressesPage() {
   };
 
   return (
-    <div className={styles.accountContainer}>
+    <>
       {error && <div className={styles.formError}>{error}</div>}
 
       {loading && !showAddForm && !editingAddress ? (
@@ -166,6 +166,6 @@ export default function AddressesPage() {
           )}
         </>
       )}
-    </div>
+    </>
   );
 }

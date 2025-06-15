@@ -27,22 +27,6 @@
   cursor: not-allowed;
 }
 
-.wishlistButton {
-  width: 44px;
-  background: none;
-  border: 1px solid #000;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.wishlistButton:hover {
-  background-color: #f5f5f5;
-}
-
 @media (max-width: 768px) {
   .container {
     margin-bottom: 20px;
@@ -51,10 +35,5 @@
   .addToCartButton {
     padding: 10px;
     font-size: 13px;
-  }
-
-  .wishlistButton {
-    width: 40px;
-    font-size: 18px;
   }
 }

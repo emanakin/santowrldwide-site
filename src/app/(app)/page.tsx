@@ -8,10 +8,10 @@ export default function Home() {
       <div className={styles.logoContainer}>
         <div className={styles.logo}>
           <Image
-            src="/images/santo-logo.png"
+            src="/images/white-cross-logo.png"
             alt="SANTOWRLDWIDE"
             width={122}
-            height={60}
+            height={122}
             priority
           />
         </div>
