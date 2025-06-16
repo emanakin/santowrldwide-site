@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import styles from "@/styles/Home.module.css";
+import VideoPlayer from "@/components/VideoPlayer";
 
 // Gallery Component
 const CollectionGallery = ({
@@ -38,7 +39,7 @@ const CollectionGallery = ({
             priority={currentMedia === mainMedia}
           />
         ) : (
-          <video
+          <VideoPlayer
             src={currentMedia.src}
             width={800}
             height={600}
@@ -67,7 +68,7 @@ const CollectionGallery = ({
                 />
               ) : (
                 <>
-                  <video
+                  <VideoPlayer
                     src={media.src}
                     width={60}
                     height={60}
@@ -154,7 +155,7 @@ export default function Home() {
 
       {/* Hero Video Section */}
       <section className={styles.heroSection}>
-        <video
+        <VideoPlayer
           ref={videoRef}
           className={styles.heroVideo}
           src="/videos/santo-live.mp4"
