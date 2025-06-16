@@ -3,9 +3,36 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  position: relative;
-  background-color: #fff;
+  width: 100%;
   z-index: 100;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-sizing: border-box;
+}
+
+/* Home page navbar - fixed with glassmorphism */
+.navbar.homeNavbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Regular pages navbar - relative positioning */
+.navbar.regularNavbar {
+  position: relative;
+  background: #fff;
+}
+
+/* Scrolled state - only applies to home page */
+.navbar.homeNavbar.scrolled {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
 .link {
@@ -16,6 +43,12 @@
   align-items: center;
   font-weight: 500;
   position: relative;
+  transition: all 0.3s ease;
+}
+
+.link:hover {
+  color: #333;
+  transform: translateY(-1px);
 }
 
 .icon {
@@ -28,32 +61,60 @@
   align-items: center;
 }
 
-/* Hamburger button styles */
+/* Hamburger button base styles */
 .hamburger {
   display: none;
-  background: transparent;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
   cursor: pointer;
-  padding: 10px;
   position: fixed;
-  margin-top: 40px;
   z-index: 200;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s ease;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+/* Home page hamburger - glass effect */
+.hamburger.homeHamburger {
+  background: rgba(0, 0, 0, 0.8);
+  top: 20px;
+  left: 20px;
+}
+
+/* Regular page hamburger - solid dark */
+.hamburger.regularHamburger {
+  background: rgba(0, 0, 0, 0.9);
+  top: 20px;
+  right: 20px;
+  left: auto;
+}
+
+.hamburger:hover {
+  background: rgba(0, 0, 0, 0.95);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
 }
 
 .bar {
   display: block;
-  width: 25px;
-  height: 3px;
-  margin: 5px auto;
-  background-color: #000;
+  width: 20px;
+  height: 2px;
+  margin: 3px 0;
+  background-color: #fff;
   transition: all 0.3s ease-in-out;
+  border-radius: 1px;
 }
 
 /* Hamburger animation when active */
 .hamburger.active .bar:nth-child(1) {
-  transform: translateY(8px) rotate(45deg);
+  transform: translateY(7px) rotate(45deg);
 }
 
 .hamburger.active .bar:nth-child(2) {
@@ -61,7 +122,7 @@
 }
 
 .hamburger.active .bar:nth-child(3) {
-  transform: translateY(-8px) rotate(-45deg);
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 /* Mobile menu styles - full screen */
@@ -71,8 +132,12 @@
   left: 0;
   width: 100%;
   height: 100vh;
-  background-color: #fff;
-  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  background-color: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  transition:
+    opacity 0.4s ease-in-out,
+    visibility 0.4s ease-in-out;
   z-index: 150;
   opacity: 0;
   visibility: hidden;
@@ -107,6 +172,12 @@
   align-items: center;
   text-transform: uppercase;
   letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.mobileLink:hover {
+  color: #333;
+  transform: translateX(5px);
 }
 
 /* Secondary utility links */
@@ -125,12 +196,18 @@
   font-weight: 500;
   display: flex;
   align-items: center;
+  transition: all 0.3s ease;
+}
+
+.mobileUtilityLink:hover {
+  color: #333;
+  transform: translateY(-2px);
 }
 
 /* Tertiary footer links */
 .mobileFooterLinks {
   margin-top: 40px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
   padding-top: 20px;
   width: 100%;
   display: flex;
@@ -144,6 +221,11 @@
   margin: 8px 0;
   font-size: 14px;
   font-weight: 400;
+  transition: all 0.3s ease;
+}
+
+.mobileFooterLink:hover {
+  color: #333;
 }
 
 /* Search bar */
@@ -174,20 +256,39 @@
 
 /* Media query for mobile responsiveness */
 @media (max-width: 768px) {
+  /* Home page mobile */
+  .navbar.homeNavbar {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+    padding: 0;
+  }
+
+  .navbar.homeNavbar.scrolled {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
+    box-shadow: none;
+  }
+
+  /* Regular page mobile */
+  .navbar.regularNavbar {
+    background: #fff;
+    padding: 12px 20px;
+  }
+
   .desktopLinks {
     display: none;
   }
 
   .hamburger {
-    display: block;
+    display: flex;
   }
 
   .mobileMenu {
     display: flex;
-  }
-
-  .navbar {
-    padding: 10px 15px;
   }
 }
 
@@ -221,7 +322,12 @@
 
 .logo {
   max-width: 150px;
-  pointer-events: auto; /* Make the logo itself clickable */
+  pointer-events: auto;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
 }
 
 .activeLink {
@@ -231,16 +337,28 @@
 .activeLink::after {
   content: "";
   position: absolute;
-  bottom: -5px;
+  bottom: -8px;
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: #000;
+  background: linear-gradient(90deg, #000 0%, #333 100%);
+  border-radius: 1px;
+  animation: underlineGlow 2s ease-in-out infinite alternate;
 }
 
 /* For mobile links, adjust the positioning */
 .mobileLink.activeLink::after {
-  bottom: -8px;
+  bottom: -10px;
+  height: 3px;
+}
+
+@keyframes underlineGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  }
 }
 
 /* Search overlay */
@@ -260,16 +378,18 @@
   width: 100%;
   display: flex;
   justify-content: center;
-  z-index: 1000; /* Higher than the overlay */
+  z-index: 1000;
 }
 
 .searchDropdown {
-  background-color: white;
-  border: 1px solid #e5e5e5;
-  border-radius: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
   width: 100%;
   max-width: 600px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
   position: relative;
 }
 
@@ -277,15 +397,19 @@
   display: flex;
   align-items: center;
   padding: 12px 15px;
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   position: relative;
 }
 
 .searchInput {
   width: 100%;
   padding: 10px 40px 10px 8px;
-  border: 1px solid #ddd;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
   font-size: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .searchButton {
@@ -297,6 +421,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.searchButton:hover {
+  transform: scale(1.1);
 }
 
 .searchResults {
@@ -308,13 +437,14 @@
   display: flex;
   align-items: center;
   padding: 10px 15px;
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
 }
 
 .searchResultItem:hover {
-  background-color: #f9f9f9;
+  background-color: rgba(0, 0, 0, 0.03);
+  transform: translateX(5px);
 }
 
 .searchResultImage {
@@ -324,6 +454,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .searchResultInfo {
@@ -357,7 +489,7 @@
   font-size: 14px;
 }
 
-/* Media query for mobile */
+/* Media query for mobile search */
 @media (max-width: 768px) {
   .searchDropdownWrapper {
     position: fixed;
@@ -367,6 +499,7 @@
 
   .searchDropdown {
     max-width: 100%;
+    border-radius: 6px;
   }
 
   .searchResults {
@@ -374,8 +507,7 @@
   }
 }
 
-/* Add these styles to your existing CSS file */
-
+/* Loading animations */
 .searchLoading {
   padding: 20px;
   display: flex;
@@ -409,4 +541,5 @@
   justify-content: center;
   color: #999;
   font-size: 14px;
+  border-radius: 4px;
 }

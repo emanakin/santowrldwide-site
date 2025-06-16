@@ -8,7 +8,8 @@
   display: flex;
   justify-content: space-between;
   max-width: 1200px;
-  margin: 50px 50px 30px;
+  padding: 0 20px;
+  margin: 50px auto 30px auto;
 }
 
 .linkColumn {
@@ -45,10 +46,47 @@
   text-align: center;
 }
 
+.socialContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  margin: 20px 0 20px 0;
+  padding: 0 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.socialLink {
+  color: #000;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: transparent;
+  transition: all 0.3s ease;
+  border: 2px solid #000;
+}
+
+.socialLink:hover {
+  background-color: #000;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.socialLink svg {
+  width: 24px;
+  height: 24px;
+}
+
 @media (max-width: 768px) {
   .linksContainer {
     flex-direction: column;
     gap: 0px;
+    margin: 30px 20px 20px;
   }
 
   .linkColumn {
@@ -62,5 +100,43 @@
   .link {
     letter-spacing: -0.4px;
     margin-bottom: 20px;
+  }
+
+  .socialContainer {
+    gap: 20px;
+    margin: 20px 0 30px 0;
+    padding: 0 15px;
+  }
+
+  .socialLink {
+    width: 44px;
+    height: 44px;
+  }
+
+  .socialLink svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .linksContainer {
+    margin: 20px 15px 15px;
+  }
+
+  .socialContainer {
+    gap: 15px;
+    margin: 15px 0 25px 0;
+    padding: 0 10px;
+  }
+
+  .socialLink {
+    width: 40px;
+    height: 40px;
+  }
+
+  .socialLink svg {
+    width: 18px;
+    height: 18px;
   }
 }

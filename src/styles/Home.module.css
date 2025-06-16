@@ -125,6 +125,7 @@
   transition: all 0.4s ease;
   backdrop-filter: blur(15px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  margin-top: 30px;
 }
 
 .muteButton:hover {
@@ -135,6 +136,41 @@
 }
 
 .muteButton svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Play/Pause Button */
+.playButton {
+  position: absolute;
+  top: 30px;
+  right: 100px;
+  z-index: 4;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  margin-top: 30px;
+}
+
+.playButton:hover {
+  background: rgba(0, 0, 0, 0.95);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.playButton svg {
   width: 22px;
   height: 22px;
   fill: white;
@@ -398,7 +434,6 @@
 }
 
 .textContent {
-  max-width: 400px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -730,6 +765,13 @@
   .playIcon {
     font-size: 10px;
   }
+
+  .playButton {
+    width: 45px;
+    height: 45px;
+    top: 20px;
+    right: 75px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -755,6 +797,22 @@
   .decorativeElement,
   .starDecoration {
     display: none;
+  }
+
+  .muteButton {
+    width: 50px;
+    height: 50px;
+    top: 25px;
+    right: 25px;
+    margin-top: 5px;
+  }
+
+  .playButton {
+    width: 50px;
+    height: 50px;
+    top: 25px;
+    right: 85px;
+    margin-top: 5px;
   }
 }
 

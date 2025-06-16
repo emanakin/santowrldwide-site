@@ -89,12 +89,16 @@ const CollectionGallery = ({
 
 export default function Home() {
   const [isMuted, setIsMuted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
+    // Add data attribute to body for homepage styling
+    document.body.setAttribute("data-page", "home");
+
     if (videoRef.current) {
-      videoRef.current.playbackRate = 0.6;
+      videoRef.current.playbackRate = 0.4;
       videoRef.current.muted = true;
     }
 
@@ -105,6 +109,11 @@ export default function Home() {
         audioRef.current.play().catch(console.log);
       }
     }
+
+    // Cleanup function to remove data attribute
+    return () => {
+      document.body.removeAttribute("data-page");
+    };
   }, []);
 
   const toggleMute = () => {
@@ -115,6 +124,18 @@ export default function Home() {
       } else {
         audioRef.current.pause();
         setIsMuted(true);
+      }
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play().catch(console.log);
+        setIsPlaying(true);
       }
     }
   };
@@ -176,6 +197,19 @@ export default function Home() {
           )}
         </button>
 
+        {/* Play/Pause Button */}
+        <button className={styles.playButton} onClick={togglePlay}>
+          {isPlaying ? (
+            <svg viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          )}
+        </button>
+
         {/* Enhanced Scroll Indicator */}
         <div className={styles.scrollIndicator} onClick={scrollToContent}>
           <div className={styles.scrollPulse}></div>
@@ -194,14 +228,14 @@ export default function Home() {
             <h1 className={styles.collectionName}>frostbite</h1>
             <div className={styles.eventDetails}>
               <div className={styles.codeEffect}>
-                {`> init_sequence()`}
-                <br />
-                {`> loading_event_data...`}
-                <br />
                 {`> decrypt_timestamp()`}
+                <br />
+                {`> revealing_drop_date...`}
+                <br />
+                {`> decryption_complete()`}
               </div>
-              <p className={styles.animated}>Thursday 130082</p>
-              <p>2000 - 2001BST</p>
+              <p className={styles.animated}>Friday, June 20th</p>
+              <p>2025 - DROP DAY</p>
             </div>
           </div>
         </div>
@@ -300,14 +334,14 @@ export default function Home() {
             <h2 className={styles.collectionName}>frostbite</h2>
             <div className={styles.eventDetails}>
               <div className={styles.codeEffect}>
-                {`> init_sequence()`}
-                <br />
-                {`> loading_event_data...`}
-                <br />
                 {`> decrypt_timestamp()`}
+                <br />
+                {`> revealing_drop_date...`}
+                <br />
+                {`> decryption_complete()`}
               </div>
-              <p className={styles.animated}>Thursday 130082</p>
-              <p>2000 - 2001BST</p>
+              <p className={styles.animated}>Friday, June 20th</p>
+              <p>2025 - DROP DAY</p>
             </div>
           </div>
         </div>
