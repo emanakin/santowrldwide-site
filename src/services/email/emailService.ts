@@ -7,6 +7,15 @@ export interface WelcomeEmailData {
   phone?: string;
 }
 
+export interface ContactEmailData {
+  fullName: string;
+  email: string;
+  subject: string;
+  message: string;
+  request: string;
+  orderNumber?: string;
+}
+
 /**
  * Send a welcome email to new subscribers
  */
@@ -32,7 +41,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{
     const emailData = await resend.emails.send({
       from: fromEmail,
       to: [data.email],
-      subject: "Welcome to SANTOWRLDWIDE! 🔥",
+      subject: "Welcome to SANTOWRLDWIDE",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
@@ -157,6 +166,111 @@ Source: Website (Locked Page)
         error instanceof Error
           ? error.message
           : "Failed to send admin notification",
+    };
+  }
+}
+
+/**
+ * Send contact form email to support team
+ */
+export async function sendContactEmail(data: ContactEmailData): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn("RESEND_API_KEY not configured, skipping contact email");
+      return { success: false, error: "Email service not configured" };
+    }
+
+    // Use development sender for testing if FROM_EMAIL not configured
+    const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev";
+    const supportEmail = "support@santowrldwide.com";
+
+    const emailData = await resend.emails.send({
+      from: fromEmail,
+      to: [supportEmail],
+      subject: `Contact Form: ${data.subject}`,
+      replyTo: data.email, // Allow direct reply to customer
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #000; font-size: 24px; margin-bottom: 10px;">SANTOWRLDWIDE Contact Form</h1>
+            <p style="color: #666; font-size: 16px;">New message from website</p>
+          </div>
+          
+          <div style="background: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #000; font-size: 18px; margin-bottom: 15px;">Contact Details</h2>
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Request Type:</strong> 
+              <span style="color: #666;">${data.request}</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Full Name:</strong> 
+              <span style="color: #666;">${data.fullName}</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Email:</strong> 
+              <span style="color: #666;">${data.email}</span>
+            </div>
+            ${
+              data.orderNumber
+                ? `
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Order Number:</strong> 
+              <span style="color: #666;">${data.orderNumber}</span>
+            </div>
+            `
+                : ""
+            }
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Subject:</strong> 
+              <span style="color: #666;">${data.subject}</span>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong style="color: #333;">Timestamp:</strong> 
+              <span style="color: #666;">${new Date().toLocaleString()}</span>
+            </div>
+          </div>
+          
+          <div style="background: #fff; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+            <h3 style="color: #000; font-size: 16px; margin-bottom: 15px;">Message:</h3>
+            <div style="color: #333; line-height: 1.6; white-space: pre-wrap;">${data.message}</div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+            <p style="color: #666; font-size: 14px;">
+              You can reply directly to this email to respond to ${data.fullName}
+            </p>
+          </div>
+        </div>
+      `,
+      text: `
+SANTOWRLDWIDE Contact Form - New Message
+
+REQUEST TYPE: ${data.request}
+FULL NAME: ${data.fullName}
+EMAIL: ${data.email}
+${data.orderNumber ? `ORDER NUMBER: ${data.orderNumber}` : ""}
+SUBJECT: ${data.subject}
+TIMESTAMP: ${new Date().toLocaleString()}
+
+MESSAGE:
+${data.message}
+
+---
+You can reply directly to this email to respond to ${data.fullName}
+      `,
+    });
+
+    console.log("Contact email sent successfully:", emailData);
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending contact email:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to send contact email",
     };
   }
 }

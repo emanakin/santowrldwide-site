@@ -242,7 +242,7 @@ export default function Home() {
         <div className={styles.imageColumn}>
           <CollectionGallery
             mainMedia={{
-              src: "/images/model-1.jpeg",
+              src: "/images/home/model-1.jpeg",
               alt: "Frostbite Collection - Main",
               type: "image",
             }}
@@ -287,7 +287,7 @@ export default function Home() {
         <div className={styles.imageColumn}>
           <CollectionGallery
             mainMedia={{
-              src: "/images/model-2.jpeg",
+              src: "/images/home/model-2.jpeg",
               alt: "Santowrld Collection - Main",
               type: "image",
             }}
