@@ -8,6 +8,7 @@ import SignupPanel from "@/components/auth/SignupPanel";
 import ResetPasswordPanel from "@/components/auth/ResetPasswordPanel";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
+import PopupManager from "@/components/popups/PopupManager";
 
 export const metadata = {
   title: "SantoWrldWide",
@@ -23,12 +24,14 @@ export default function AppLayout({
     <AuthProvider>
       <CartProvider>
         <WishlistProvider>
-          <Navbar />
-          <main style={{ minHeight: "100vh" }}>{children}</main>
-          <Footer />
-          <LoginPanel />
-          <SignupPanel />
-          <ResetPasswordPanel />
+          <PopupManager>
+            <Navbar />
+            <main style={{ minHeight: "100vh" }}>{children}</main>
+            <Footer />
+            <LoginPanel />
+            <SignupPanel />
+            <ResetPasswordPanel />
+          </PopupManager>
         </WishlistProvider>
       </CartProvider>
     </AuthProvider>
