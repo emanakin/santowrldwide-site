@@ -158,11 +158,12 @@ export default function Navbar() {
           <Link href="/">
             <div className={styles.logo}>
               <Image
-                src="/images/santo-logo.png"
+                src="/images/white-cross-logo.png"
                 alt="SANTOWRLDWIDE"
-                width={122}
-                height={60}
+                width={80}
+                height={80}
                 priority
+                style={{ filter: "invert(1)" }} // Inverts colors to make white logo black
               />
             </div>
           </Link>
