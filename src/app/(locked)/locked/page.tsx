@@ -135,13 +135,13 @@ export default function LockedPage() {
         <video
           ref={videoRef}
           className={styles.backgroundVideo}
+          src="https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4"
           loop
           muted={isMuted}
           playsInline
           autoPlay
           controls={false}
         >
-          <source src="/videos/background.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 

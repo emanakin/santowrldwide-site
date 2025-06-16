@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "@/styles/Home.module.css";
-import VideoPlayer from "@/components/VideoPlayer";
 
 // Gallery Component
 const CollectionGallery = ({
@@ -39,7 +38,7 @@ const CollectionGallery = ({
             priority={currentMedia === mainMedia}
           />
         ) : (
-          <VideoPlayer
+          <video
             src={currentMedia.src}
             width={800}
             height={600}
@@ -47,7 +46,9 @@ const CollectionGallery = ({
             loop
             muted
             className={styles.mainVideo}
-          />
+          >
+            Your browser does not support the video tag.
+          </video>
         )}
       </div>
       <div className={styles.mediaOptions}>
@@ -68,14 +69,16 @@ const CollectionGallery = ({
                 />
               ) : (
                 <>
-                  <VideoPlayer
+                  <video
                     src={media.src}
                     width={60}
                     height={60}
                     muted
                     loop
                     className={styles.mediaVideo}
-                  />
+                  >
+                    Your browser does not support the video tag.
+                  </video>
                   <div className={styles.playIcon}>▶</div>
                 </>
               )}
@@ -115,7 +118,7 @@ export default function Home() {
     return () => {
       document.body.removeAttribute("data-page");
     };
-  }, []);
+  }, [isMuted]);
 
   const toggleMute = () => {
     if (audioRef.current) {
@@ -155,15 +158,17 @@ export default function Home() {
 
       {/* Hero Video Section */}
       <section className={styles.heroSection}>
-        <VideoPlayer
+        <video
           ref={videoRef}
           className={styles.heroVideo}
-          src="/videos/santo-live.mp4"
+          src="https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/santo-live.mp4"
           autoPlay
           loop
           muted
           playsInline
-        />
+        >
+          Your browser does not support the video tag.
+        </video>
 
         {/* Retro Aesthetic Overlays */}
         <div className={styles.retroOverlay}></div>
@@ -309,7 +314,7 @@ export default function Home() {
                 type: "image",
               },
               {
-                src: "/videos/background.mp4",
+                src: "https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4",
                 alt: "Video Background",
                 type: "video",
               },
