@@ -1,56 +1,100 @@
 "use client";
 import React, { useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
+import WishlistButton from "./WishlistButton";
 import styles from "@/styles/products/AddToCartButton.module.css";
 import { Product, CartItem } from "@/types/product-types";
 
 type AddToCartButtonProps = {
   product: Product;
+  selectedVariantId?: string | null;
+  selectedSize?: string;
+  selectedColor?: string;
+  quantity?: number;
 };
 
-export default function AddToCartButton({ product }: AddToCartButtonProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedVariant] = useState(product.variants[0]?.id);
-  const [selectedSize] = useState("Medium");
-  const router = useRouter();
-  const { addItem } = useCart();
+export default function AddToCartButton({
+  product,
+  selectedVariantId,
+  selectedSize,
+  selectedColor,
+  quantity = 1,
+}: AddToCartButtonProps) {
+  const { addItem, openCart } = useCart();
+  const [isAdding, setIsAdding] = useState(false);
+  // const router = useRouter();
 
-  const handleAddToCart = () => {
-    if (!selectedVariant) return;
+  const handleAddToCart = async () => {
+    if (!selectedVariantId) {
+      console.error("No variant selected");
+      return;
+    }
 
-    setIsLoading(true);
+    setIsAdding(true);
+
     try {
-      addItem({
-        id: Math.random().toString(36).substring(2, 9), // Generate a simple unique ID
-        variantId: selectedVariant,
-        quantity: 1,
-        title: product.title,
-        price: product.price,
-        imageUrl: product.imageUrl,
-        size: selectedSize,
-      } as CartItem);
+      // Find the selected variant to get its price
+      const variant = product.variants.find((v) => v.id === selectedVariantId);
 
-      // Navigate to cart page
-      router.push("/cart");
+      if (!variant) {
+        console.error("Selected variant not found");
+        return;
+      }
+
+      // Check if variant is available
+      if (!variant.availableForSale) {
+        console.error("Selected variant is not available for sale");
+        return;
+      }
+
+      // Create cart item
+      const cartItem: CartItem = {
+        id: `${selectedVariantId}-${Date.now()}`, // Temporary ID, will be replaced by Shopify
+        variantId: selectedVariantId,
+        quantity,
+        title: product.title,
+        price: variant.price,
+        imageUrl: product.images?.[0]?.url,
+        size: selectedSize,
+        color: selectedColor,
+      };
+
+      // Add to cart
+      await addItem(cartItem);
+
+      // Open cart drawer
+      openCart();
     } catch (error) {
-      console.error("Error adding to cart:", error);
+      console.error("Error adding item to cart:", error);
     } finally {
-      setIsLoading(false);
+      setIsAdding(false);
     }
   };
+
+  // Check if the selected variant is available
+  const selectedVariant = product.variants.find(
+    (v) => v.id === selectedVariantId
+  );
+  const isVariantAvailable = selectedVariant?.availableForSale ?? false;
 
   return (
     <div className={styles.container}>
       <button
         className={styles.addToCartButton}
         onClick={handleAddToCart}
-        disabled={isLoading}
+        disabled={isAdding || !selectedVariantId || !isVariantAvailable}
       >
-        {isLoading ? "ADDING..." : "ADD TO BAG"}
+        {isAdding
+          ? "Adding..."
+          : !selectedVariantId
+            ? "Select Options"
+            : !isVariantAvailable
+              ? "Out of Stock"
+              : "Add to Cart"}
       </button>
 
-      <button className={styles.wishlistButton}>♡</button>
+      <WishlistButton product={product} size="medium" />
     </div>
   );
 }

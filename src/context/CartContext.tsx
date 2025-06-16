@@ -1,17 +1,17 @@
 "use client";
 import CartDrawer from "@/components/cart/CartDrawer";
 import React, { createContext, useContext, useState, useEffect } from "react";
-
-type CartItem = {
-  id: string;
-  variantId: string;
-  quantity: number;
-  title: string;
-  price: string;
-  imageUrl?: string;
-  size?: string;
-  color?: string;
-};
+import { useAuth } from "@/context/AuthContext";
+import {
+  createCart,
+  addCartItems,
+  updateCartItems,
+  removeCartItems,
+  updateCartBuyerIdentity,
+  getCart,
+  shopifyCartToLocalCart,
+} from "@/lib/shopify/cart";
+import { CartItem } from "@/types/product-types";
 
 export interface CartContextType {
   cartItems: CartItem[];
@@ -28,6 +28,8 @@ export interface CartContextType {
   tax: number;
   shipping: number;
   total: number;
+  initiateCheckout: () => Promise<string>; // Returns checkout URL
+  cartId: string | null;
 }
 
 // Create the context
@@ -41,93 +43,243 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [cartId, setCartId] = useState<string | null>(null);
+  const [subtotal, setSubtotal] = useState(0);
+  const [tax, setTax] = useState(0);
+  const [shipping] = useState(10.0); // Default shipping cost
+  const [total, setTotal] = useState(0);
+  const [needsSync, setNeedsSync] = useState(false);
 
-  // Calculate cart totals
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + parseFloat(item.price) * item.quantity,
-    0
-  );
-  const tax = subtotal * 0.13; // Assuming 13% tax rate
-  const shipping = 10.0; // Default shipping cost
-  const total = subtotal + tax + shipping;
+  // Get auth context
+  const { user } = useAuth();
 
-  // Load cart from localStorage on initial render
+  // Initialize cart or load from storage
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        setCartItems(parsedCart);
-        setCartCount(
-          parsedCart.reduce(
-            (total: number, item: CartItem) => total + item.quantity,
-            0
-          )
-        );
-      } catch (error) {
-        console.error("Error parsing cart data from localStorage:", error);
+    const loadCart = async () => {
+      // Try to load cart ID from localStorage
+      const storedCartId = localStorage.getItem("cartId");
+
+      if (storedCartId) {
+        try {
+          // Try to fetch the cart from Shopify
+          const shopifyCart = await getCart(storedCartId);
+
+          if (shopifyCart) {
+            setCartId(storedCartId);
+            // Convert Shopify cart to our local format
+            const localCart = shopifyCartToLocalCart(shopifyCart);
+            setCartItems(localCart.items);
+            setSubtotal(localCart.subtotal);
+            setTax(localCart.tax);
+            setTotal(localCart.total + shipping);
+            setCartCount(
+              localCart.items.reduce((sum, item) => sum + item.quantity, 0)
+            );
+            return;
+          }
+        } catch (error) {
+          console.error("Error loading cart from Shopify:", error);
+        }
       }
-    }
-  }, []);
 
-  // Save cart to localStorage when it changes
+      // If we don't have a valid cart in Shopify, create a new one
+      try {
+        const newCart = await createCart();
+        setCartId(newCart.id);
+        localStorage.setItem("cartId", newCart.id);
+        setCartItems([]);
+        setSubtotal(0);
+        setTax(0);
+        setTotal(shipping);
+        setCartCount(0);
+      } catch (error) {
+        console.error("Error creating new cart:", error);
+      }
+    };
+
+    loadCart();
+  }, [shipping]);
+
+  // When user changes, we may need to associate the cart with the user
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-    setCartCount(cartItems.reduce((total, item) => total + item.quantity, 0));
-  }, [cartItems]);
+    const associateCartWithUser = async () => {
+      if (user && cartId) {
+        try {
+          setLoading(true);
+          // Here we would get the user's customer access token
+          // This is just a placeholder - implement your actual token retrieval
+          const customerAccessToken = await getCustomerAccessToken();
+
+          if (customerAccessToken) {
+            await updateCartBuyerIdentity(
+              cartId,
+              user.email || "",
+              customerAccessToken
+            );
+          } else {
+            // Even without a token, we can at least set the email
+            await updateCartBuyerIdentity(cartId, user.email || "");
+          }
+        } catch (error) {
+          console.error("Error associating cart with user:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    associateCartWithUser();
+  }, [user, cartId]);
+
+  // Sync local cart with Shopify cart when needed
+  useEffect(() => {
+    if (needsSync && cartId) {
+      const syncCartWithShopify = async () => {
+        try {
+          setLoading(true);
+          const shopifyCart = await getCart(cartId);
+          if (shopifyCart) {
+            const localCart = shopifyCartToLocalCart(shopifyCart);
+            setCartItems(localCart.items);
+            setSubtotal(localCart.subtotal);
+            setTax(localCart.tax);
+            setTotal(localCart.total + shipping);
+            setCartCount(
+              localCart.items.reduce((sum, item) => sum + item.quantity, 0)
+            );
+          }
+        } catch (error) {
+          console.error("Error syncing cart with Shopify:", error);
+        } finally {
+          setLoading(false);
+          setNeedsSync(false);
+        }
+      };
+
+      syncCartWithShopify();
+    }
+  }, [needsSync, cartId, shipping]);
+
+  // Placeholder function for getting customer access token
+  const getCustomerAccessToken = async (): Promise<string | null> => {
+    // In a real implementation, this would fetch the token from cookies or API
+    // For now, just return null (implement this based on your auth system)
+    return null;
+  };
 
   // Cart functions
   const openCart = () => setIsCartOpen(true);
   const closeCart = () => setIsCartOpen(false);
 
   // Add an item to the cart
-  const addItem = (newItem: CartItem) => {
+  const addItem = async (newItem: CartItem) => {
+    if (!cartId) return;
+
     setLoading(true);
-    setCartItems((prevItems) => {
-      const existingItemIndex = prevItems.findIndex(
-        (item) =>
-          item.variantId === newItem.variantId &&
-          item.size === newItem.size &&
-          item.color === newItem.color
+    try {
+      // First check if item already exists in cart
+      const existingItemIndex = cartItems.findIndex(
+        (item) => item.variantId === newItem.variantId
       );
 
       if (existingItemIndex >= 0) {
-        // Item exists, update quantity
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex].quantity += newItem.quantity;
-        return updatedItems;
+        // If item exists, update its quantity
+        const existingItem = cartItems[existingItemIndex];
+        const lineId = existingItem.id;
+        const newQuantity = existingItem.quantity + newItem.quantity;
+
+        await updateCartItems(cartId, [{ lineId, quantity: newQuantity }]);
       } else {
-        // Item doesn't exist, add new item
-        return [...prevItems, newItem];
+        // Item doesn't exist, add it to cart
+        await addCartItems(cartId, [newItem]);
       }
-    });
-    setLoading(false);
+
+      // Set flag to sync cart from Shopify
+      setNeedsSync(true);
+    } catch (error) {
+      console.error("Error adding item to cart:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Remove an item from the cart
-  const removeItem = (itemId: string) => {
+  const removeItem = async (itemId: string) => {
+    if (!cartId) return;
+
     setLoading(true);
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-    setLoading(false);
+    try {
+      await removeCartItems(cartId, [itemId]);
+      // Set flag to sync cart from Shopify
+      setNeedsSync(true);
+    } catch (error) {
+      console.error("Error removing item from cart:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Update item quantity
-  const updateItemQuantity = (itemId: string, quantity: number) => {
+  const updateItemQuantity = async (itemId: string, quantity: number) => {
+    if (!cartId) return;
+
     setLoading(true);
-    if (quantity <= 0) {
-      removeItem(itemId);
-    } else {
-      setCartItems((prevItems) =>
-        prevItems.map((item) =>
-          item.id === itemId ? { ...item, quantity } : item
-        )
-      );
+    try {
+      if (quantity <= 0) {
+        await removeCartItems(cartId, [itemId]);
+      } else {
+        await updateCartItems(cartId, [{ lineId: itemId, quantity }]);
+      }
+      // Set flag to sync cart from Shopify
+      setNeedsSync(true);
+    } catch (error) {
+      console.error("Error updating item quantity:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const clearCart = () => {
-    setCartItems([]);
+  // Clear cart
+  const clearCart = async () => {
+    if (!cartId) return;
+
+    setLoading(true);
+    try {
+      // Create a new empty cart
+      const newCart = await createCart();
+      setCartId(newCart.id);
+      localStorage.setItem("cartId", newCart.id);
+      setCartItems([]);
+      setSubtotal(0);
+      setTax(0);
+      setTotal(shipping);
+      setCartCount(0);
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initiate checkout process
+  const initiateCheckout = async (): Promise<string> => {
+    if (!cartId) {
+      throw new Error("No cart available for checkout");
+    }
+
+    try {
+      // Get the latest cart data which includes the checkout URL
+      const cart = await getCart(cartId);
+
+      if (!cart?.checkoutUrl) {
+        throw new Error("Checkout URL not available");
+      }
+
+      return cart.checkoutUrl;
+    } catch (error) {
+      console.error("Error initiating checkout:", error);
+      throw error;
+    }
   };
 
   // Provide the context value
@@ -146,6 +298,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     tax,
     shipping,
     total,
+    initiateCheckout,
+    cartId,
   };
 
   return (

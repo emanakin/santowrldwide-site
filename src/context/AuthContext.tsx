@@ -15,6 +15,7 @@ type AuthContextType = {
   setShowLoginPanel: (show: boolean) => void;
   setShowSignupPanel: (show: boolean) => void;
   setShowResetPanel: (show: boolean) => void;
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   setShowLoginPanel: () => {},
   setShowSignupPanel: () => {},
   setShowResetPanel: () => {},
+  refreshUser: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -40,10 +42,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [showSignupPanel, setShowSignupPanel] = useState(false);
   const [showResetPanel, setShowResetPanel] = useState(false);
 
+  // Function to refresh user data from server
+  const refreshUser = async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      try {
+        // Get fresh user data by calling the auth state change manually
+        // This will trigger the onAuthStateChanged listener
+        await currentUser.reload();
+      } catch (error) {
+        console.error("Error refreshing user:", error);
+      }
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      // Convert Firebase Auth User to our custom User type
-      setUser(mapFirebaseUserToUser(firebaseUser));
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Convert Firebase Auth User to our custom User type
+        const mappedUser = mapFirebaseUserToUser(firebaseUser);
+
+        // If we have additional user data stored in localStorage from login, merge it
+        try {
+          const storedUserData = localStorage.getItem("userData");
+          if (storedUserData) {
+            const userData = JSON.parse(storedUserData);
+            // Merge stored data with Firebase user data
+            const enrichedUser = {
+              ...mappedUser,
+              ...userData,
+              id: firebaseUser.uid, // Always use Firebase UID as ID
+              email: firebaseUser.email, // Always use Firebase email
+            };
+            setUser(enrichedUser);
+          } else {
+            setUser(mappedUser);
+          }
+        } catch (error) {
+          console.error("Error parsing stored user data:", error);
+          setUser(mappedUser);
+        }
+      } else {
+        setUser(null);
+        // Clear stored user data when user signs out
+        localStorage.removeItem("userData");
+      }
       setLoading(false);
     });
 
@@ -72,6 +115,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [showLoginPanel, showSignupPanel, showResetPanel]);
 
+  // Enhanced setUser that also updates localStorage
+  const setUserWithStorage = (newUser: User | null) => {
+    setUser(newUser);
+    if (newUser) {
+      // Store additional user data (excluding sensitive info)
+      const userDataToStore = {
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        shopifyCustomerId: newUser.shopifyCustomerId,
+        displayName: newUser.displayName,
+      };
+      localStorage.setItem("userData", JSON.stringify(userDataToStore));
+    } else {
+      localStorage.removeItem("userData");
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -80,10 +140,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         showLoginPanel,
         showSignupPanel,
         showResetPanel,
-        setUser,
+        setUser: setUserWithStorage,
         setShowLoginPanel,
         setShowSignupPanel,
         setShowResetPanel,
+        refreshUser,
       }}
     >
       {children}

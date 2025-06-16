@@ -18,17 +18,33 @@ export default function ProductGallery({
 }: ProductGalleryProps) {
   const galleryRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to active image when activeIndex changes
+  // Scroll to active image within gallery container only
   useEffect(() => {
     if (galleryRef.current) {
       const imageElements = galleryRef.current.querySelectorAll(
         `.${styles.imageWrapper}`
       );
       if (imageElements && imageElements[activeIndex]) {
-        imageElements[activeIndex].scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
+        // Scroll within the gallery container only, don't affect page scroll
+        const galleryContainer = galleryRef.current;
+        const targetImage = imageElements[activeIndex] as HTMLElement;
+
+        if (galleryContainer && targetImage) {
+          const containerRect = galleryContainer.getBoundingClientRect();
+          const imageRect = targetImage.getBoundingClientRect();
+
+          // Only scroll if the image is outside the visible area of the container
+          if (
+            imageRect.top < containerRect.top ||
+            imageRect.bottom > containerRect.bottom
+          ) {
+            targetImage.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+              inline: "nearest",
+            });
+          }
+        }
       }
     }
   }, [activeIndex]);
@@ -44,7 +60,7 @@ export default function ProductGallery({
               fill
               sizes="(max-width: 768px) 100vw, 700px"
               priority={index === 0}
-              style={{ objectFit: "cover" }}
+              style={{ objectFit: "contain" }}
               quality={90}
             />
           </div>

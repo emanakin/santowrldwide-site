@@ -1,0 +1,142 @@
+.cookieBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #000;
+  color: white;
+  z-index: 999;
+  transform: translateY(100%);
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.text {
+  flex: 1;
+}
+
+.message {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  color: #fff;
+}
+
+.learnMoreButton {
+  background: none;
+  border: none;
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0;
+}
+
+.learnMoreButton:hover {
+  opacity: 0.8;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.technicalButton,
+.acceptButton {
+  padding: 12px 20px;
+  border: 1px solid #fff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  font-family: "Inter", sans-serif;
+  white-space: nowrap;
+}
+
+.technicalButton {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #fff;
+}
+
+.technicalButton:hover {
+  background: #fff;
+  color: #000;
+}
+
+.acceptButton {
+  background: #fff;
+  color: #000;
+  border: 1px solid #fff;
+}
+
+.acceptButton:hover {
+  background: transparent;
+  color: #fff;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    padding: 20px 15px;
+  }
+
+  .text {
+    text-align: center;
+  }
+
+  .message {
+    font-size: 12px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .technicalButton,
+  .acceptButton {
+    padding: 14px 16px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 15px 10px;
+  }
+
+  .message {
+    font-size: 11px;
+  }
+
+  .learnMoreButton {
+    font-size: 11px;
+  }
+}

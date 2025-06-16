@@ -57,6 +57,14 @@ export default function AccountNav() {
       >
         Addresses
       </Link>
+      <Link
+        href="/account/wishlist"
+        className={`${styles.accountNavLink} ${
+          isActive("/account/wishlist") ? styles.activeLink : ""
+        }`}
+      >
+        Wishlist
+      </Link>
       <button onClick={handleLogout} className={styles.accountNavLink}>
         Log out
       </button>

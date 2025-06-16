@@ -13,6 +13,11 @@ export default function ContactPage() {
   });
 
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{
+    type: "success" | "error" | null;
+    message: string;
+  }>({ type: null, message: "" });
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -21,26 +26,75 @@ export default function ContactPage() {
   ) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    // Clear any previous status messages when user starts typing
+    if (submitStatus.type) {
+      setSubmitStatus({ type: null, message: "" });
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add your form submission logic here
-    console.log("Form submitted:", formData);
-    // Reset form after submission
-    setFormData({
-      request: "",
-      fullName: "",
-      orderNumber: "",
-      email: "",
-      subject: "",
-      message: "",
-    });
+    setIsSubmitting(true);
+    setSubmitStatus({ type: null, message: "" });
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus({
+          type: "success",
+          message:
+            data.message ||
+            "Thank you for your message. We'll get back to you soon!",
+        });
+
+        // Reset form after successful submission
+        setFormData({
+          request: "",
+          fullName: "",
+          orderNumber: "",
+          email: "",
+          subject: "",
+          message: "",
+        });
+      } else {
+        setSubmitStatus({
+          type: "error",
+          message: data.error || "Failed to send message. Please try again.",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      setSubmitStatus({
+        type: "error",
+        message: "An unexpected error occurred. Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className={styles.container}>
       <form onSubmit={handleSubmit} className={styles.form}>
+        {/* Status Messages */}
+        {submitStatus.type && (
+          <div
+            className={`${styles.statusMessage} ${styles[submitStatus.type]}`}
+          >
+            {submitStatus.message}
+          </div>
+        )}
+
         <div className={styles.formField}>
           <div
             className={styles.dropdown}
@@ -125,6 +179,7 @@ export default function ContactPage() {
               value={formData.fullName}
               onChange={handleInputChange}
               required
+              disabled={isSubmitting}
             />
           </div>
           <div className={styles.fieldHalf}>
@@ -135,6 +190,7 @@ export default function ContactPage() {
               name="orderNumber"
               value={formData.orderNumber}
               onChange={handleInputChange}
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -148,6 +204,7 @@ export default function ContactPage() {
             value={formData.email}
             onChange={handleInputChange}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -160,6 +217,7 @@ export default function ContactPage() {
             value={formData.subject}
             onChange={handleInputChange}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -172,11 +230,16 @@ export default function ContactPage() {
             value={formData.message}
             onChange={handleInputChange}
             required
+            disabled={isSubmitting}
           />
         </div>
 
-        <button type="submit" className={styles.submitButton}>
-          SEND
+        <button
+          type="submit"
+          className={styles.submitButton}
+          disabled={isSubmitting || !formData.request}
+        >
+          {isSubmitting ? "SENDING..." : "SEND"}
         </button>
       </form>
 

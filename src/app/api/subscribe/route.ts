@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json();
+    const { email, phone } = await request.json();
 
     if (!email || typeof email !== "string") {
       return NextResponse.json(
@@ -14,6 +14,19 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Validate phone number if provided
+    if (phone && typeof phone !== "string") {
+      return NextResponse.json(
+        {
+          error: "Phone number must be a valid string",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Clean up phone number - only pass if it has actual content
+    const cleanPhone = phone && phone.trim() ? phone.trim() : undefined;
 
     // Get client IP address
     const headersList = await headers();
@@ -50,7 +63,7 @@ export async function POST(request: Request) {
     }
 
     // Add subscriber with IP address for rate limiting
-    const result = await addSubscriber(email, "website", ipAddress);
+    const result = await addSubscriber(email, "website", ipAddress, cleanPhone);
 
     if (!result.success) {
       // Special handling for rate limited responses

@@ -14,6 +14,7 @@ export default function CartDrawer() {
     removeItem,
     updateItemQuantity,
     loading,
+    subtotal,
   } = useCart();
 
   if (!isCartOpen) return null;
@@ -51,13 +52,14 @@ export default function CartDrawer() {
                         alt={item.title}
                         width={80}
                         height={80}
-                        objectFit="cover"
+                        object-fit="cover"
                       />
                     </div>
                   )}
                   <div className={styles.itemInfo}>
                     <h3>{item.title}</h3>
-                    <p>${item.price}</p>
+                    <p>${parseFloat(item.price).toFixed(2)}</p>
+                    {item.size && <p>Size: {item.size}</p>}
                     <div className={styles.quantityControl}>
                       <button
                         disabled={loading}
@@ -93,16 +95,7 @@ export default function CartDrawer() {
             </div>
             <div className={styles.subtotal}>
               <span>Subtotal</span>
-              <span>
-                $
-                {cartItems
-                  .reduce(
-                    (total, item) =>
-                      total + parseFloat(item.price) * item.quantity,
-                    0
-                  )
-                  .toFixed(2)}
-              </span>
+              <span>${subtotal.toFixed(2)}</span>
             </div>
             <div className={styles.actions}>
               <Link
@@ -111,6 +104,13 @@ export default function CartDrawer() {
                 onClick={closeCart}
               >
                 CHECKOUT
+              </Link>
+              <Link
+                href="/cart"
+                className={styles.viewCartButton}
+                onClick={closeCart}
+              >
+                VIEW CART
               </Link>
               <button className={styles.continueButton} onClick={closeCart}>
                 CONTINUE SHOPPING

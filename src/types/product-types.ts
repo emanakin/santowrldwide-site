@@ -37,6 +37,29 @@ export interface Product {
   images: ProductImage[];
   options?: ProductOption[];
   variants: ProductVariant[];
+  featuredImage?: ProductImage;
+}
+
+// Add a specific type for product list items (what getProducts returns)
+export interface ProductListItem {
+  id: string;
+  title: string;
+  handle: string;
+  description: string;
+  price: string;
+  currencyCode: string;
+  featuredImage: {
+    url: string;
+    altText: string;
+  };
+  images: {
+    edges: {
+      node: {
+        url: string;
+        altText: string;
+      };
+    }[];
+  };
 }
 
 // Cart-related types
@@ -48,6 +71,7 @@ export interface CartItem {
   price: string;
   imageUrl?: string;
   size?: string;
+  color?: string;
 }
 
 // Define types for product data

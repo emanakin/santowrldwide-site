@@ -1,42 +1,85 @@
 .card {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  transition: opacity 0.2s ease;
+  position: relative;
+  background: #fff;
+  border: none;
+  transition: none; /* Remove hover transition */
 }
 
 .card:hover {
-  opacity: 0.85;
+  transform: none; /* Remove hover transform */
+  box-shadow: none; /* Remove hover shadow */
+}
+
+.cardLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
 .imageContainer {
   position: relative;
   width: 100%;
   padding-bottom: 125%; /* 4:5 aspect ratio */
-  background-color: #f7f7f7;
   margin-bottom: 12px;
   overflow: hidden;
+  background-color: #fff; /* White background to blend with photos */
+  cursor: pointer;
 }
 
 .info {
-  padding: 5px 0;
+  padding: 5px 0 12px;
+}
+
+.productDetails {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
 }
 
 .title {
   font-size: 14px;
   font-weight: 400;
-  margin: 0 0 5px;
+  margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-right: 10px; /* Space between title and price */
 }
 
 .price {
   font-size: 14px;
   margin: 0;
   font-weight: 500;
+  flex-shrink: 0; /* Prevent price from shrinking */
+  text-align: right;
+}
+
+.cardActions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.card:hover .cardActions {
+  opacity: 1;
+}
+
+.wishlistBtn {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.wishlistBtn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 768px) {
@@ -49,8 +92,18 @@
     font-size: 13px;
   }
 
+  .title {
+    padding-right: 8px; /* Reduced spacing on mobile */
+  }
+
   .info {
-    padding: 3px 0;
+    padding: 3px 0 10px;
+  }
+
+  .cardActions {
+    opacity: 1; /* Always visible on mobile */
+    top: 8px;
+    right: 8px;
   }
 }
 
@@ -61,7 +114,6 @@
   justify-content: center;
   align-items: center;
   background-color: #f0f0f0;
-  color: #666;
   font-size: 2rem;
   font-weight: 500;
 }

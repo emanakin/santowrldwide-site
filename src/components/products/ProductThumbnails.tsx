@@ -20,14 +20,7 @@ export default function ProductThumbnails({
   // Function to handle thumbnail click
   const handleThumbnailClick = (index: number) => {
     setActiveIndex(index);
-
-    // Find the gallery element and scroll to the selected image
-    const gallery = document.querySelector(`.gallery`);
-    const imageElements = gallery?.querySelectorAll(`.imageWrapper`);
-
-    if (imageElements && imageElements[index]) {
-      imageElements[index].scrollIntoView({ block: "start" });
-    }
+    // Removed auto-scroll behavior to prevent page shifting
   };
 
   return (

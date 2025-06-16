@@ -69,6 +69,14 @@
   font-size: 1rem;
 }
 
+.phoneInput {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #333;
+  background-color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+}
+
 .subscribeButton {
   width: 100%;
   padding: 0.8rem;

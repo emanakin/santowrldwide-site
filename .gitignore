@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Video files - use cloud storage instead
+public/videos/*.mp4
+public/videos/*.mov
+public/videos/*.avi
+public/videos/*.webm
+
+# But keep the videos directory structure
+!public/videos/.gitkeep

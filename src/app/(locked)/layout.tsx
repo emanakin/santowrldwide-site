@@ -17,7 +17,7 @@ export default function LockedLayout({
         <link
           rel="preload"
           as="video"
-          href="/videos/background.mp4"
+          href="https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4"
           type="video/mp4"
         />
 

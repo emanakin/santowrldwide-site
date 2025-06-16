@@ -1,34 +1,66 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import styles from "@/styles/cart/CartPage.module.css";
+import { useRouter } from "next/navigation";
+import { getProducts } from "@/lib/shopify/products";
+import { ProductListItem } from "@/types/product-types";
 
 export default function CartPage() {
   const { cartItems, removeItem, subtotal, tax, shipping, total } = useCart();
+  const { user, setShowLoginPanel, loading } = useAuth();
   const [email, setEmail] = useState("");
+  const [recommendations, setRecommendations] = useState<ProductListItem[]>([]);
+  const [activeTab, setActiveTab] = useState("YOU MAY ALSO LIKE");
+  const router = useRouter();
 
-  // Recommendations - would be replaced with actual data in a real implementation
-  const recommendations = [
-    { id: 1, title: "Product 1", imageUrl: "/path/to/image1.jpg" },
-    { id: 2, title: "Product 2", imageUrl: "/path/to/image2.jpg" },
-    { id: 3, title: "Product 3", imageUrl: "/path/to/image3.jpg" },
-    { id: 4, title: "Product 4", imageUrl: "/path/to/image4.jpg" },
-  ];
+  // Update email when user changes
+  useEffect(() => {
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [user]);
 
-  //   const recentlyViewed = [
-  //     { id: 5, title: "Product 5", imageUrl: "/path/to/image5.jpg" },
-  //     { id: 6, title: "Product 6", imageUrl: "/path/to/image6.jpg" },
-  //     { id: 7, title: "Product 7", imageUrl: "/path/to/image7.jpg" },
-  //     { id: 8, title: "Product 8", imageUrl: "/path/to/image8.jpg" },
-  //   ];
+  // Fetch actual product recommendations
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        const products = await getProducts(8);
+        setRecommendations(products);
+      } catch (error) {
+        console.error("Error fetching recommendations:", error);
+        setRecommendations([]);
+      }
+    };
+
+    fetchRecommendations();
+  }, []);
 
   const handleProceedToCheckout = (e: React.FormEvent) => {
     e.preventDefault();
-    // Implement checkout logic
-    console.log("Proceeding to checkout with email:", email);
+
+    if (cartItems.length === 0) {
+      return;
+    }
+
+    if (!user && false) {
+      setShowLoginPanel(true);
+    } else {
+      router.push("/checkout");
+    }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -56,17 +88,22 @@ export default function CartPage() {
                         <Image
                           src={item.imageUrl}
                           alt={item.title}
-                          width={100}
-                          height={120}
-                          objectFit="cover"
+                          width={80}
+                          height={100}
+                          style={{
+                            objectFit: "cover",
+                            borderRadius: "4px",
+                          }}
                         />
                       )}
                     </div>
                     <div className={styles.itemInfo}>
                       <h3 className={styles.itemTitle}>{item.title}</h3>
-                      {item.color && item.size && (
+                      {(item.size || item.color) && (
                         <p className={styles.itemVariant}>
-                          SIZE: {item.size} {item.color && `- ${item.color}`}
+                          {item.size && `SIZE: ${item.size}`}
+                          {item.size && item.color && " - "}
+                          {item.color && item.color}
                         </p>
                       )}
                       <button
@@ -107,48 +144,106 @@ export default function CartPage() {
 
         <div className={styles.checkoutSection}>
           <h2 className={styles.checkoutHeading}>CHECKOUT</h2>
-          <p className={styles.checkoutText}>
-            Enter your email to login or continue to checkout
-          </p>
-          <form onSubmit={handleProceedToCheckout}>
-            <div className={styles.emailField}>
-              <label htmlFor="email">Email address</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          {user ? (
+            <div>
+              <p className={styles.checkoutText}>
+                Logged in as {user.displayName || user.email}
+              </p>
+              <button
+                onClick={handleProceedToCheckout}
+                className={styles.checkoutButton}
+                disabled={cartItems.length === 0}
+              >
+                PROCEED TO CHECKOUT
+              </button>
             </div>
-            <button type="submit" className={styles.checkoutButton}>
-              PROCEED TO CHECKOUT
-            </button>
-          </form>
+          ) : (
+            <>
+              <p className={styles.checkoutText}>
+                Enter your email to login or continue to checkout
+              </p>
+              <form onSubmit={handleProceedToCheckout}>
+                <div className={styles.emailField}>
+                  <label htmlFor="email">Email address</label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className={styles.checkoutButton}
+                  disabled={cartItems.length === 0}
+                >
+                  PROCEED TO CHECKOUT
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
 
+      {/* Recommendations Section */}
       {cartItems.length > 0 && (
         <div className={styles.recommendations}>
           <div className={styles.recommendationTabs}>
-            <div className={styles.tabActive}>YOU MAY ALSO LIKE</div>
-            <div className={styles.tab}>RECENTLY VIEWED</div>
+            <div
+              className={
+                activeTab === "YOU MAY ALSO LIKE"
+                  ? styles.tabActive
+                  : styles.tab
+              }
+              onClick={() => setActiveTab("YOU MAY ALSO LIKE")}
+            >
+              YOU MAY ALSO LIKE
+            </div>
+            <div
+              className={
+                activeTab === "RECENTLY VIEWED" ? styles.tabActive : styles.tab
+              }
+              onClick={() => setActiveTab("RECENTLY VIEWED")}
+            >
+              RECENTLY VIEWED
+            </div>
           </div>
 
           <div className={styles.recommendationProducts}>
-            {recommendations.map((product) => (
-              <div key={product.id} className={styles.recommendedProduct}>
-                <div className={styles.recommendedProductImage}>
-                  <Image
-                    src={product.imageUrl}
-                    alt={product.title}
-                    width={150}
-                    height={180}
-                    objectFit="cover"
-                  />
-                </div>
+            {recommendations.length > 0 ? (
+              recommendations.slice(0, 4).map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/products/${product.handle}`}
+                  className={styles.recommendedProduct}
+                >
+                  <div className={styles.recommendedProductImage}>
+                    <Image
+                      src={
+                        product.featuredImage.url || "/images/placeholder.png"
+                      }
+                      alt={product.featuredImage.altText || product.title}
+                      width={150}
+                      height={180}
+                      style={{ objectFit: "cover" }}
+                    />
+                  </div>
+                  <div className={styles.recommendedProductInfo}>
+                    <h4 className={styles.recommendedProductTitle}>
+                      {product.title}
+                    </h4>
+                    <p className={styles.recommendedProductPrice}>
+                      ${product.price}
+                    </p>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className={styles.noRecommendations}>
+                <p>No recommendations available</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}

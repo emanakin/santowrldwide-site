@@ -10,6 +10,7 @@
 .accountContent {
   display: flex;
   position: relative;
+  min-height: 400px;
 }
 
 .accountSidebar {
@@ -17,14 +18,15 @@
   position: absolute;
   left: 0;
   top: 0;
+  z-index: 10;
 }
 
 .accountMain {
   width: 100%;
-  padding-left: 0;
+  padding-left: 280px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .accountTitle {
@@ -38,6 +40,8 @@
   display: flex;
   flex-direction: column;
   padding-top: 2rem;
+  background: #fff;
+  padding: 2rem 1rem 1rem 0;
 }
 
 .accountNavHeader {
@@ -71,13 +75,14 @@
   font-size: 1.25rem;
   font-weight: 500;
   margin-bottom: 1.5rem;
-  text-align: center;
+  text-align: left;
 }
 
 /* Empty state */
 .emptyState {
   text-align: center;
   padding: 3rem 0;
+  width: 100%;
 }
 
 .emptyState p {
@@ -113,7 +118,7 @@
   font-size: 1.1rem;
   font-weight: 500;
   margin-bottom: 1.5rem;
-  text-align: center;
+  text-align: left;
 }
 
 .addressForm,
@@ -292,6 +297,10 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
+  .accountContainer {
+    padding: 1rem;
+  }
+
   .accountContent {
     flex-direction: column;
   }
@@ -299,10 +308,25 @@
   .accountSidebar {
     position: static;
     width: 100%;
+    margin-bottom: 2rem;
   }
 
   .accountMain {
-    margin-top: 2rem;
+    padding-left: 0;
+    align-items: center;
+  }
+
+  .accountNav {
+    padding: 1rem 0;
+    flex-direction: row;
+    gap: 1rem;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .pageTitle,
+  .formTitle {
+    text-align: center;
   }
 
   .formRow {
