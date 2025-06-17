@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import styles from "@/styles/auth/Auth.module.css";
 import { useAuth } from "@/context/AuthContext";
 import { handleFirebaseAuthError } from "@/utils/error-utils";
@@ -18,7 +17,6 @@ export default function LoginPanel() {
   const [error, setError] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const {
     showLoginPanel,
     setShowLoginPanel,
@@ -39,7 +37,7 @@ export default function LoginPanel() {
       setLoading(true);
       await loginWithEmailService(email, password);
       setShowLoginPanel(false);
-      router.push("/account/orders");
+      // Removed automatic redirect - user stays on current page
     } catch (err: unknown) {
       const apiError = handleFirebaseAuthError(err);
       setError(apiError.error);
@@ -53,7 +51,7 @@ export default function LoginPanel() {
       setLoading(true);
       await socialLoginService(provider);
       setShowLoginPanel(false);
-      router.push("/account/orders");
+      // Removed automatic redirect - user stays on current page
     } catch (err: unknown) {
       const apiError = handleFirebaseAuthError(err);
       // Special case for popup closed

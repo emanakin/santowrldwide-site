@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import styles from "@/styles/auth/Auth.module.css";
 import { useAuth } from "@/context/AuthContext";
 import { SocialProvider } from "@/types/firebase-types";
@@ -21,7 +20,6 @@ export default function SignupPanel() {
   const [error, setError] = useState<string>("");
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const { showSignupPanel, setShowSignupPanel, setShowLoginPanel } = useAuth();
 
   const handleClose = () => {
@@ -42,7 +40,7 @@ export default function SignupPanel() {
       setLoading(true);
       await signupWithEmailService(email, password, firstName, lastName);
       setShowSignupPanel(false);
-      router.push("/account/orders");
+      // Removed automatic redirect - user stays on current page
     } catch (err: unknown) {
       const apiError = handleFirebaseAuthError(err);
       setError(apiError.error);
@@ -56,7 +54,7 @@ export default function SignupPanel() {
       setLoading(true);
       await socialSignupService(provider);
       setShowSignupPanel(false);
-      router.push("/account/orders");
+      // Removed automatic redirect - user stays on current page
     } catch (err: unknown) {
       const apiError = handleFirebaseAuthError(err);
       // Special case for popup closed
