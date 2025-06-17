@@ -1,6 +1,14 @@
 import { storefrontClient } from "./client";
 import { shopifyRequest } from "./utils";
-import { CartItem } from "@/context/CartContext";
+import { CartItem } from "@/types/product-types";
+import {
+  CheckoutCreateResponse,
+  CheckoutLineItemsReplaceResponse,
+  CheckoutCustomerAssociateResponse,
+  CheckoutLineItemInput,
+  CheckoutCreateInput,
+  ShopifyCheckout,
+} from "@/types/shopify-types";
 
 // GraphQL mutations for checkout
 const CREATE_CHECKOUT = `
@@ -52,18 +60,18 @@ const ASSOCIATE_CUSTOMER_WITH_CHECKOUT = `
 
 // Create a new checkout
 export async function createCheckout(cartItems: CartItem[]): Promise<string> {
-  const lineItems = cartItems.map((item) => ({
+  const lineItems: CheckoutLineItemInput[] = cartItems.map((item) => ({
     variantId: item.variantId,
     quantity: item.quantity,
   }));
 
-  const variables = {
+  const variables: { input: CheckoutCreateInput } = {
     input: {
       lineItems,
     },
   };
 
-  const response = await shopifyRequest(
+  const response = await shopifyRequest<CheckoutCreateResponse>(
     CREATE_CHECKOUT,
     storefrontClient,
     variables,
@@ -81,8 +89,8 @@ export async function createCheckout(cartItems: CartItem[]): Promise<string> {
 export async function updateCheckout(
   checkoutId: string,
   cartItems: CartItem[]
-) {
-  const lineItems = cartItems.map((item) => ({
+): Promise<ShopifyCheckout> {
+  const lineItems: CheckoutLineItemInput[] = cartItems.map((item) => ({
     variantId: item.variantId,
     quantity: item.quantity,
   }));
@@ -92,7 +100,7 @@ export async function updateCheckout(
     lineItems,
   };
 
-  const response = await shopifyRequest(
+  const response = await shopifyRequest<CheckoutLineItemsReplaceResponse>(
     UPDATE_CHECKOUT,
     storefrontClient,
     variables,
@@ -110,13 +118,13 @@ export async function updateCheckout(
 export async function associateCustomerWithCheckout(
   checkoutId: string,
   customerAccessToken: string
-) {
+): Promise<ShopifyCheckout> {
   const variables = {
     checkoutId,
     customerAccessToken,
   };
 
-  const response = await shopifyRequest(
+  const response = await shopifyRequest<CheckoutCustomerAssociateResponse>(
     ASSOCIATE_CUSTOMER_WITH_CHECKOUT,
     storefrontClient,
     variables,
