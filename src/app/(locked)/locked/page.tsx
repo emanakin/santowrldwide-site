@@ -141,6 +141,7 @@ export default function LockedPage() {
           playsInline
           autoPlay
           controls={false}
+          preload="metadata" // Optimize loading
         >
           Your browser does not support the video tag.
         </video>

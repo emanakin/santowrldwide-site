@@ -29,7 +29,8 @@
   --radius: 0.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Dark mode removed - keep original light theme only */
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
@@ -56,7 +57,7 @@
     --chart-4: #2a9d8f;
     --chart-5: #264653;
   }
-}
+} */
 
 * {
   box-sizing: border-box;
@@ -70,12 +71,21 @@ body {
   overflow-x: hidden;
 }
 
+/* Force override any system dark mode preferences */
+html {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Force light mode - override any dark mode preferences */
+  background-color: #ffffff !important;
+  color: #171717 !important;
 }
 
 /* Reset padding for homepage to allow full-screen hero */
@@ -88,11 +98,12 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Removed dark mode color-scheme */
+/* @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
   }
-}
+} */
 
 /* Smooth scrolling */
 html {

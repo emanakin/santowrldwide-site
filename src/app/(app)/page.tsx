@@ -92,7 +92,7 @@ const CollectionGallery = ({
 };
 
 export default function Home() {
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -109,24 +109,59 @@ export default function Home() {
     if (audioRef.current) {
       audioRef.current.volume = 0.25;
       audioRef.current.loop = true;
-      if (!isMuted) {
-        audioRef.current.play().catch(console.log);
-      }
+      // Start muted to comply with autoplay policies
+      audioRef.current.muted = true;
     }
 
-    // Cleanup function to remove data attribute
+    // Use the same successful video strategy as locked page
+    const attemptVideoPlay = async () => {
+      if (videoRef.current) {
+        try {
+          // Force hide controls
+          videoRef.current.controls = false;
+
+          // Try to play
+          await videoRef.current.play();
+          setIsPlaying(true);
+        } catch (error) {
+          console.error("Video autoplay failed:", error);
+
+          // Retry with a slight delay (helps on mobile)
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current
+                .play()
+                .catch((e) => console.error("Retry autoplay failed:", e));
+            }
+          }, 300);
+        }
+      }
+    };
+
+    // Try playing video immediately
+    attemptVideoPlay();
+
+    // Add event listeners to help with autoplay (same as locked page)
+    window.addEventListener("focus", attemptVideoPlay);
+    document.addEventListener("touchstart", attemptVideoPlay, { once: true });
+
+    // Cleanup function
     return () => {
       document.body.removeAttribute("data-page");
+      window.removeEventListener("focus", attemptVideoPlay);
     };
-  }, [isMuted]);
+  }, []);
 
   const toggleMute = () => {
     if (audioRef.current) {
       if (isMuted) {
+        // Unmute and play audio
+        audioRef.current.muted = false;
         audioRef.current.play().catch(console.log);
         setIsMuted(false);
       } else {
-        audioRef.current.pause();
+        // Mute audio (but keep it playing)
+        audioRef.current.muted = true;
         setIsMuted(true);
       }
     }
@@ -166,6 +201,7 @@ export default function Home() {
           loop
           muted
           playsInline
+          preload="metadata" // Optimize loading
         >
           Your browser does not support the video tag.
         </video>
