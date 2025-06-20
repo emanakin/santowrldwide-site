@@ -1,239 +1,426 @@
 .container {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 40px 20px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
   font-family: "Inter", sans-serif;
 }
 
-/* Top Section */
-.topSection {
+/* TV Section */
+.tvSection {
   display: flex;
-  margin-bottom: 40px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
-.titleCol {
-  flex: 0 0 45%;
-  padding-right: 20px;
-}
-
-.mainTitle {
-  font-size: 32px;
-  font-weight: 500;
-  line-height: 1.1;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.descriptionCol {
-  flex: 0 0 55%;
-}
-
-.description {
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Founders Section */
-.foundersSection {
-  margin-bottom: 60px;
+.tvContainer {
   position: relative;
+  width: 100%;
+  max-width: 600px;
+  aspect-ratio: 4/3;
 }
 
-.imagesRow {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  position: relative;
-}
-
-.imageContainer {
-  width: 39%;
-  height: 350px; /* Fixed height for all images */
-  overflow: hidden;
-  position: relative;
-}
-
-.imageContainerSmaller {
-  width: 20%;
-  height: 350px; /* Fixed height for all images */
-  overflow: hidden;
-  position: relative;
-}
-
-.founderImage {
+.tvImage {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-/* Corner element */
-.cornerElement {
-  position: absolute;
-  right: -20px;
-  bottom: -10px;
-  width: 125px;
-  height: 125px;
+  object-fit: contain;
+  position: relative;
   z-index: 2;
 }
 
-.foundersInfo {
-  display: flex;
-  margin-top: 5px;
-  align-items: flex-start;
-}
-
-.officeInfo {
-  flex: 0 0 45%;
-  padding-right: 20px;
-}
-
-.foundedInfo {
-  flex: 0 0 55%;
-}
-
-.infoLabel {
-  font-size: 12px;
-  font-weight: 400;
-  margin: 0 0 5px 0;
-  color: #666;
-}
-
-.infoText {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0;
-  padding-left: 20px; /* Indent the location text */
-  text-transform: uppercase;
-}
-
-.founderNames {
-  margin: 0;
-  padding-left: 20px; /* Indent the founder names */
-}
-
-.founderName {
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0 0 2px 0;
-  text-transform: uppercase;
-}
-
-/* Vision Section */
-.visionSection {
-  display: flex;
-  margin-bottom: 60px;
-}
-
-.visionImageCol {
-  flex: 0 0 30%;
-  padding-right: 40px;
-}
-
-.visionImage {
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-}
-
-.visionTextCol {
-  flex: 0 0 70%;
-  padding-top: 20px;
-}
-
-.visionTitle {
-  font-size: 24px;
-  font-weight: 500;
-  margin: 0 0 20px 0;
-}
-
-.visionText {
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0 0 15px 0;
-}
-
-/* Community Section */
-.communitySection {
-  position: relative;
-  padding-left: 40px;
-  margin-bottom: 60px;
-}
-
-.quoteSymbol {
+/* Screen Content */
+.screenContent {
   position: absolute;
-  top: -10px;
+  top: 12%;
+  left: 5%;
+  right: 28%;
+  bottom: 17%;
+  z-index: 1;
+  background: #0a0a0a;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.screenContent::before {
+  content: "";
+  position: absolute;
+  top: 0;
   left: 0;
-  font-size: 60px;
-  font-weight: 700;
-  color: #000;
-  line-height: 1;
-  font-family: serif;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(transparent 50%, rgba(0, 255, 0, 0.03) 50%);
+  background-size: 100% 4px;
+  animation: scanlines 0.1s linear infinite;
+  pointer-events: none;
+  z-index: 3;
 }
 
-.communityTitle {
-  font-size: 24px;
-  font-weight: 500;
-  margin: 0 0 20px 0;
+.screenContent::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  animation: flicker 3s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.communityText {
-  font-size: 14px;
-  line-height: 1.5;
-  margin: 0 0 15px 0;
+.typingText {
+  color: #ffffff;
+  font-family: "Courier New", monospace;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.screenVideo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+
+.screenVideo.videoActive {
+  opacity: 1;
+}
+
+.staticNoise {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    repeating-conic-gradient(#000 0deg, #000 90deg, #fff 90deg, #fff 180deg),
+    repeating-conic-gradient(#fff 0deg, #fff 90deg, #000 90deg, #000 180deg);
+  background-size:
+    8px 8px,
+    12px 12px;
+  background-position:
+    0 0,
+    4px 4px;
+  animation: pixelStatic 0.1s infinite;
+  z-index: 2;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.staticNoise::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 4px,
+      rgba(255, 255, 255, 0.8) 4px,
+      rgba(255, 255, 255, 0.8) 8px,
+      transparent 8px,
+      transparent 12px,
+      rgba(0, 0, 0, 0.8) 12px,
+      rgba(0, 0, 0, 0.8) 16px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 6px,
+      rgba(128, 128, 128, 0.6) 6px,
+      rgba(128, 128, 128, 0.6) 12px
+    );
+  animation: pixelNoise 0.08s infinite;
+  image-rendering: pixelated;
+}
+
+.staticNoise::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.3) 0px,
+    rgba(255, 255, 255, 0.3) 2px,
+    transparent 2px,
+    transparent 4px,
+    rgba(0, 0, 0, 0.4) 4px,
+    rgba(0, 0, 0, 0.4) 6px,
+    transparent 6px,
+    transparent 8px
+  );
+  animation: pixelFlicker 0.12s infinite;
+  image-rendering: pixelated;
+}
+
+.line {
+  opacity: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 2px solid #ffffff;
+  width: 0;
+  max-width: fit-content;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.line:nth-child(1) {
+  animation:
+    typeText1 1.8s steps(14, end) 0.5s forwards,
+    hideCursor 0.1s ease-in 2.2s forwards,
+    hideText 0.5s ease-in 3.5s forwards;
+}
+
+.line:nth-child(2) {
+  animation:
+    typeText2 2.2s steps(19, end) 3.5s forwards,
+    hideCursor 0.1s ease-in 5.6s forwards,
+    hideText 0.5s ease-in 6s forwards;
+}
+
+.line:nth-child(3) {
+  animation:
+    typeText3 1.8s steps(15, end) 6.5s forwards,
+    hideCursor 0.1s ease-in 8.2s forwards,
+    hideText 0.5s ease-in 9s forwards;
+}
+
+.line:nth-child(4) {
+  animation:
+    typeText4 2.5s steps(27, end) 9.5s forwards,
+    hideCursor 0.1s ease-in 11.9s forwards,
+    hideText 0.5s ease-in 12s forwards;
+}
+
+@keyframes typeText1 {
+  0% {
+    opacity: 1;
+    width: 0;
+  }
+  100% {
+    opacity: 1;
+    width: 100%;
+    max-width: 16ch;
+  }
+}
+
+@keyframes typeText2 {
+  0% {
+    opacity: 1;
+    width: 0;
+  }
+  100% {
+    opacity: 1;
+    width: 100%;
+    max-width: 21ch;
+  }
+}
+
+@keyframes typeText3 {
+  0% {
+    opacity: 1;
+    width: 0;
+  }
+  100% {
+    opacity: 1;
+    width: 100%;
+    max-width: 17ch;
+  }
+}
+
+@keyframes typeText4 {
+  0% {
+    opacity: 1;
+    width: 0;
+  }
+  100% {
+    opacity: 1;
+    width: 100%;
+    max-width: 29ch;
+  }
+}
+
+@keyframes hideCursor {
+  0% {
+    border-right-color: #ffffff;
+  }
+  100% {
+    border-right-color: transparent;
+  }
+}
+
+@keyframes hideText {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pixelStatic {
+  0% {
+    background-position:
+      0 0,
+      4px 4px;
+    filter: contrast(1.2) brightness(0.9);
+  }
+  25% {
+    background-position:
+      -8px 8px,
+      12px -4px;
+    filter: contrast(1.5) brightness(1.1);
+  }
+  50% {
+    background-position:
+      4px -8px,
+      -8px 12px;
+    filter: contrast(0.8) brightness(1.3);
+  }
+  75% {
+    background-position:
+      12px 4px,
+      -12px -8px;
+    filter: contrast(1.8) brightness(0.7);
+  }
+  100% {
+    background-position:
+      0 0,
+      4px 4px;
+    filter: contrast(1.2) brightness(0.9);
+  }
+}
+
+@keyframes pixelNoise {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  33% {
+    transform: translate(-2px, 1px) scale(1.02);
+    opacity: 0.9;
+  }
+  66% {
+    transform: translate(1px, -2px) scale(0.98);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+}
+
+@keyframes pixelFlicker {
+  0% {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+  20% {
+    opacity: 0.9;
+    transform: translateX(-1px);
+  }
+  40% {
+    opacity: 0.3;
+    transform: translateX(1px);
+  }
+  60% {
+    opacity: 0.8;
+    transform: translateX(0);
+  }
+  80% {
+    opacity: 0.1;
+    transform: translateX(-1px);
+  }
+  100% {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scanlines {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.98;
+  }
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .topSection,
-  .visionSection {
-    flex-direction: column;
+  .tvContainer {
+    max-width: 400px;
   }
 
-  .titleCol,
-  .descriptionCol,
-  .visionImageCol,
-  .visionTextCol {
-    flex: 0 0 100%;
-    padding-right: 0;
+  .typingText {
+    font-size: 0.8rem;
   }
 
-  .titleCol {
-    margin-bottom: 20px;
+  .screenContent {
+    top: 5%;
+    left: 0%;
+    right: 2%;
+    bottom: 18%;
+    width: 80%;
+  }
+}
+
+@media (max-width: 480px) {
+  .tvContainer {
+    max-width: 300px;
   }
 
-  .visionImageCol {
-    margin-bottom: 20px;
-    max-width: 100%;
+  .typingText {
+    font-size: 0.6rem;
+    line-height: 1.3;
   }
 
-  .imagesRow {
-    flex-direction: column;
-  }
-
-  .imageContainer {
-    width: 100%;
-    margin-bottom: 15px;
-    height: auto;
-  }
-
-  .foundersInfo {
-    flex-direction: column;
-  }
-
-  .officeInfo {
-    margin-bottom: 20px;
-    flex: 0 0 100%;
-    padding-right: 0;
-  }
-
-  .mainTitle {
-    font-size: 28px;
-  }
-
-  .infoText,
-  .founderNames {
-    padding-left: 10px;
+  .screenContent {
+    top: 5%;
+    left: 0%;
+    right: 2%;
+    bottom: 18%;
+    width: 80%;
   }
 }
