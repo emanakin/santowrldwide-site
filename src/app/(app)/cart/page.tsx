@@ -206,8 +206,8 @@ export default function CartPage() {
                         product.featuredImage.url || "/images/placeholder.png"
                       }
                       alt={product.featuredImage.altText || product.title}
-                      width={180}
-                      height={220}
+                      fill
+                      sizes="(max-width: 480px) 120px, (max-width: 768px) 140px, 180px"
                       style={{ objectFit: "contain" }}
                     />
                   </div>

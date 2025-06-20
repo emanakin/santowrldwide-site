@@ -327,6 +327,20 @@
   width: 100%;
   text-align: left;
   margin-top: 50px;
+  color: #333 !important; /* Force color override for Safari */
+  -webkit-appearance: none; /* Remove Safari default button styling */
+  appearance: none; /* Remove default button styling */
+  -webkit-tap-highlight-color: transparent; /* Remove Safari tap highlight */
+}
+
+.mobileNavToggle:hover {
+  color: #000 !important; /* Force hover color override for Safari */
+}
+
+.mobileNavToggle:focus {
+  color: #333 !important; /* Ensure focus state doesn't show blue */
+  outline: none;
+  border-color: #999;
 }
 
 .mobileNavToggle:after {
@@ -334,10 +348,12 @@
   position: absolute;
   right: 1rem;
   transition: transform 0.2s;
+  color: #333 !important; /* Force color override for Safari dropdown icon */
 }
 
 .mobileNavToggle.open:after {
   transform: rotate(180deg);
+  color: #333 !important; /* Maintain color when open */
 }
 
 .mobileNavContent {
@@ -362,6 +378,13 @@
   width: 100%;
   color: #333 !important; /* Force color override for Safari */
   -webkit-tap-highlight-color: transparent; /* Remove Safari tap highlight */
+  -webkit-appearance: none; /* Remove Safari default styling */
+  appearance: none; /* Remove default styling */
+  background: none; /* Ensure no background color */
+  border: none; /* Remove any border that might be applied */
+  font-family: inherit; /* Ensure font consistency */
+  font-size: inherit; /* Ensure font size consistency */
+  text-align: left; /* Ensure text alignment */
 }
 
 .mobileNavContent .accountNavLink:last-child {
@@ -375,10 +398,17 @@
 .mobileNavContent .accountNavLink:focus {
   color: #333 !important; /* Ensure focus state doesn't show blue */
   outline: none;
+  background: none !important; /* Remove any focus background */
 }
 
 .mobileNavContent .accountNavLink:hover {
   color: #000 !important; /* Force hover color override for Safari */
+  background: rgba(0, 0, 0, 0.05); /* Subtle hover background */
+}
+
+.mobileNavContent .accountNavLink:active {
+  color: #333 !important; /* Ensure active state doesn't show blue */
+  background: rgba(0, 0, 0, 0.1); /* Subtle active background */
 }
 
 /* Responsive breakpoints */

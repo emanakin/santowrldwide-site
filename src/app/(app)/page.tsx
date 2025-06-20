@@ -305,16 +305,6 @@ export default function Home() {
                 type: "image",
               },
             ]}
-            decorativeElement={
-              <div className={styles.redCross}>
-                <Image
-                  src="/images/red-cross.png"
-                  alt="Red Cross"
-                  width={250}
-                  height={250}
-                />
-              </div>
-            }
           />
         </div>
       </div>
@@ -323,7 +313,10 @@ export default function Home() {
         <div className={styles.textColumn}>
           <div className={styles.textContent}>
             <div className={styles.dateCode}>SW20250/1</div>
-            <h2 className={styles.collectionName}>santowrld</h2>
+            <h2 className={styles.collectionName}>{"i<3hating"}</h2>
+            <Link href="/products" className={styles.exploreButton}>
+              EXPLORE DROP
+            </Link>
           </div>
         </div>
         <div className={styles.imageColumn}>
@@ -368,7 +361,7 @@ export default function Home() {
         <div className={styles.textColumn}>
           <div className={styles.textContent}>
             <div className={styles.dateCode}>SW20250/1</div>
-            <h2 className={styles.collectionName}>frostbite</h2>
+            <h2 className={styles.collectionName}>mod tee</h2>
             <div className={styles.eventDetails}>
               <div className={styles.codeEffect}>
                 {`> decrypt_timestamp()`}
@@ -406,9 +399,9 @@ export default function Home() {
                 type: "image",
               },
               {
-                src: "https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4",
-                alt: "Video Background",
-                type: "video",
+                src: "/images/home/model-2-alt3.png",
+                alt: "Model Shot 3",
+                type: "image",
               },
             ]}
           />
@@ -419,7 +412,10 @@ export default function Home() {
         <div className={styles.textColumn}>
           <div className={styles.textContent}>
             <div className={styles.dateCode}>SW20250/1</div>
-            <h2 className={styles.collectionName}>santowrld</h2>
+            <h2 className={styles.collectionName}>wax denim</h2>
+            <Link href="/products" className={styles.exploreButton}>
+              EXPLORE DROP
+            </Link>
           </div>
         </div>
         <div className={styles.imageColumn}>

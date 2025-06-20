@@ -216,6 +216,7 @@
 }
 
 .recommendedProductImage {
+  position: relative;
   background: transparent;
   border-radius: 8px;
   overflow: hidden;
@@ -278,6 +279,7 @@
     -ms-overflow-style: none;
     gap: 15px;
     padding-bottom: 10px;
+    padding-right: 20px;
   }
 
   .recommendationProducts::-webkit-scrollbar {
@@ -287,6 +289,7 @@
   .recommendedProduct {
     min-width: 140px;
     max-width: 160px;
+    flex-shrink: 0;
   }
 
   .recommendedProductImage {
@@ -301,11 +304,13 @@
 @media (max-width: 480px) {
   .recommendationProducts {
     gap: 12px;
+    padding-right: 15px;
   }
 
   .recommendedProduct {
     min-width: 120px;
     max-width: 140px;
+    flex-shrink: 0;
   }
 
   .recommendedProductImage {
