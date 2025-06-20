@@ -1,17 +1,17 @@
 "use client";
 
-import React from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import styles from "@/styles/account/Account.module.css";
-import { useAuth } from "@/context/AuthContext";
 import { logoutService } from "@/services/client/auth";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AccountNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { setUser } = useAuth();
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -27,47 +27,114 @@ export default function AccountNav() {
     return pathname === path;
   };
 
+  const toggleMobileNav = () => {
+    setIsMobileNavOpen(!isMobileNavOpen);
+  };
+
+  const closeMobileNav = () => {
+    setIsMobileNavOpen(false);
+  };
+
   return (
-    <nav
-      className={styles.accountNav}
-      style={{ position: "relative", zIndex: 10 }}
-    >
-      <div className={styles.accountNavHeader}>Account</div>
-      <Link
-        href="/account/orders"
-        className={`${styles.accountNavLink} ${
-          isActive("/account/orders") ? styles.activeLink : ""
-        }`}
+    <>
+      {/* Mobile Navigation Toggle */}
+      <button
+        className={`${styles.mobileNavToggle} ${isMobileNavOpen ? styles.open : ""}`}
+        onClick={toggleMobileNav}
       >
-        Order History
-      </Link>
-      <Link
-        href="/account/details"
-        className={`${styles.accountNavLink} ${
-          isActive("/account/details") ? styles.activeLink : ""
-        }`}
-      >
-        Account Details
-      </Link>
-      <Link
-        href="/account/addresses"
-        className={`${styles.accountNavLink} ${
-          isActive("/account/addresses") ? styles.activeLink : ""
-        }`}
-      >
-        Addresses
-      </Link>
-      <Link
-        href="/account/wishlist"
-        className={`${styles.accountNavLink} ${
-          isActive("/account/wishlist") ? styles.activeLink : ""
-        }`}
-      >
-        Wishlist
-      </Link>
-      <button onClick={handleLogout} className={styles.accountNavLink}>
-        Log out
+        Account Navigation
       </button>
-    </nav>
+
+      {/* Mobile Navigation Content */}
+      <div
+        className={`${styles.mobileNavContent} ${isMobileNavOpen ? styles.open : ""}`}
+      >
+        <Link
+          href="/account/orders"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/orders") ? styles.activeLink : ""
+          }`}
+          onClick={closeMobileNav}
+        >
+          Order History
+        </Link>
+        <Link
+          href="/account/details"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/details") ? styles.activeLink : ""
+          }`}
+          onClick={closeMobileNav}
+        >
+          Account Details
+        </Link>
+        <Link
+          href="/account/addresses"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/addresses") ? styles.activeLink : ""
+          }`}
+          onClick={closeMobileNav}
+        >
+          Addresses
+        </Link>
+        <Link
+          href="/account/wishlist"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/wishlist") ? styles.activeLink : ""
+          }`}
+          onClick={closeMobileNav}
+        >
+          Wishlist
+        </Link>
+        <button
+          onClick={() => {
+            handleLogout();
+            closeMobileNav();
+          }}
+          className={styles.accountNavLink}
+        >
+          Log out
+        </button>
+      </div>
+
+      {/* Desktop Navigation */}
+      <nav className={styles.accountNav}>
+        <div className={styles.accountNavHeader}>Account</div>
+        <Link
+          href="/account/orders"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/orders") ? styles.activeLink : ""
+          }`}
+        >
+          Order History
+        </Link>
+        <Link
+          href="/account/details"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/details") ? styles.activeLink : ""
+          }`}
+        >
+          Account Details
+        </Link>
+        <Link
+          href="/account/addresses"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/addresses") ? styles.activeLink : ""
+          }`}
+        >
+          Addresses
+        </Link>
+        <Link
+          href="/account/wishlist"
+          className={`${styles.accountNavLink} ${
+            isActive("/account/wishlist") ? styles.activeLink : ""
+          }`}
+        >
+          Wishlist
+        </Link>
+        <button onClick={handleLogout} className={styles.accountNavLink}>
+          Log out
+        </button>
+      </nav>
+    </>
   );
 }

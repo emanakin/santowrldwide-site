@@ -45,7 +45,6 @@ export default function WishlistPage() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>My Wishlist</h1>
         {wishlistCount > 0 && (
           <div className={styles.headerActions}>
             <span className={styles.count}>{wishlistCount} items</span>

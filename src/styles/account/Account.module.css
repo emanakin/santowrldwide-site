@@ -3,30 +3,33 @@
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 2rem 1rem; /* Increased top padding */
   position: relative;
 }
 
 .accountContent {
   display: flex;
+  justify-content: center;
   position: relative;
   min-height: 400px;
 }
 
 .accountSidebar {
-  width: 250px;
+  width: fit-content;
   position: absolute;
-  left: 0;
+  left: 50%;
   top: 0;
-  z-index: 10;
+  transform: translateX(-600px); /* Move left by half container width */
+  z-index: 100;
 }
 
 .accountMain {
   width: 100%;
-  padding-left: 280px;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  margin: 0 auto;
 }
 
 .accountTitle {
@@ -39,9 +42,6 @@
 .accountNav {
   display: flex;
   flex-direction: column;
-  padding-top: 2rem;
-  background: #fff;
-  padding: 2rem 1rem 1rem 0;
 }
 
 .accountNavHeader {
@@ -75,7 +75,7 @@
   font-size: 1.25rem;
   font-weight: 500;
   margin-bottom: 1.5rem;
-  text-align: left;
+  text-align: center;
 }
 
 /* Empty state */
@@ -118,7 +118,7 @@
   font-size: 1.1rem;
   font-weight: 500;
   margin-bottom: 1.5rem;
-  text-align: left;
+  text-align: center;
 }
 
 .addressForm,
@@ -241,9 +241,15 @@
 /* Address cards */
 .addressList {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  padding-top: 20px;
+  width: 100%;
+  justify-items: center; /* Center the cards */
+  max-width: 750px; /* Limit container width to ensure max 2 columns */
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .addressCard {
@@ -255,6 +261,8 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 350px; /* Limit max width for better centering */
 }
 
 .addressCard:hover {
@@ -295,8 +303,86 @@
   letter-spacing: 0.5px;
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
+/* Mobile navigation toggle */
+.mobileNavToggle {
+  display: none;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  position: relative;
+  width: 100%;
+  text-align: left;
+  margin-top: 50px;
+}
+
+.mobileNavToggle:after {
+  content: "▼";
+  position: absolute;
+  right: 1rem;
+  transition: transform 0.2s;
+}
+
+.mobileNavToggle.open:after {
+  transform: rotate(180deg);
+}
+
+.mobileNavContent {
+  display: none;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mobileNavContent.open {
+  display: block;
+}
+
+.mobileNavContent .accountNavLink {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #eee;
+  display: block;
+  width: 100%;
+}
+
+.mobileNavContent .accountNavLink:last-child {
+  border-bottom: none;
+}
+
+/* Responsive breakpoints */
+
+/* Large screens - ensure sidebar doesn't go off screen */
+@media (max-width: 1200px) {
+  .accountSidebar {
+    transform: translateX(-500px);
+  }
+
+  .accountDetailsContainer {
+    max-width: 550px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .accountSidebar {
+    transform: translateX(-460px);
+  }
+
+  .accountDetailsContainer {
+    max-width: 500px;
+  }
+}
+
+/* Switch to mobile navigation */
+@media (max-width: 950px) {
+  .accountDetailsContainer {
+    max-width: 450px;
+  }
+
   .accountContainer {
     padding: 1rem;
   }
@@ -307,21 +393,26 @@
 
   .accountSidebar {
     position: static;
+    transform: none;
     width: 100%;
     margin-bottom: 2rem;
+    background: transparent;
   }
 
   .accountMain {
-    padding-left: 0;
-    align-items: center;
+    max-width: 100%;
   }
 
   .accountNav {
-    padding: 1rem 0;
-    flex-direction: row;
-    gap: 1rem;
-    overflow-x: auto;
-    white-space: nowrap;
+    display: none; /* Hide regular nav */
+  }
+
+  .mobileNavToggle {
+    display: block; /* Show mobile nav toggle */
+  }
+
+  .accountDetailsContainer {
+    max-width: 400px;
   }
 
   .pageTitle,
@@ -342,5 +433,16 @@
 @media (max-width: 640px) {
   .addressList {
     grid-template-columns: 1fr;
+  }
+
+  .accountDetailsContainer {
+    max-width: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+  .accountDetailsContainer {
+    max-width: 100%;
+    padding: 0 0.5rem;
   }
 }

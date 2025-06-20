@@ -7,10 +7,6 @@ interface AccountLayoutProps {
 }
 
 export default function AccountLayout({ children }: AccountLayoutProps) {
-  // Server component - no useAuth hook here
-  // In real implementation, you'd use server session validation
-  // For now we'll use client-side protection in each page
-
   return (
     <div className={styles.accountContainer}>
       <div className={styles.accountContent}>
