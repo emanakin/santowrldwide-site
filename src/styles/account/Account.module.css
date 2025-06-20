@@ -52,7 +52,7 @@
 
 .accountNavLink {
   padding: 0.25rem 0;
-  color: #333;
+  color: #333 !important; /* Force color override for Safari */
   text-decoration: none;
   border: none;
   font-size: 0.95rem;
@@ -60,10 +60,20 @@
   text-align: left;
   cursor: pointer;
   transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent; /* Remove Safari tap highlight */
 }
 
 .accountNavLink:hover {
-  color: #000;
+  color: #000 !important; /* Force color override for Safari */
+}
+
+.accountNavLink:visited {
+  color: #333 !important; /* Override visited link color in Safari */
+}
+
+.accountNavLink:focus {
+  color: #333 !important; /* Ensure focus state doesn't show blue */
+  outline: none;
 }
 
 .activeLink {
@@ -337,6 +347,8 @@
   border-radius: 4px;
   padding: 1rem;
   margin-bottom: 1rem;
+  z-index: 10; /* Ensure account nav stays below main navbar */
+  position: relative;
 }
 
 .mobileNavContent.open {
@@ -348,10 +360,25 @@
   border-bottom: 1px solid #eee;
   display: block;
   width: 100%;
+  color: #333 !important; /* Force color override for Safari */
+  -webkit-tap-highlight-color: transparent; /* Remove Safari tap highlight */
 }
 
 .mobileNavContent .accountNavLink:last-child {
   border-bottom: none;
+}
+
+.mobileNavContent .accountNavLink:visited {
+  color: #333 !important; /* Override visited link color in Safari */
+}
+
+.mobileNavContent .accountNavLink:focus {
+  color: #333 !important; /* Ensure focus state doesn't show blue */
+  outline: none;
+}
+
+.mobileNavContent .accountNavLink:hover {
+  color: #000 !important; /* Force hover color override for Safari */
 }
 
 /* Responsive breakpoints */
@@ -397,6 +424,7 @@
     width: 100%;
     margin-bottom: 2rem;
     background: transparent;
+    z-index: 10; /* Lower z-index on mobile to avoid navbar conflicts */
   }
 
   .accountMain {

@@ -284,14 +284,14 @@ export default function Home() {
         <div className={styles.imageColumn}>
           <CollectionGallery
             mainMedia={{
-              src: "/images/home/model-1.jpeg",
-              alt: "Frostbite Collection - Main",
+              src: "/images/home/model-1-alt2.png",
+              alt: "Model Shot 2",
               type: "image",
             }}
             alternativeMedia={[
               {
-                src: "/images/home/model-1.jpeg",
-                alt: "Frostbite Main",
+                src: "/images/home/model-1-alt2.png",
+                alt: "Model Shot 2",
                 type: "image",
               },
               {
@@ -300,8 +300,8 @@ export default function Home() {
                 type: "image",
               },
               {
-                src: "/images/home/model-1-alt2.png",
-                alt: "Model Shot 2",
+                src: "/images/home/model-1.jpeg",
+                alt: "Frostbite Main",
                 type: "image",
               },
             ]}
@@ -329,30 +329,25 @@ export default function Home() {
         <div className={styles.imageColumn}>
           <CollectionGallery
             mainMedia={{
-              src: "/images/home/model-2.jpeg",
-              alt: "Santowrld Collection - Main",
+              src: "/images/home/model-4.JPG",
+              alt: "2 models on bed",
               type: "image",
             }}
             alternativeMedia={[
               {
-                src: "/images/home/model-2.jpeg",
-                alt: "Model Shot 1",
+                src: "/images/home/model-4.JPG",
+                alt: "2 models on bed",
                 type: "image",
               },
               {
-                src: "/images/home/model-2-alt1.jpeg",
-                alt: "Model Shot 2",
+                src: "/images/home/model-4-alt1.JPG",
+                alt: "2 models on bed",
                 type: "image",
               },
               {
-                src: "/images/home/model-2-alt2.jpg",
-                alt: "Model Shot 3",
+                src: "/images/home/model-4-alt2.JPG",
+                alt: "2 models on bed",
                 type: "image",
-              },
-              {
-                src: "https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4",
-                alt: "Video Background",
-                type: "video",
               },
             ]}
             decorativeElement={
@@ -390,6 +385,46 @@ export default function Home() {
         <div className={styles.imageColumn}>
           <CollectionGallery
             mainMedia={{
+              src: "/images/home/model-2.jpeg",
+              alt: "Santowrld Collection - Main",
+              type: "image",
+            }}
+            alternativeMedia={[
+              {
+                src: "/images/home/model-2.jpeg",
+                alt: "Model Shot 1",
+                type: "image",
+              },
+              {
+                src: "/images/home/model-2-alt1.jpeg",
+                alt: "Model Shot 2",
+                type: "image",
+              },
+              {
+                src: "/images/home/model-2-alt2.jpg",
+                alt: "Model Shot 3",
+                type: "image",
+              },
+              {
+                src: "https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4",
+                alt: "Video Background",
+                type: "video",
+              },
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className={styles.section}>
+        <div className={styles.textColumn}>
+          <div className={styles.textContent}>
+            <div className={styles.dateCode}>SW20250/1</div>
+            <h2 className={styles.collectionName}>santowrld</h2>
+          </div>
+        </div>
+        <div className={styles.imageColumn}>
+          <CollectionGallery
+            mainMedia={{
               src: "/images/home/model-3.png",
               alt: "2 girls on bed",
               type: "image",
@@ -413,41 +448,6 @@ export default function Home() {
               {
                 src: "/images/home/model-3-alt3.png",
                 alt: "2 girls on bed",
-                type: "image",
-              },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className={styles.section}>
-        <div className={styles.textColumn}>
-          <div className={styles.textContent}>
-            <div className={styles.dateCode}>SW20250/1</div>
-            <h2 className={styles.collectionName}>santowrld</h2>
-          </div>
-        </div>
-        <div className={styles.imageColumn}>
-          <CollectionGallery
-            mainMedia={{
-              src: "/images/home/model-4.JPG",
-              alt: "2 models on bed",
-              type: "image",
-            }}
-            alternativeMedia={[
-              {
-                src: "/images/home/model-4.JPG",
-                alt: "2 models on bed",
-                type: "image",
-              },
-              {
-                src: "/images/home/model-4-alt1.JPG",
-                alt: "2 models on bed",
-                type: "image",
-              },
-              {
-                src: "/images/home/model-4-alt2.JPG",
-                alt: "2 models on bed",
                 type: "image",
               },
             ]}

@@ -581,7 +581,7 @@
 }
 
 .dateCode {
-  font-family: "Inter", sans-serif;
+  font-family: "Garet", "Inter", sans-serif;
   font-weight: 400;
   font-size: 16px;
   color: #585858;
@@ -591,7 +591,7 @@
 }
 
 .collectionName {
-  font-family: "Gruppo", "Inter", sans-serif;
+  font-family: "Microsoft Yi Baiti", "Gruppo", "Inter", sans-serif;
   font-weight: 300;
   font-size: clamp(32px, 4vw, 48px); /* Responsive font size */
   margin-bottom: clamp(20px, 3vh, 40px); /* Responsive margin */

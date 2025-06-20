@@ -145,6 +145,16 @@
   justify-content: center;
   align-items: center;
   overflow-y: auto;
+  /* Ensure no horizontal overflow */
+  overflow-x: hidden;
+  /* Prevent scrollbar from showing unless needed */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* Hide scrollbar for webkit browsers */
+.mobileMenu::-webkit-scrollbar {
+  display: none;
 }
 
 .mobileMenu.open {

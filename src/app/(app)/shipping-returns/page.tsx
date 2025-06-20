@@ -17,12 +17,9 @@ export default function ShippingReturnsPage() {
             products must be unworn, unwashed, and in their original packaging.
           </p>
           <p>
-            To initiate a return or exchange, please visit{" "}
-            <a
-              href="https://santowrldwide.happyreturns.com"
-              className={styles.link}
-            >
-              https://santowrldwide.happyreturns.com
+            To initiate a return or exchange, please email{" "}
+            <a href="mailto:support@santowrldwide.com" className={styles.link}>
+              support@santowrldwide.com
             </a>
             .
           </p>
@@ -39,18 +36,8 @@ export default function ShippingReturnsPage() {
           <ul className={styles.bulletList}>
             <li>
               For <strong>OOFOS Classic Flex Slide</strong>, please email us at{" "}
-              <a href="mailto:hello@santowrldwide.com" className={styles.link}>
-                hello@santowrldwide.com
-              </a>
-              .
-            </li>
-            <li>
-              For all other OOFOS products, initiate your return at{" "}
-              <a
-                href="https://santowrldwide.happyreturns.com"
-                className={styles.link}
-              >
-                https://santowrldwide.happyreturns.com
+              <a href="mailto:info@santowrldwide.com" className={styles.link}>
+                info@santowrldwide.com
               </a>
               .
             </li>
@@ -85,7 +72,7 @@ export default function ShippingReturnsPage() {
             </li>
             <li>
               <strong>Local Pickup</strong> (Toronto): Free pickup available at
-              788 Islington Ave, Toronto, Ontario.
+              73 Robert St, Toronto, Ontario.
             </li>
             <li>
               <strong>Drop-off Service</strong> (Toronto area): Deliveries

@@ -64,9 +64,9 @@ const Footer = () => {
             <Link href="/policy" className={styles.link}>
               Privacy & Cookie Policy
             </Link>
-            <Link href="/faq" className={styles.link}>
+            {/* <Link href="/faq" className={styles.link}>
               FAQ
-            </Link>
+            </Link> */}
           </div>
         </div>
 

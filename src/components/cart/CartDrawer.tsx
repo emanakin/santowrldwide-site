@@ -52,7 +52,7 @@ export default function CartDrawer() {
                         alt={item.title}
                         width={80}
                         height={80}
-                        object-fit="cover"
+                        style={{ objectFit: "contain" }}
                       />
                     </div>
                   )}

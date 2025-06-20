@@ -56,6 +56,34 @@ export default function Navbar() {
     setIsMenuOpen(false);
   };
 
+  // Handle body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth =
+        window.innerWidth - document.documentElement.clientWidth;
+
+      // Disable scrolling and hide scrollbar
+      document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+      // Also prevent scrolling on html element
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      // Re-enable scrolling
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+      document.documentElement.style.overflow = "";
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   // Toggle search bar visibility
   const toggleSearch = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -487,13 +515,6 @@ export default function Navbar() {
           {/* Tertiary footer links */}
           <div className={styles.mobileFooterLinks}>
             <Link
-              href="/contact"
-              className={styles.mobileFooterLink}
-              onClick={closeMenu}
-            >
-              Contact
-            </Link>
-            <Link
               href="/shipping-returns"
               className={styles.mobileFooterLink}
               onClick={closeMenu}
@@ -521,13 +542,13 @@ export default function Navbar() {
             >
               Privacy & Cookie Policy
             </Link>
-            <Link
+            {/* <Link
               href="/faq"
               className={styles.mobileFooterLink}
               onClick={closeMenu}
             >
               FAQ
-            </Link>
+            </Link> */}
           </div>
         </div>
       </div>

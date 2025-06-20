@@ -202,7 +202,51 @@
 }
 
 @media (max-width: 768px) {
+  .checkoutContainer {
+    padding: 40px 20px 40px 20px;
+  }
+
+  .checkoutTitle {
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 40px;
+    font-size: 28px;
+  }
+
   .checkoutContent {
     flex-direction: column;
+  }
+
+  .accountButtonsContainer {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .loginButton,
+  .guestCheckoutButton {
+    flex: none;
+    width: 100%;
+  }
+
+  .orDivider {
+    margin: 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkoutContainer {
+    padding: 15px 15px 30px 15px;
+  }
+
+  .checkoutTitle {
+    font-size: 24px;
+    margin-top: 15px;
+    margin-bottom: 30px;
+  }
+
+  .orderSummary,
+  .checkoutForm {
+    padding: 20px;
   }
 }

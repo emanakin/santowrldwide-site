@@ -131,7 +131,7 @@ export default function CheckoutPage() {
               <span>${subtotal.toFixed(2)}</span>
             </div>
             <div className={styles.orderTotalLine}>
-              <span>Tax</span>
+              <span>Estimated Tax</span>
               <span>${tax.toFixed(2)}</span>
             </div>
             <div className={styles.orderTotalLine}>

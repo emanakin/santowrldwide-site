@@ -26,6 +26,10 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-weight: 500;
+  color: #000;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .filterButton:hover {

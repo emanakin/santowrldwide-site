@@ -465,10 +465,17 @@ export function shopifyCartToLocalCart(shopifyCart: ShopifyCart | null): {
   });
 
   const subtotal = parseFloat(shopifyCart.estimatedCost.subtotalAmount.amount);
-  const tax = shopifyCart.estimatedCost.totalTaxAmount
+  const shopifyTax = shopifyCart.estimatedCost.totalTaxAmount
     ? parseFloat(shopifyCart.estimatedCost.totalTaxAmount.amount)
     : 0;
-  const total = parseFloat(shopifyCart.estimatedCost.totalAmount.amount);
+
+  // Use Shopify's tax if available, otherwise calculate 13% as default estimate for Canadian customers
+  // The actual tax will be calculated by Shopify when the user enters their address during checkout
+  const tax = shopifyTax > 0 ? shopifyTax : subtotal * 0.13;
+
+  const shopifyTotal = parseFloat(shopifyCart.estimatedCost.totalAmount.amount);
+  // If we're using estimated tax (shopifyTax was 0), recalculate total
+  const total = shopifyTax > 0 ? shopifyTotal : subtotal + tax;
 
   return { items, subtotal, tax, total };
 }

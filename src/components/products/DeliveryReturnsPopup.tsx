@@ -74,7 +74,6 @@ export default function DeliveryReturnsPopup({
               For any questions about delivery or returns, please contact us:
             </p>
             <p>Email: support@santowrldwide.com</p>
-            <p>Phone: 416-123-4567</p>
             <p>Hours: Monday-Friday, 9am-5pm EST</p>
           </div>
         </div>

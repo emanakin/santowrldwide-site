@@ -14,7 +14,6 @@ export default function CartPage() {
   const { user, setShowLoginPanel, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [recommendations, setRecommendations] = useState<ProductListItem[]>([]);
-  const [activeTab, setActiveTab] = useState("YOU MAY ALSO LIKE");
   const router = useRouter();
 
   // Update email when user changes
@@ -91,7 +90,7 @@ export default function CartPage() {
                           width={80}
                           height={100}
                           style={{
-                            objectFit: "cover",
+                            objectFit: "contain",
                             borderRadius: "4px",
                           }}
                         />
@@ -126,7 +125,7 @@ export default function CartPage() {
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className={styles.summaryLine}>
-                  <span>Tax / GST</span>
+                  <span>Estimated Tax</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
                 <div className={styles.summaryLine}>
@@ -190,24 +189,7 @@ export default function CartPage() {
       {cartItems.length > 0 && (
         <div className={styles.recommendations}>
           <div className={styles.recommendationTabs}>
-            <div
-              className={
-                activeTab === "YOU MAY ALSO LIKE"
-                  ? styles.tabActive
-                  : styles.tab
-              }
-              onClick={() => setActiveTab("YOU MAY ALSO LIKE")}
-            >
-              YOU MAY ALSO LIKE
-            </div>
-            <div
-              className={
-                activeTab === "RECENTLY VIEWED" ? styles.tabActive : styles.tab
-              }
-              onClick={() => setActiveTab("RECENTLY VIEWED")}
-            >
-              RECENTLY VIEWED
-            </div>
+            <div className={styles.tabActive}>YOU MAY ALSO LIKE</div>
           </div>
 
           <div className={styles.recommendationProducts}>
@@ -224,9 +206,9 @@ export default function CartPage() {
                         product.featuredImage.url || "/images/placeholder.png"
                       }
                       alt={product.featuredImage.altText || product.title}
-                      width={150}
-                      height={180}
-                      style={{ objectFit: "cover" }}
+                      width={180}
+                      height={220}
+                      style={{ objectFit: "contain" }}
                     />
                   </div>
                   <div className={styles.recommendedProductInfo}>
