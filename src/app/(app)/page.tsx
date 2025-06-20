@@ -277,7 +277,7 @@ export default function Home() {
                 {`> decryption_complete()`}
               </div>
               <p className={styles.animated}>Friday, June 20th</p>
-              <p>2025 - DROP DAY</p>
+              <p>2025 - DROP LIVE</p>
             </div>
           </div>
         </div>
@@ -378,7 +378,7 @@ export default function Home() {
                 {`> decryption_complete()`}
               </div>
               <p className={styles.animated}>Friday, June 20th</p>
-              <p>2025 - DROP DAY</p>
+              <p>2025 - DROP LIVE</p>
             </div>
           </div>
         </div>
