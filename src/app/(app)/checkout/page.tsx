@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import styles from "@/styles/checkout/Checkout.module.css";
 import Link from "next/link";
 import { updateCartBuyerIdentity } from "@/lib/shopify/cart";
+import { STORE_PAUSED, SOLD_OUT_MESSAGE } from "@/lib/storeStatus";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -25,6 +26,8 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState(user?.email || "");
 
   useEffect(() => {
+    if (STORE_PAUSED) return;
+
     // If cart is empty, redirect to cart page
     if (cartItems.length === 0) {
       router.push("/cart");
@@ -93,6 +96,16 @@ export default function CheckoutPage() {
     // For now, return null
     return null;
   };
+
+  if (STORE_PAUSED) {
+    return (
+      <div className={styles.checkoutContainer}>
+        <h1 className={styles.checkoutTitle}>Checkout</h1>
+        <p>{SOLD_OUT_MESSAGE}</p>
+        <Link href="/products">View archive</Link>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.checkoutContainer}>

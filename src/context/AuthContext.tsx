@@ -4,10 +4,12 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { auth } from "@/lib/firebase/client/firebaseApp";
 import { onAuthStateChanged } from "firebase/auth";
 import { User, mapFirebaseUserToUser } from "@/types/user-types";
+import { isSuperAdmin } from "@/lib/auth/superAdmins";
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
+  isSuperAdmin: boolean;
   showLoginPanel: boolean;
   showSignupPanel: boolean;
   showResetPanel: boolean;
@@ -21,6 +23,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  isSuperAdmin: false,
   showLoginPanel: false,
   showSignupPanel: false,
   showResetPanel: false,
@@ -137,6 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         user,
         loading,
+        isSuperAdmin: isSuperAdmin(user?.id, user?.email),
         showLoginPanel,
         showSignupPanel,
         showResetPanel,

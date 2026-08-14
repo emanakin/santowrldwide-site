@@ -8,6 +8,7 @@ import styles from "@/styles/cart/CartPage.module.css";
 import { useRouter } from "next/navigation";
 import { getProducts } from "@/lib/shopify/products";
 import { ProductListItem } from "@/types/product-types";
+import { STORE_PAUSED, SOLD_OUT_MESSAGE } from "@/lib/storeStatus";
 
 export default function CartPage() {
   const { cartItems, removeItem, subtotal, tax, shipping, total } = useCart();
@@ -143,7 +144,9 @@ export default function CartPage() {
 
         <div className={styles.checkoutSection}>
           <h2 className={styles.checkoutHeading}>CHECKOUT</h2>
-          {user ? (
+          {STORE_PAUSED ? (
+            <p className={styles.checkoutText}>{SOLD_OUT_MESSAGE}</p>
+          ) : user ? (
             <div>
               <p className={styles.checkoutText}>
                 Logged in as {user.displayName || user.email}

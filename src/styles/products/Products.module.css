@@ -17,6 +17,13 @@
   color: #666;
 }
 
+.soldOutNotice {
+  margin: 1.5rem 0 0;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .filterButton {
   background: none;
   border: 1px solid #000;

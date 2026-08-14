@@ -1050,85 +1050,85 @@
     text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
   }
   15% {
-    content: "2@%5 - DR#P D@Y";
+    content: "2@%5 - S#LD 0@T";
     opacity: 0.5;
     transform: translateY(3px);
     text-shadow: 0 0 8px rgba(255, 0, 0, 0.4);
   }
   20% {
-    content: "2)25 - D6#P D*Y";
+    content: "2)25 - S6#D 0*T";
     opacity: 0.6;
     transform: translateY(2px);
     text-shadow: 0 0 6px rgba(255, 0, 0, 0.3);
   }
   25% {
-    content: "20$5 - DR@P DAY";
+    content: "20$5 - S@LD 0UT";
     opacity: 0.7;
     transform: translateY(1px);
     text-shadow: 0 0 4px rgba(255, 0, 0, 0.2);
   }
   30% {
-    content: "202% - D*OP DAY";
+    content: "202% - S*LD 0UT";
     opacity: 0.8;
     transform: translateY(0.5px);
     text-shadow: 0 0 3px rgba(255, 0, 0, 0.1);
   }
   35% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 0.9;
     transform: translateY(0px);
     text-shadow: none;
   }
   40% {
-    content: "20$5 - DR@P DAY";
+    content: "20$5 - S@LD 0UT";
     opacity: 0.8;
     transform: translateY(-1px);
     text-shadow: 0 0 2px rgba(255, 0, 0, 0.1);
   }
   45% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 1;
     transform: translateY(0px);
     text-shadow: none;
   }
   50% {
-    content: "202% - D*OP DAY";
+    content: "202% - S*LD 0UT";
     opacity: 0.9;
     transform: translateY(0px);
     text-shadow: 0 0 1px rgba(255, 0, 0, 0.05);
   }
   55% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 1;
     transform: translateY(0px);
     text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   }
   65% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 1;
     transform: translateY(0px);
     text-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
   }
   75% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 1;
     transform: translateY(0px);
     text-shadow: none;
   }
   85% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 1;
     transform: translateY(0px);
     text-shadow: none;
   }
   95% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 1;
     transform: translateY(0px);
     text-shadow: none;
   }
   100% {
-    content: "2025 - DROP DAY";
+    content: "2025 - SOLD OUT";
     opacity: 1;
     transform: translateY(0px);
     text-shadow: none;

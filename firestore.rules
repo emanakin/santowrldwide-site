@@ -15,6 +15,9 @@ service cloud.firestore {
     // Newsletter subscribers and rate limits are handled server-side with Admin SDK
     // Admin SDK bypasses these security rules entirely, so no rules needed
     
+    // shoots, model_applications and models are written only by the Admin SDK
+    // via the /api/models and /api/admin routes, so they stay denied below
+    
     // Global rule: Deny all other access by default
     // This ensures security for any collections not explicitly defined above
     match /{document=**} {

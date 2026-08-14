@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build --debug",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed:super-admins": "tsx scripts/seed-super-admins.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1111.0",
     "@hookform/resolvers": "^4.1.3",
     "@shopify/shopify-api": "^11.11.1",
     "firebase": "^11.4.0",
@@ -32,6 +34,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.1",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

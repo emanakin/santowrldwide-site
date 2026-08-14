@@ -45,6 +45,9 @@ const Footer = () => {
             <Link href="/shipping-returns" className={styles.link}>
               Shipping & Return
             </Link>
+            <Link href="/models" className={styles.link}>
+              Models
+            </Link>
           </div>
 
           <div className={styles.linkColumn}>

@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import WishlistButton from "./WishlistButton";
 import styles from "@/styles/products/AddToCartButton.module.css";
 import { Product, CartItem } from "@/types/product-types";
+import { STORE_PAUSED, SOLD_OUT_LABEL } from "@/lib/storeStatus";
 
 type AddToCartButtonProps = {
   product: Product;
@@ -26,6 +27,8 @@ export default function AddToCartButton({
   // const router = useRouter();
 
   const handleAddToCart = async () => {
+    if (STORE_PAUSED) return;
+
     if (!selectedVariantId) {
       console.error("No variant selected");
       return;
@@ -76,22 +79,25 @@ export default function AddToCartButton({
   const selectedVariant = product.variants.find(
     (v) => v.id === selectedVariantId
   );
-  const isVariantAvailable = selectedVariant?.availableForSale ?? false;
+  const isVariantAvailable =
+    !STORE_PAUSED && (selectedVariant?.availableForSale ?? false);
 
   return (
     <div className={styles.container}>
       <button
         className={styles.addToCartButton}
         onClick={handleAddToCart}
-        disabled={isAdding || !selectedVariantId || !isVariantAvailable}
+        disabled={STORE_PAUSED || isAdding || !selectedVariantId || !isVariantAvailable}
       >
-        {isAdding
-          ? "Adding..."
-          : !selectedVariantId
-            ? "Select Options"
-            : !isVariantAvailable
-              ? "Out of Stock"
-              : "Add to Cart"}
+        {STORE_PAUSED
+          ? SOLD_OUT_LABEL
+          : isAdding
+            ? "Adding..."
+            : !selectedVariantId
+              ? "Select Options"
+              : !isVariantAvailable
+                ? "Out of Stock"
+                : "Add to Cart"}
       </button>
 
       <WishlistButton product={product} size="medium" />

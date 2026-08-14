@@ -19,8 +19,11 @@ export interface User {
   addresses?: Address[];
   defaultAddressId?: string | null;
   shopifyPassword?: string | null;
+  role?: UserRole | null;
   // Add any other custom fields your application needs
 }
+
+export type UserRole = "super_admin";
 
 // Type for creating/saving a user
 export interface UserData {

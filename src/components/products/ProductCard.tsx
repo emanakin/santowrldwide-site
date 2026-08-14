@@ -5,6 +5,7 @@ import Image from "next/image";
 import WishlistButton from "./WishlistButton";
 import styles from "@/styles/products/ProductCard.module.css";
 import { ProductCardProps } from "@/types/product-types";
+import { STORE_PAUSED, SOLD_OUT_LABEL } from "@/lib/storeStatus";
 
 export default function ProductCard({ product }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
@@ -87,6 +88,9 @@ export default function ProductCard({ product }: ProductCardProps) {
             <div className={styles.imagePlaceholder}>
               <span>{product.title[0]}</span>
             </div>
+          )}
+          {STORE_PAUSED && (
+            <span className={styles.soldOutBadge}>{SOLD_OUT_LABEL}</span>
           )}
         </div>
         <div className={styles.info}>

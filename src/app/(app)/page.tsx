@@ -270,14 +270,14 @@ export default function Home() {
             <h1 className={styles.collectionName}>frostbite</h1>
             <div className={styles.eventDetails}>
               <div className={styles.codeEffect}>
-                {`> decrypt_timestamp()`}
+                {`> drop_status()`}
                 <br />
-                {`> revealing_drop_date...`}
+                {`> all_pieces_sold_out`}
                 <br />
-                {`> decryption_complete()`}
+                {`> archive_unlocked()`}
               </div>
               <p className={styles.animated}>Friday, June 20th</p>
-              <p>2025 - DROP LIVE</p>
+              <p>2025 - SOLD OUT</p>
             </div>
           </div>
         </div>
@@ -315,7 +315,7 @@ export default function Home() {
             <div className={styles.dateCode}>SW20250/1</div>
             <h2 className={styles.collectionName}>{"i<3hating"}</h2>
             <Link href="/products" className={styles.exploreButton}>
-              EXPLORE DROP
+              VIEW ARCHIVE
             </Link>
           </div>
         </div>
@@ -364,14 +364,14 @@ export default function Home() {
             <h2 className={styles.collectionName}>mod tee</h2>
             <div className={styles.eventDetails}>
               <div className={styles.codeEffect}>
-                {`> decrypt_timestamp()`}
+                {`> drop_status()`}
                 <br />
-                {`> revealing_drop_date...`}
+                {`> all_pieces_sold_out`}
                 <br />
-                {`> decryption_complete()`}
+                {`> archive_unlocked()`}
               </div>
               <p className={styles.animated}>Friday, June 20th</p>
-              <p>2025 - DROP LIVE</p>
+              <p>2025 - SOLD OUT</p>
             </div>
           </div>
         </div>
@@ -414,7 +414,7 @@ export default function Home() {
             <div className={styles.dateCode}>SW20250/1</div>
             <h2 className={styles.collectionName}>wax denim</h2>
             <Link href="/products" className={styles.exploreButton}>
-              EXPLORE DROP
+              VIEW ARCHIVE
             </Link>
           </div>
         </div>

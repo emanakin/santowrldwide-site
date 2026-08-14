@@ -12,6 +12,7 @@ import {
   shopifyCartToLocalCart,
 } from "@/lib/shopify/cart";
 import { CartItem } from "@/types/product-types";
+import { STORE_PAUSED } from "@/lib/storeStatus";
 
 export interface CartContextType {
   cartItems: CartItem[];
@@ -56,6 +57,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
   // Initialize cart or load from storage
   useEffect(() => {
     const loadCart = async () => {
+      // Don't hit Shopify while the drop is paused — the shop is sold out
+      if (STORE_PAUSED) {
+        setCartItems([]);
+        setSubtotal(0);
+        setTax(0);
+        setTotal(0);
+        setCartCount(0);
+        return;
+      }
+
       // Try to load cart ID from localStorage
       const storedCartId = localStorage.getItem("cartId");
 
@@ -173,6 +184,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Add an item to the cart
   const addItem = async (newItem: CartItem) => {
+    if (STORE_PAUSED) return;
     if (!cartId) return;
 
     setLoading(true);
@@ -263,6 +275,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Initiate checkout process
   const initiateCheckout = async (): Promise<string> => {
+    if (STORE_PAUSED) {
+      throw new Error("This drop is sold out.");
+    }
     if (!cartId) {
       throw new Error("No cart available for checkout");
     }

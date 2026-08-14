@@ -10,7 +10,7 @@ import { useAuth } from "@/context/AuthContext";
 export default function AccountNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { setUser } = useAuth();
+  const { setUser, isSuperAdmin } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -26,6 +26,14 @@ export default function AccountNav() {
   const isActive = (path: string) => {
     return pathname === path;
   };
+
+  // Models/Shoots have nested detail routes, so match the whole section
+  const isActiveSection = (path: string) => {
+    return pathname.startsWith(path);
+  };
+
+  const isShootsActive = isActiveSection("/account/models/shoots");
+  const isModelsActive = isActiveSection("/account/models") && !isShootsActive;
 
   const toggleMobileNav = () => {
     setIsMobileNavOpen(!isMobileNavOpen);
@@ -85,6 +93,28 @@ export default function AccountNav() {
         >
           Wishlist
         </Link>
+        {isSuperAdmin && (
+          <>
+            <Link
+              href="/account/models"
+              className={`${styles.accountNavLink} ${
+                isModelsActive ? styles.activeLink : ""
+              }`}
+              onClick={closeMobileNav}
+            >
+              Models
+            </Link>
+            <Link
+              href="/account/models/shoots"
+              className={`${styles.accountNavLink} ${
+                isShootsActive ? styles.activeLink : ""
+              }`}
+              onClick={closeMobileNav}
+            >
+              Shoots
+            </Link>
+          </>
+        )}
         <button
           onClick={() => {
             handleLogout();
@@ -131,6 +161,26 @@ export default function AccountNav() {
         >
           Wishlist
         </Link>
+        {isSuperAdmin && (
+          <>
+            <Link
+              href="/account/models"
+              className={`${styles.accountNavLink} ${
+                isModelsActive ? styles.activeLink : ""
+              }`}
+            >
+              Models
+            </Link>
+            <Link
+              href="/account/models/shoots"
+              className={`${styles.accountNavLink} ${
+                isShootsActive ? styles.activeLink : ""
+              }`}
+            >
+              Shoots
+            </Link>
+          </>
+        )}
         <button onClick={handleLogout} className={styles.accountNavLink}>
           Log out
         </button>

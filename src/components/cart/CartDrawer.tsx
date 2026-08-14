@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import Link from "next/link";
 import styles from "@/styles/cart/CartDrawer.module.css";
 import Image from "next/image";
+import { STORE_PAUSED, SOLD_OUT_MESSAGE } from "@/lib/storeStatus";
 
 export default function CartDrawer() {
   const {
@@ -29,7 +30,18 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {cartItems.length === 0 ? (
+        {STORE_PAUSED ? (
+          <div className={styles.emptyCart}>
+            <p>{SOLD_OUT_MESSAGE}</p>
+            <Link
+              href="/products"
+              className={styles.shopButton}
+              onClick={closeCart}
+            >
+              VIEW ARCHIVE
+            </Link>
+          </div>
+        ) : cartItems.length === 0 ? (
           <div className={styles.emptyCart}>
             <p>Your bag is empty</p>
             <Link

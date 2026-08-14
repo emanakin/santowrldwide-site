@@ -1,69 +1,21 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import styles from "@/styles/locked/locked.module.css";
+import BackgroundVideo from "@/components/video/BackgroundVideo";
+import { VIDEOS } from "@/lib/media";
 
 export default function LockedPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const router = useRouter();
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
     null
   );
-
-  useEffect(() => {
-    // Always start with muted=true for better autoplay success
-    setIsMuted(true);
-
-    // Function to attempt video play with retries
-    const attemptPlay = async () => {
-      if (videoRef.current) {
-        try {
-          // Force hide controls
-          videoRef.current.controls = false;
-
-          // Try to play
-          await videoRef.current.play();
-        } catch (error) {
-          console.error("Video autoplay failed:", error);
-
-          // On mobile, try again with a slight delay (sometimes helps)
-          setTimeout(() => {
-            if (videoRef.current) {
-              videoRef.current
-                .play()
-                .catch((e) => console.error("Retry autoplay failed:", e));
-            }
-          }, 300);
-        }
-      }
-    };
-
-    // Try playing immediately
-    attemptPlay();
-
-    // Also try playing on window focus events (helps with some mobile browsers)
-    window.addEventListener("focus", attemptPlay);
-    document.addEventListener("touchstart", attemptPlay, { once: true });
-
-    return () => {
-      window.removeEventListener("focus", attemptPlay);
-    };
-  }, []);
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      const newMuteState = !isMuted;
-      videoRef.current.muted = newMuteState;
-      setIsMuted(newMuteState);
-    }
-  };
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,36 +83,8 @@ export default function LockedPage() {
   return (
     <>
       <div className={styles.lockedContainer}>
-        {/* Background video */}
-        <video
-          ref={videoRef}
-          className={styles.backgroundVideo}
-          src="https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4"
-          loop
-          muted={isMuted}
-          playsInline
-          autoPlay
-          controls={false}
-          preload="metadata" // Optimize loading
-        >
-          Your browser does not support the video tag.
-        </video>
-
-        {/* Mute/Unmute button */}
-        <button
-          onClick={toggleMute}
-          className={styles.muteButton}
-          aria-label={isMuted ? "Unmute" : "Mute"}
-        >
-          {isMuted ? (
-            <span className={styles.muteIcon}>🔇</span>
-          ) : (
-            <span className={styles.muteIcon}>🔊</span>
-          )}
-        </button>
-
-        {/* Dark overlay */}
-        <div className={styles.overlay}></div>
+        {/* Background video, mute button and dark overlay */}
+        <BackgroundVideo src={VIDEOS.background} overlayOpacity={0.7} />
 
         {/* Content container */}
         <div className={styles.contentContainer}>

@@ -3,6 +3,7 @@ import ProductGrid from "@/components/products/ProductGrid";
 import Breadcrumb from "@/components/products/Breadcrumb";
 import { getProducts } from "@/lib/shopify/products";
 import styles from "@/styles/products/Products.module.css";
+import { STORE_PAUSED, SOLD_OUT_MESSAGE } from "@/lib/storeStatus";
 
 // Fallback data in case the API fails
 const fallbackProducts = [
@@ -66,6 +67,9 @@ export default async function ProductsPage() {
   return (
     <div className={styles.container}>
       <Breadcrumb items={[{ label: "SW2025 Drop", url: "/products" }]} />
+      {STORE_PAUSED && (
+        <p className={styles.soldOutNotice}>{SOLD_OUT_MESSAGE}</p>
+      )}
       <div className={styles.headerRow}>
         <div className={styles.itemCount}>{products.length} items</div>
         <button className={styles.filterButton}>FILTER</button>
