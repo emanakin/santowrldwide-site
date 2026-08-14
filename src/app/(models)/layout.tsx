@@ -1,10 +1,21 @@
 import React from "react";
+import type { Viewport } from "next";
 import "../globals.css";
-import { VIDEOS } from "@/lib/media";
+import DarkChrome from "@/components/video/DarkChrome";
 
 export const metadata = {
   title: "Models - SANTOWRLDWIDE",
   description: "Casting for SANTOWRLDWIDE music videos, campaigns and editorial",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent" as const,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  colorScheme: "dark",
+  viewportFit: "cover",
 };
 
 /**
@@ -18,21 +29,13 @@ export default function ModelsLayout({
 }) {
   return (
     <>
-      <head>
-        <link
-          rel="preload"
-          as="video"
-          href={VIDEOS.feelAlive}
-          type="video/mp4"
-        />
-        <meta name="theme-color" content="#000000" />
-      </head>
+      <DarkChrome />
       <div
         style={{
           margin: 0,
           padding: 0,
           backgroundColor: "#000",
-          minHeight: "100vh",
+          minHeight: "100dvh",
         }}
       >
         {children}

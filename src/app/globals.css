@@ -88,6 +88,14 @@ body {
   color: #171717 !important;
 }
 
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+body[data-theme="dark"] {
+  color-scheme: dark !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
 /* Reset padding for homepage to allow full-screen hero */
 body:has([data-page="home"]) {
   padding-top: 0;

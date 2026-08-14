@@ -1,9 +1,22 @@
 import React from "react";
+import type { Viewport } from "next";
 import "../globals.css";
+import DarkChrome from "@/components/video/DarkChrome";
+import { VIDEOS } from "@/lib/media";
 
 export const metadata = {
   title: "SantoWrldWide - Locked",
   description: "Toronto based streetwear",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent" as const,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+  colorScheme: "dark",
+  viewportFit: "cover",
 };
 
 export default function LockedLayout({
@@ -13,30 +26,14 @@ export default function LockedLayout({
 }) {
   return (
     <>
-      <head>
-        <link
-          rel="preload"
-          as="video"
-          href="https://pub-9c5280bc16f841f2848160de54fa0828.r2.dev/background.mp4"
-          type="video/mp4"
-        />
-
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-
-        <meta name="theme-color" content="#000000" />
-
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
-      </head>
+      <link rel="preload" as="video" href={VIDEOS.background} type="video/mp4" />
+      <DarkChrome />
       <div
         style={{
           margin: 0,
           padding: 0,
           backgroundColor: "#000",
-          minHeight: "100vh",
+          minHeight: "100dvh",
         }}
       >
         {children}
