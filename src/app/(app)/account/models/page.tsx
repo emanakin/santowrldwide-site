@@ -4,7 +4,11 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { adminFetch } from "@/services/client/adminApi";
 import { useSuperAdminGuard } from "@/hooks/useSuperAdminGuard";
-import { RosterModel, RosterStatus } from "@/types/model-types";
+import {
+  ModelApplication,
+  RosterModel,
+  RosterStatus,
+} from "@/types/model-types";
 import accountStyles from "@/styles/account/Account.module.css";
 import styles from "@/styles/account/AccountModels.module.css";
 
@@ -30,6 +34,7 @@ const EMPTY_NEW_MODEL = {
 export default function AdminModelsPage() {
   const { allowed, checking } = useSuperAdminGuard();
   const [models, setModels] = useState<RosterModel[]>([]);
+  const [applications, setApplications] = useState<ModelApplication[]>([]);
   const [filter, setFilter] = useState<RosterFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +45,14 @@ export default function AdminModelsPage() {
   const loadModels = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await adminFetch<{ models: RosterModel[] }>(
-        "/api/admin/models"
-      );
-      setModels(data.models);
+      const [modelsData, applicationsData] = await Promise.all([
+        adminFetch<{ models: RosterModel[] }>("/api/admin/models"),
+        adminFetch<{ applications: ModelApplication[] }>(
+          "/api/admin/applications"
+        ),
+      ]);
+      setModels(modelsData.models);
+      setApplications(applicationsData.applications);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load models.");
@@ -72,6 +81,23 @@ export default function AdminModelsPage() {
       setError(err instanceof Error ? err.message : "Unable to create model.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const addToRoster = async (application: ModelApplication) => {
+    try {
+      const data = await adminFetch<{ application: ModelApplication }>(
+        `/api/admin/applications/${application.id}`,
+        { method: "PATCH", body: JSON.stringify({ addToRoster: true }) }
+      );
+      setApplications((prev) =>
+        prev.map((a) => (a.id === application.id ? data.application : a))
+      );
+      await loadModels();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to add this model."
+      );
     }
   };
 
@@ -214,6 +240,57 @@ export default function AdminModelsPage() {
             {saving ? "Saving..." : "Save model"}
           </button>
         </form>
+      )}
+
+      {applications.length > 0 && (
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>
+            Applications ({applications.length})
+          </h2>
+          <ul className={styles.list}>
+            {applications.map((application) => (
+              <li key={application.id} className={styles.listItem}>
+                <div className={styles.listMain}>
+                  <Link
+                    href={`/account/models/applications/${application.id}`}
+                    className={styles.itemTitle}
+                  >
+                    {application.fullName}
+                  </Link>
+                  <span className={styles.itemMeta}>
+                    {[
+                      application.phone,
+                      application.email,
+                      application.city,
+                      application.shootTitle,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </div>
+                <div className={styles.listActions}>
+                  <span className={styles.badge}>{application.status}</span>
+                  {application.modelId ? (
+                    <Link
+                      href={`/account/models/${application.modelId}`}
+                      className={styles.secondaryButton}
+                    >
+                      On roster
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => addToRoster(application)}
+                    >
+                      Add to models
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className={styles.filterRow}>

@@ -213,6 +213,12 @@
   flex-wrap: wrap;
 }
 
+.listActions .primaryButton {
+  align-self: auto;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
 .itemTitle {
   font-size: 1rem;
   font-weight: 500;
@@ -281,6 +287,37 @@ a.itemTitle:hover {
   border: 1px solid #e5e5e5;
 }
 
+.photoLarge {
+  width: 160px;
+  height: 210px;
+  object-fit: cover;
+  border: 1px solid #e5e5e5;
+}
+
+.detailList {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 1.5rem;
+}
+
+.detailList dt {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #777;
+  margin-bottom: 0.25rem;
+}
+
+.detailList dd {
+  font-size: 0.95rem;
+  color: #111;
+}
+
+.detailList a {
+  color: #111;
+  text-decoration: underline;
+}
+
 /* Applications */
 
 .applicationList {
@@ -338,7 +375,8 @@ a.itemTitle:hover {
 }
 
 @media (max-width: 640px) {
-  .formGrid {
+  .formGrid,
+  .detailList {
     grid-template-columns: 1fr;
   }
 

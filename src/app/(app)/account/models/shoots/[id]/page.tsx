@@ -107,6 +107,24 @@ export default function AdminShootDetailPage() {
     }
   };
 
+  const addToRoster = async (application: ModelApplication) => {
+    try {
+      const data = await adminFetch<{ application: ModelApplication }>(
+        `/api/admin/applications/${application.id}`,
+        { method: "PATCH", body: JSON.stringify({ addToRoster: true }) }
+      );
+      setApplications((prev) =>
+        prev.map((a) => (a.id === application.id ? data.application : a))
+      );
+      setNotice(`${application.fullName} added to the roster.`);
+      setError(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to add this model."
+      );
+    }
+  };
+
   const setApplicationStatus = async (
     application: ModelApplication,
     status: ApplicationStatus
@@ -282,12 +300,16 @@ export default function AdminShootDetailPage() {
             {applications.map((application) => (
               <article key={application.id} className={styles.application}>
                 <div className={styles.listMain}>
-                  <span className={styles.itemTitle}>
+                  <Link
+                    href={`/account/models/applications/${application.id}`}
+                    className={styles.itemTitle}
+                  >
                     {application.fullName}
-                  </span>
+                  </Link>
                   <span className={styles.itemMeta}>
                     {[
                       application.email,
+                      application.phone,
                       application.city,
                       application.instagram,
                     ]
@@ -339,14 +361,28 @@ export default function AdminShootDetailPage() {
                     </button>
                   ))}
 
-                  {application.modelId && (
+                  {application.modelId ? (
                     <Link
                       href={`/account/models/${application.modelId}`}
                       className={styles.secondaryButton}
                     >
                       Open roster profile
                     </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => addToRoster(application)}
+                    >
+                      Add to models
+                    </button>
                   )}
+                  <Link
+                    href={`/account/models/applications/${application.id}`}
+                    className={styles.secondaryButton}
+                  >
+                    View details
+                  </Link>
                 </div>
               </article>
             ))}
