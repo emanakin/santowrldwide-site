@@ -60,7 +60,7 @@ export async function createCustomer(
       "Shopify customer creation response:",
       JSON.stringify({
         success: !!response?.customerCreate?.customer,
-        errors: response?.customerCreate?.userErrors || [],
+        errors: response?.customerCreate?.customerUserErrors || [],
       })
     );
 
@@ -89,14 +89,15 @@ export async function getCustomerAccessToken(email: string, password: string) {
     `Getting access token for ${email}`
   );
 
-  if (!response?.customerAccessTokenCreate.customerAccessToken) {
+  const payload = response?.customerAccessTokenCreate;
+  if (!payload?.customerAccessToken) {
     throw new Error(
-      response?.customerAccessTokenCreate.customerUserErrors[0]?.message ||
+      payload?.customerUserErrors?.[0]?.message ||
         "Failed to authenticate customer"
     );
   }
 
-  return response.customerAccessTokenCreate.customerAccessToken;
+  return payload.customerAccessToken;
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   signupWithEmailService,
   socialSignupService,
 } from "@/services/client/auth";
+import { auth } from "@/lib/firebase/client/firebaseApp";
 
 export default function SignupPanel() {
   const [email, setEmail] = useState("");
@@ -52,13 +53,18 @@ export default function SignupPanel() {
   const handleSocialLogin = async (provider: SocialProvider) => {
     try {
       setLoading(true);
+      setError("");
       await socialSignupService(provider);
       setShowSignupPanel(false);
-      // Removed automatic redirect - user stays on current page
     } catch (err: unknown) {
       const apiError = handleFirebaseAuthError(err);
       // Special case for popup closed
       if (apiError.code === "auth/popup-closed-by-user") return;
+      // Provider popup already authenticated the user; close anyway.
+      if (auth.currentUser) {
+        setShowSignupPanel(false);
+        return;
+      }
       setError(apiError.error);
     } finally {
       setLoading(false);

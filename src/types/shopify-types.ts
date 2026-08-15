@@ -58,7 +58,8 @@ export interface ShopifyOrder {
 export interface CustomerCreateResponse {
   customerCreate: {
     customer: ShopifyCustomer | null;
-    userErrors: Array<{
+    customerUserErrors: Array<{
+      code?: string;
       field: string[] | null;
       message: string;
     }>;
@@ -82,7 +83,8 @@ export interface CustomerAccessTokenResponse {
 export interface CustomerCreateResponse {
   customerCreate: {
     customer: ShopifyCustomer | null;
-    userErrors: Array<{
+    customerUserErrors: Array<{
+      code?: string;
       field: string[] | null;
       message: string;
     }>;

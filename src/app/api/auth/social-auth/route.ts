@@ -16,14 +16,16 @@ export async function POST(request: Request) {
         metadata,
       });
 
-      response.cookies.set({
-        name: "shopify_customer_token",
-        value: shopifyToken.accessToken,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        expires: new Date(shopifyToken.expiresAt),
-      });
+      if (shopifyToken?.accessToken) {
+        response.cookies.set({
+          name: "shopify_customer_token",
+          value: shopifyToken.accessToken,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          expires: new Date(shopifyToken.expiresAt),
+        });
+      }
 
       return response;
     } catch (error) {

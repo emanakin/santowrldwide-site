@@ -89,7 +89,7 @@ export async function registerUser(
 
   if (!shopifyCustomerResponse?.customerCreate.customer) {
     const error =
-      shopifyCustomerResponse?.customerCreate.userErrors[0]?.message ||
+      shopifyCustomerResponse?.customerCreate.customerUserErrors[0]?.message ||
       "Failed to create Shopify customer";
     throw new Error(error);
   }
@@ -136,6 +136,95 @@ export async function registerUser(
   };
 }
 
+type ShopifyCustomerToken = {
+  accessToken: string;
+  expiresAt: string;
+};
+
+/**
+ * Best-effort Shopify customer + access token for a social login.
+ * Firebase auth already succeeded; a Shopify mismatch must not fail the login.
+ */
+async function ensureShopifyCustomerAccess(params: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  existingCustomerId?: string | null;
+  existingPassword?: string | null;
+}): Promise<{
+  shopifyCustomerId?: string | null;
+  shopifyPassword?: string | null;
+  shopifyToken?: ShopifyCustomerToken;
+}> {
+  const { email, firstName, lastName, existingCustomerId, existingPassword } =
+    params;
+
+  if (existingPassword) {
+    try {
+      const shopifyToken = await getCustomerAccessToken(email, existingPassword);
+      return {
+        shopifyCustomerId: existingCustomerId,
+        shopifyPassword: existingPassword,
+        shopifyToken,
+      };
+    } catch (error) {
+      console.warn(
+        "Stored Shopify credentials failed; trying to create a customer:",
+        error
+      );
+    }
+  }
+
+  const shopifyPassword = generateSecurePassword();
+  let shopifyCustomerResponse;
+  try {
+    shopifyCustomerResponse = await createCustomer(
+      email,
+      shopifyPassword,
+      firstName,
+      lastName
+    );
+  } catch (error) {
+    console.warn("Shopify customerCreate request failed:", error);
+    return {
+      shopifyCustomerId: existingCustomerId,
+      shopifyPassword: existingPassword,
+    };
+  }
+  const customer = shopifyCustomerResponse?.customerCreate?.customer;
+  const createError =
+    shopifyCustomerResponse?.customerCreate?.customerUserErrors?.[0]?.message;
+
+  if (customer) {
+    try {
+      const shopifyToken = await getCustomerAccessToken(email, shopifyPassword);
+      return {
+        shopifyCustomerId: customer.id,
+        shopifyPassword,
+        shopifyToken,
+      };
+    } catch (error) {
+      console.error(
+        "Created Shopify customer but could not get an access token:",
+        error
+      );
+      return {
+        shopifyCustomerId: customer.id,
+        shopifyPassword,
+      };
+    }
+  }
+
+  console.warn(
+    "Could not create Shopify customer for social login:",
+    createError || "unknown error"
+  );
+  return {
+    shopifyCustomerId: existingCustomerId,
+    shopifyPassword: existingPassword,
+  };
+}
+
 /**
  * Authenticates a user with social login
  */
@@ -167,77 +256,42 @@ export async function socialAuthUser(idToken: string) {
 
   // Check if user exists in Firestore
   let userData = await getUserFromFirestoreAdmin(userId);
-  let shopifyCustomerId = userData?.shopifyCustomerId;
-  let shopifyPassword = userData?.shopifyPassword;
 
-  // If user doesn't exist in Firestore, create them
+  let shopifyAccess: Awaited<ReturnType<typeof ensureShopifyCustomerAccess>> =
+    {};
+  try {
+    shopifyAccess = await ensureShopifyCustomerAccess({
+      email,
+      firstName: userData?.firstName || firstName,
+      lastName: userData?.lastName || lastName,
+      existingCustomerId: userData?.shopifyCustomerId,
+      existingPassword: userData?.shopifyPassword,
+    });
+  } catch (error) {
+    console.error("Shopify association failed for social login:", error);
+  }
+
   if (!userData) {
     console.log("🆕 Creating new social user in Firestore:", userId);
-
-    // Generate a secure password for Shopify
-    shopifyPassword = generateSecurePassword();
-
-    // Create a customer in Shopify
-    const shopifyCustomerResponse = await createCustomer(
-      email,
-      shopifyPassword,
-      firstName,
-      lastName
-    );
-
-    if (!shopifyCustomerResponse?.customerCreate.customer) {
-      throw new Error("Failed to create Shopify customer");
-    }
-
-    shopifyCustomerId = shopifyCustomerResponse.customerCreate.customer.id;
-
-    // Save user data to Firestore
     await saveUserToFirestoreAdmin(userId, {
       email,
       firstName,
       lastName,
-      shopifyCustomerId,
-      shopifyPassword,
+      shopifyCustomerId: shopifyAccess.shopifyCustomerId,
+      shopifyPassword: shopifyAccess.shopifyPassword,
     });
-
-    // Get the newly created user data
     userData = await getUserFromFirestoreAdmin(userId);
-  } else if (!userData.shopifyCustomerId || !userData.shopifyPassword) {
-    // User exists but doesn't have Shopify credentials
-    // This can happen if user was created before we implemented Shopify integration
-
-    shopifyPassword = generateSecurePassword();
-
-    // Create a customer in Shopify
-    const shopifyCustomerResponse = await createCustomer(
-      email,
-      shopifyPassword,
-      userData.firstName || firstName,
-      userData.lastName || lastName
-    );
-
-    if (!shopifyCustomerResponse?.customerCreate.customer) {
-      throw new Error("Failed to create Shopify customer");
-    }
-
-    shopifyCustomerId = shopifyCustomerResponse.customerCreate.customer.id;
-
-    // Update user with Shopify credentials
+  } else if (
+    shopifyAccess.shopifyCustomerId !== userData.shopifyCustomerId ||
+    shopifyAccess.shopifyPassword !== userData.shopifyPassword
+  ) {
     await saveUserToFirestoreAdmin(userId, {
       ...userData,
-      shopifyCustomerId,
-      shopifyPassword,
+      shopifyCustomerId: shopifyAccess.shopifyCustomerId,
+      shopifyPassword: shopifyAccess.shopifyPassword,
     });
-
-    // Get updated user data
     userData = await getUserFromFirestoreAdmin(userId);
   }
-
-  // Get a Shopify customer access token
-  const shopifyToken = await getCustomerAccessToken(
-    email,
-    shopifyPassword as string
-  );
 
   return {
     user: {
@@ -246,6 +300,6 @@ export async function socialAuthUser(idToken: string) {
       displayName: userRecord.displayName,
     },
     metadata: userData,
-    shopifyToken,
+    shopifyToken: shopifyAccess.shopifyToken,
   };
 }

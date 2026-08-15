@@ -96,6 +96,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => unsubscribe();
   }, []);
 
+  // Close auth panels once Firebase has a signed-in user (e.g. Google popup).
+  useEffect(() => {
+    if (!user) return;
+    setShowLoginPanel(false);
+    setShowSignupPanel(false);
+    setShowResetPanel(false);
+  }, [user]);
+
   // When one panel opens, close the other
   useEffect(() => {
     if (showLoginPanel) setShowSignupPanel(false);

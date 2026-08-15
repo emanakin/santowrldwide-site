@@ -6,10 +6,6 @@ import {
   FacebookAuthProvider,
   signOut,
 } from "firebase/auth";
-import {
-  getGoogleAuthToken,
-  getFacebookAuthToken,
-} from "@/lib/firebase/client/auth";
 import { SocialProvider } from "@/types/firebase-types";
 
 /**
@@ -65,22 +61,27 @@ export async function socialLoginService(
   // Get the Firebase ID token
   const idToken = await result.user.getIdToken();
 
-  // Call your API endpoint
-  const response = await fetch("/api/auth/social-auth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken }),
-  });
+  // Sync Shopify/Firestore after Firebase auth. Failures here must not
+  // keep the login panel open — the user is already authenticated.
+  try {
+    const response = await fetch("/api/auth/social-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.error || "Social login failed");
-  }
+    if (!response.ok) {
+      console.error("Social auth backend failed:", data.error);
+      return;
+    }
 
-  // Store the additional user metadata
-  if (data.metadata) {
-    localStorage.setItem("userData", JSON.stringify(data.metadata));
+    if (data.metadata) {
+      localStorage.setItem("userData", JSON.stringify(data.metadata));
+    }
+  } catch (error) {
+    console.error("Social auth backend failed:", error);
   }
 }
 
@@ -117,43 +118,13 @@ export async function signupWithEmailService(
 
 /**
  * Sign up (or login) using a social provider.
- * Uses the appropriate Firebase social method.
+ * Same Firebase ID-token flow as login — Google OAuth tokens are not valid
+ * for adminAuth.verifyIdToken and would fail after the popup already succeeded.
  */
 export async function socialSignupService(
   provider: SocialProvider
 ): Promise<void> {
-  let idToken: string | undefined;
-
-  // Get the idToken from the appropriate provider
-  if (provider === "google") {
-    idToken = await getGoogleAuthToken();
-  } else if (provider === "facebook") {
-    idToken = await getFacebookAuthToken();
-  } else {
-    throw new Error("Unsupported social provider");
-  }
-
-  if (!idToken) {
-    throw new Error("Failed to get authentication token.");
-  }
-
-  // Call your API endpoint to create/login the user in both systems
-  const response = await fetch("/api/auth/social-auth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, idToken }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || "Social authentication failed");
-  }
-
-  // Store user metadata if provided
-  if (data.metadata) {
-    localStorage.setItem("userData", JSON.stringify(data.metadata));
-  }
+  return socialLoginService(provider);
 }
 
 /**
