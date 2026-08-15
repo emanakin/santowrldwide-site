@@ -12,6 +12,10 @@ export const SUPER_ADMINS = [
     uid: "z42xur9fyeXkjegvMxj0YSEdK723",
     email: "emmanuelakinlosotu12@gmail.com",
   },
+  {
+    uid: "Uez1ikXOKsaSv53RYD9va1ZE8us2",
+    email: "jursomarzo@yahoo.com",
+  },
 ] as const;
 
 export const SUPER_ADMIN_UIDS: string[] = SUPER_ADMINS.map((a) => a.uid);
