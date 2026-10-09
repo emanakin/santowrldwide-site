@@ -68,9 +68,8 @@ export default function LockedPage() {
       });
 
       if (response.ok) {
-        // Set a cookie or session to indicate the site is unlocked for this user
-        document.cookie = "site_unlocked=true; path=/; max-age=3600";
         router.push("/");
+        router.refresh();
       } else {
         alert("Incorrect password. Please try again.");
       }

@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
-  serverExternalPackages: ["firebase-admin"],
+  serverExternalPackages: ["firebase-admin", "nodemailer"],
 };
 
 export default nextConfig;

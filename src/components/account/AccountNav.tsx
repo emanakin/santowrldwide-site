@@ -95,6 +95,7 @@ export default function AccountNav() {
         </Link>
         {isSuperAdmin && (
           <>
+            <Link href="/account/production/settings" className={`${styles.accountNavLink} ${isActiveSection("/account/production") ? styles.activeLink : ""}`} onClick={closeMobileNav}>Outreach dashboard</Link>
             <Link
               href="/account/models"
               className={`${styles.accountNavLink} ${
@@ -163,6 +164,7 @@ export default function AccountNav() {
         </Link>
         {isSuperAdmin && (
           <>
+            <Link href="/account/production/settings" className={`${styles.accountNavLink} ${isActiveSection("/account/production") ? styles.activeLink : ""}`}>Outreach dashboard</Link>
             <Link
               href="/account/models"
               className={`${styles.accountNavLink} ${

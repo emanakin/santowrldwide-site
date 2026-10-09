@@ -192,6 +192,7 @@ export default function Navbar() {
         >
           ABOUT
         </Link>
+        <Link href="/productions" className={`${styles.link} ${isActiveLink("/productions") ? styles.activeLink : ""}`}>PRODUCTIONS</Link>
         <Link
           href="/contact"
           className={`${styles.link} ${
@@ -431,6 +432,7 @@ export default function Navbar() {
           >
             ABOUT
           </Link>
+          <Link href="/productions" className={`${styles.mobileLink} ${isActiveLink("/productions") ? styles.activeLink : ""}`} onClick={closeMenu}>PRODUCTIONS</Link>
           <Link
             href="/contact"
             className={`${styles.mobileLink} ${

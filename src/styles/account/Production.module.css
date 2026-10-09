@@ -1,0 +1,63 @@
+.root { width: 100%; color: #171717; padding-bottom: 5rem; }
+.header { padding: 1rem 0 2rem; border-bottom: 1px solid #dedede; }
+.header h1 { font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -.055em; line-height: 1.05; margin: .7rem 0; }
+.header p:last-child { color: #696969; max-width: 38rem; }
+.eyebrow { font-size: .7rem; text-transform: uppercase; letter-spacing: .22em; font-weight: 700; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; padding: 1.5rem 0; }
+.stats div { border: 1px solid #dedede; padding: 1.1rem; display: flex; flex-direction: column; gap: .35rem; }
+.stats strong { font-size: 1.8rem; line-height: 1; }
+.stats span { color: #777; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; }
+.mailStatus { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border: 1px solid #d8d8d8; background: #f7f7f4; padding: 1rem 1.25rem; margin-bottom: 1.25rem; }
+.mailStatus > div { display: flex; flex-direction: column; gap: .2rem; }
+.mailStatus > div span { color: #666; font-size: .8rem; }
+.mailStatus ul { display: flex; flex-wrap: wrap; gap: .45rem 1.2rem; list-style: none; margin: 0; padding: 0; font-size: .8rem; }
+.toolbar, .filters, .actions, .tabs, .rowActions { display: flex; gap: .65rem; align-items: center; flex-wrap: wrap; }
+.toolbar { justify-content: space-between; margin: 1rem 0 1.5rem; }
+.root button, .fileButton { cursor: pointer; background: white; border: 1px solid #bbb; padding: .65rem .85rem; font: inherit; font-size: .85rem; }
+.root button:disabled { opacity: .45; cursor: not-allowed; }
+.root button:hover:not(:disabled), .fileButton:hover { border-color: #222; }
+.root .active, .root .selected, .root .primary { background: #171717; color: white; border-color: #171717; }
+.notice { background: #f2f2f2; padding: .8rem 1rem; margin: 1rem 0; font-size: .9rem; overflow-wrap: anywhere; }
+.form { border: 1px solid #dedede; padding: 1.25rem; margin-bottom: 1.5rem; }
+.editorDetails { border: 1px solid #d5d5d5; margin-bottom: 1.5rem; }
+.editorDetails > summary { cursor: pointer; padding: .9rem 1rem; font-size: .9rem; font-weight: 700; }
+.editorDetails .form { border: 0; border-top: 1px solid #dedede; margin: 0; }
+.form h2, .draftEditor h2 { font-size: 1.3rem; margin-bottom: 1rem; }
+.formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+.root label { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+.root label span { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; }
+.root input, .root select, .root textarea { width: 100%; min-width: 0; border: 1px solid #ccc; border-radius: 0; background: white; color: #171717; padding: .7rem; font: inherit; font-size: .9rem; }
+.root input:focus, .root select:focus, .root textarea:focus { outline: 2px solid #222; outline-offset: 1px; }
+.hint { font-size: .8rem; color: #666; margin: .5rem 0 1rem; }
+.filters { margin: 1rem 0; }
+.filters input { flex: 1; }
+.filters select { width: auto; }
+.list { border-top: 1px solid #ddd; }
+.pipelineHead, .pipelineRow { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(90px, 1fr) minmax(75px, .75fr) minmax(85px, .85fr) minmax(100px, 1fr) minmax(180px, 1.4fr); gap: .7rem; align-items: center; }
+.pipelineHead { padding: .65rem .35rem; background: #f1f1ee; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; }
+.pipelineRow { padding: .9rem .35rem; border-bottom: 1px solid #ddd; }
+.pipelineRow > div { display: flex; flex-direction: column; gap: .28rem; min-width: 0; }
+.pipelineRow span, .pipelineRow small { font-size: .78rem; color: #6a6a6a; overflow-wrap: anywhere; }
+.pipelineRow .companyLink { font-size: .92rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.pipelineRow .statusChip { width: fit-content; padding: .24rem .42rem; color: #222; background: #e9e9e5; text-transform: capitalize; }
+.pipelineRow .rowActions { display: flex; flex-direction: row; flex-wrap: wrap; gap: .35rem; }
+.pipelineRow .rowActions a { font-size: .73rem; text-decoration: underline; }
+.pipelineRow .rowActions button { padding: .28rem .4rem; font-size: .73rem; }
+.row { padding: .9rem .4rem; border-bottom: 1px solid #ddd; display: grid; grid-template-columns: 2fr 1.2fr auto; gap: 1rem; align-items: center; }
+.row div { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.row span, .row small { color: #777; font-size: .8rem; overflow-wrap: anywhere; }
+.rowActions { flex-direction: row !important; }
+.rowActions a { text-decoration: underline; font-size: .8rem; }
+.rowActions button { padding: .4rem .6rem; }
+.draftLayout { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr); gap: 1rem; }
+.draftList { display: flex; flex-direction: column; gap: .35rem; }
+.draftList button { text-align: left; display: flex; flex-direction: column; gap: .3rem; overflow-wrap: anywhere; }
+.draftList span { font-size: .75rem; opacity: .65; }
+.draftEditor { border: 1px solid #ddd; padding: 1.25rem; }
+.draftEditor > p { margin-bottom: 1rem; font-size: .85rem; }
+.draftEditor label { margin-bottom: .85rem; }
+.checkboxLabel { display: flex !important; flex-direction: row !important; align-items: center; gap: .55rem !important; }
+.root .checkboxLabel input { width: auto; }
+@media (max-width: 1000px) { .pipelineHead { display: none; } .pipelineRow { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: .8rem; } .pipelineRow > div:last-child { grid-column: 1 / -1; } }
+@media (max-width: 800px) { .stats { grid-template-columns: repeat(2, 1fr); } .formGrid, .draftLayout { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; gap: .4rem; } }
+@media (max-width: 600px) { .pipelineRow { grid-template-columns: 1fr 1fr; } .pipelineRow > div:first-child, .pipelineRow > div:last-child { grid-column: 1 / -1; } }

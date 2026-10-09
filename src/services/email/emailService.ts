@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function resendClient() {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("RESEND_API_KEY is not configured");
+  return new Resend(key);
+}
 
 export interface WelcomeEmailData {
   email: string;
@@ -66,7 +70,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData): Promise<{
       );
     }
 
-    const emailData = await resend.emails.send({
+    const emailData = await resendClient().emails.send({
       from: fromEmail,
       to: [data.email],
       subject: "Welcome to SANTOWRLDWIDE",
@@ -159,7 +163,7 @@ export async function sendAdminNotification(data: WelcomeEmailData): Promise<{
       return { success: true };
     }
 
-    const emailData = await resend.emails.send({
+    const emailData = await resendClient().emails.send({
       from: fromEmail,
       to: [adminEmail],
       subject: "New Subscriber - SANTOWRLDWIDE",
@@ -215,7 +219,7 @@ export async function sendContactEmail(data: ContactEmailData): Promise<{
     const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev";
     const supportEmail = "support@santowrldwide.com";
 
-    const emailData = await resend.emails.send({
+    const emailData = await resendClient().emails.send({
       from: fromEmail,
       to: [supportEmail],
       subject: `Contact Form: ${data.subject}`,
@@ -336,7 +340,7 @@ export async function sendModelApplicationNotification(
       )
       .join("");
 
-    await resend.emails.send({
+    await resendClient().emails.send({
       from: fromEmail,
       to: recipients,
       replyTo: data.email,
@@ -415,7 +419,7 @@ export async function sendModelApplicationConfirmation(
 
     const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev";
 
-    await resend.emails.send({
+    await resendClient().emails.send({
       from: fromEmail,
       to: [data.email],
       subject: "We received your application - SANTOWRLDWIDE",
@@ -472,7 +476,7 @@ export async function sendModelReplyEmail(
 
     const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev";
 
-    await resend.emails.send({
+    await resendClient().emails.send({
       from: fromEmail,
       to: [data.to],
       replyTo: process.env.ADMIN_EMAIL || fromEmail,

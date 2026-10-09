@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
+import { createUnlockToken } from "@/lib/siteLock";
+import { timingSafeEqual } from "node:crypto";
 
 export async function POST(request: Request) {
   try {
     const { password } = await request.json();
-    const sitePassword = process.env.NEXT_PUBLIC_SITE_PASSWORD;
+    const sitePassword = process.env.SITE_PASSWORD;
+    const secret = process.env.SITE_UNLOCK_SECRET;
 
-    if (!sitePassword) {
+    if (!sitePassword || !secret) {
       console.error("SITE_PASSWORD environment variable is not set");
       return NextResponse.json(
         { error: "Server configuration error" },
@@ -13,14 +16,19 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password === sitePassword) {
+    const submitted = Buffer.from(typeof password === "string" ? password : "");
+    const expected = Buffer.from(sitePassword);
+    if (submitted.length === expected.length && timingSafeEqual(submitted, expected)) {
       // Password is correct
       const response = NextResponse.json({ success: true });
 
       // Set a cookie to remember this user is authenticated
-      response.cookies.set("site_unlocked", "true", {
+      response.cookies.set("site_unlocked", await createUnlockToken(secret), {
         maxAge: 60 * 60, // 1 hour
         path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
       });
 
       return response;

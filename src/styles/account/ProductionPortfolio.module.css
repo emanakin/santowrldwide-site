@@ -1,0 +1,107 @@
+.root { width: 100%; min-height: 100vh; background: #f8f7f3; color: #171715; font-family: Arial, Helvetica, sans-serif; }
+.canvas { width: 100%; margin: auto; background: #f8f7f3; overflow: hidden; }
+.topbar { height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(20px, 3vw, 48px); border-bottom: 1px solid #d2d0ca; gap: 20px; }
+.brand { color: inherit; font-size: 15px; font-weight: 900; letter-spacing: -.07em; text-decoration: none; white-space: nowrap; }
+.brand span { font-weight: 400; letter-spacing: -.05em; }
+.private, .kicker, .sectionDivider, .introTop, .marquee, .imageIndex, .personFacts, .filmTop > span, .filmNumber, .filmArrow, .videoCaption, .projectMeta, .footer > div > span { font-family: "Courier New", monospace; font-size: 11px; letter-spacing: .03em; }
+.private { color: #77746e; }
+.topbar nav { display: flex; gap: clamp(15px, 2vw, 36px); }
+.topbar nav a { color: #171715; font-size: 13px; text-decoration: none; }
+.topbar nav a:hover, .footer a:hover { text-decoration: underline; }
+.intro { padding: 28px clamp(20px, 3vw, 48px) 0; }
+.introTop, .sectionDivider { display: flex; justify-content: space-between; gap: 20px; }
+.introTitle { min-height: 360px; display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; padding: 45px 0 35px; }
+.introTitle h1 { font-size: clamp(76px, 12vw, 190px); line-height: .76; letter-spacing: -.11em; font-weight: 600; margin: 0; }
+.introTitle h1 em, .person h2 i, .project h2 i { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: -.09em; }
+.introTitle > div { width: 230px; align-self: flex-end; }
+.introTitle p { font-size: 16px; line-height: 1.45; margin: 20px 0 0; }
+.star { font-size: 55px; line-height: .7; }
+.marquee { display: flex; justify-content: space-between; gap: 15px; padding: 12px 0; border-top: 1px solid #171715; }
+.person { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); align-items: center; gap: clamp(30px, 5vw, 90px); padding: 40px clamp(20px, 3vw, 48px); min-height: 410px; background: #d5d2c8; }
+.personImage { width: 100%; aspect-ratio: 4/5; position: relative; background: #c5c3bd; overflow: hidden; }
+.personImage img { width: 100%; height: 100%; position: absolute; object-fit: cover; object-position: center 25%; filter: grayscale(1); }
+.assetPlaceholder { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; background: radial-gradient(circle at 80% 15%, #eeece6 0, #cac7be 44%, #aaa69e 100%); color: #242320; font-family: "Courier New", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.assetPlaceholder strong { font-family: Arial, Helvetica, sans-serif; font-size: clamp(35px, 6vw, 85px); font-weight: 500; line-height: .92; letter-spacing: -.08em; max-width: 70%; text-transform: none; }
+.imageIndex { position: absolute; bottom: 17px; left: 22px; padding: 6px 8px; background: #f8f7f3; z-index: 1; }
+.personCopy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 20px 0; }
+.person h2 { font-size: clamp(58px, 7vw, 104px); font-weight: 600; line-height: .88; letter-spacing: -.09em; margin: 30px 0 24px; }
+.role { font-weight: 700; margin: 0 0 24px !important; }
+.personCopy > p:not(.kicker) { max-width: 500px; font-size: 16px; line-height: 1.55; }
+.personFacts { display: flex; flex-wrap: wrap; gap: 8px 22px; border-top: 1px solid #a6a49d; width: 100%; margin-top: 50px; padding-top: 16px; }
+.sectionDivider { padding: 18px clamp(20px, 3vw, 48px); border-bottom: 1px solid #d2d0ca; }
+.feature { padding: 0 clamp(20px, 3vw, 48px) 86px; }
+.featureHeading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 220px) minmax(0, 360px); align-items: end; gap: clamp(20px, 3vw, 45px); padding: 66px 0 35px; }
+.projectHeader { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; padding: 66px 0 35px; }
+.featureHeading h2 { font-size: clamp(110px, 17vw, 240px); letter-spacing: -.12em; line-height: .75; margin: 20px 0 0; font-weight: 600; }
+.punctuation { color: #812d29; }
+.featureHeading > p, .projectHeader > p { max-width: 360px; font-size: 17px; line-height: 1.5; margin: 0; }
+.v2Still { width: 100%; aspect-ratio: 4/3; position: relative; overflow: hidden; background: #d2d0ca; }
+.v2Still img { object-fit: cover; }
+.v2Still > span { position: absolute; z-index: 1; bottom: 0; left: 0; padding: 8px 10px; background: #f8f7f3; font: 10px "Courier New", monospace; }
+.creditLine { display: flex; justify-content: space-between; gap: 15px; border-top: 1px solid #171715; padding: 12px 0; font-family: "Courier New", monospace; font-size: 11px; }
+.breakdown { display: grid; grid-template-columns: 1fr 2fr; gap: 40px; padding: 55px 0 72px; border-bottom: 1px solid #bfbdb5; }
+.breakdown h3, .filmTop h3 { font-size: clamp(35px, 4vw, 60px); font-weight: 500; line-height: 1; letter-spacing: -.07em; margin: 25px 0 0; }
+.breakdownGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.breakdownGrid > div { border-top: 1px solid #171715; padding-top: 12px; }
+.breakdownGrid span { font-family: "Courier New", monospace; font-size: 11px; }
+.breakdownGrid p { font-size: 14px; line-height: 1.55; margin: 35px 0 0; }
+.filmArea { padding: 35px 0 10px; }
+.filmTop { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+.filmTop h3 { margin: 0; }
+.filmGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.filmCard { min-width: 0; background: #171715; color: #f8f7f3; }
+.filmCard video, .projectVideo video { width: 100%; display: block; aspect-ratio: 16/9; background: #101010; object-fit: contain; }
+.filmCardCaption { display: flex; align-items: baseline; justify-content: space-between; gap: 15px; padding: 17px; }
+.filmCardCaption span { font: 11px "Courier New", monospace; }
+.filmCardCaption strong { font-size: clamp(18px, 2vw, 29px); font-weight: 500; letter-spacing: -.06em; }
+.videoPlaceholder { width: 100%; aspect-ratio: 16/9; background: #1b1b1a; color: #eee; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(16px, 3vw, 45px); font-family: "Courier New", monospace; font-size: 11px; letter-spacing: .05em; }
+.videoPlaceholder strong { font-family: Arial, Helvetica, sans-serif; font-size: clamp(36px, 7vw, 100px); font-weight: 500; letter-spacing: -.08em; line-height: .9; }
+.videoPlaceholder a { color: inherit; }
+.videoCaption { display: flex; justify-content: space-between; gap: 20px; padding: 13px 16px; color: #eee; }
+.project { padding: 0 clamp(20px, 3vw, 48px) 85px; }
+.projectHeader h2 { font-size: clamp(70px, 11vw, 150px); font-weight: 600; letter-spacing: -.1em; line-height: .78; margin: 30px 0 0; }
+.projectVideo { background: #101010; }
+.projectMeta { display: flex; justify-content: space-between; gap: 20px; padding: 15px 0; border-bottom: 1px solid #bfbdb5; }
+.footer { min-height: 250px; background: #1d1d1b; color: #f5f4ee; padding: 35px clamp(20px, 3vw, 48px); display: flex; align-items: flex-end; justify-content: space-between; }
+.footer > div { display: flex; flex-direction: column; gap: 24px; }
+.footer strong { font-size: clamp(40px, 7vw, 90px); font-weight: 500; line-height: .9; letter-spacing: -.08em; }
+.footer strong span { color: #b9514c; margin-left: 14px; }
+.footer a { color: inherit; text-decoration: none; font-size: 13px; }
+.footerLinks { text-align: right; }
+.footerLinks a:last-child { opacity: .55; font-size: 11px; }
+@media (max-width: 900px) {
+  .private { display: none; }
+  .person { grid-template-columns: minmax(0, 220px) minmax(0, 1fr); }
+  .featureHeading { grid-template-columns: 1fr 150px; }
+  .featureHeading > p { grid-column: 1 / -1; }
+  .breakdown { grid-template-columns: 1fr; }
+}
+@media (max-width: 650px) {
+  .topbar { height: 56px; }
+  .topbar nav { gap: 12px; }
+  .topbar nav a { font-size: 11px; }
+  .introTitle { min-height: 270px; display: block; padding-top: 45px; }
+  .introTitle h1 { font-size: clamp(70px, 18vw, 110px); }
+  .introTitle > div { width: auto; display: flex; gap: 15px; margin-top: 35px; }
+  .introTitle p { margin: 0; font-size: 13px; }
+  .star { font-size: 36px; }
+  .marquee span:nth-child(2), .marquee span:nth-child(3), .sectionDivider span:last-child { display: none; }
+  .person { grid-template-columns: 1fr; gap: 24px; padding: 28px 20px 38px; }
+  .personImage { width: min(58vw, 210px); }
+  .personCopy { padding: 0; }
+  .person h2 { font-size: 70px; }
+  .featureHeading { grid-template-columns: 1fr 38%; gap: 20px; padding-top: 48px; }
+  .projectHeader { display: block; padding-top: 48px; }
+  .featureHeading > p, .projectHeader > p { margin-top: 35px; font-size: 15px; }
+  .creditLine { flex-direction: column; gap: 5px; }
+  .filmGrid { grid-template-columns: 1fr; gap: 18px; }
+  .breakdownGrid { grid-template-columns: 1fr; gap: 22px; }
+  .breakdownGrid p { margin-top: 15px; }
+  .filmTop > span { max-width: 95px; text-align: right; }
+  .filmstrip button { padding: 10px; min-height: 115px; }
+  .filmstrip button strong { font-size: 18px; }
+  .filmstrip button small { display: none; }
+  .videoCaption span:last-child { display: none; }
+  .projectMeta { flex-direction: column; gap: 7px; }
+  .footer { align-items: flex-start; flex-direction: column; justify-content: space-between; gap: 30px; }
+}

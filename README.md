@@ -48,7 +48,17 @@ NEXT_PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN=
 
 # Site Settings
 NEXT_PUBLIC_LOCK_MODE=false
-NEXT_PUBLIC_SITE_PASSWORD=
+SITE_PASSWORD=
+SITE_UNLOCK_SECRET=
+
+# Reviewed production outreach (server only)
+SMTP_HOST=mail.privateemail.com
+SMTP_PORT=465
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
+SANTO_POSTAL_ADDRESS=
+PRODUCTIONS_PORTFOLIO_READY=false
 ```
 
 ### Installation
@@ -66,6 +76,17 @@ yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Productions and contact research
+
+- `/productions` is public and uses the existing R2 bucket root keys listed in `PRODUCTION_MEDIA.md`. It has its own studio layout and preserves the bottom project bar. Final credits, rights, and the Stop This impact figure still need owner confirmation.
+- `/account/production` redirects to the owner-only dashboard at `/account/production/settings`.
+- `/account/production/settings` is restricted to existing Firebase super admins. It can preload the 271 researched contacts bundled in `src/data/production-contacts.json`, import a newer CSV, review contacts and drafts, and export the live list. Firestore holds `production_contacts` and `production_drafts`. Preloading is idempotent for existing contacts.
+- A contact must have a source URL, a recent check date, and a public professional route. The source and legal basis fields are separate: a published email alone does not authorize a commercial message.
+- Each outbound draft needs individual review, explicit send confirmation, a recorded basis, a working Santo SMTP mailbox, a sender postal address, and `PRODUCTIONS_PORTFOLIO_READY=true`. Marking that flag true is reserved for an approved, published portfolio. A send with an uncertain SMTP result is recorded as `send_unknown` and is not retried automatically.
+- Resend remains for existing transactional mail; production outreach uses the Santo mailbox only. The contact research workflow and source queue are documented in the production folder's README.
+
+See `SETUP_GUIDE.md` for the complete setup and verification workflow. Configure the variables in `.env.example` for the target Vercel environment. `SITE_PASSWORD` and `SITE_UNLOCK_SECRET` are server-only; remove any prior `NEXT_PUBLIC_SITE_PASSWORD` setting from Vercel. Never commit `.env.local`.
 
 ## Deployment
 

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifyUnlockToken } from "@/lib/siteLock";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   // Check if site is in lock mode
   const isLockModeEnabled = process.env.NEXT_PUBLIC_LOCK_MODE === "true";
 
@@ -9,6 +10,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (
     path.startsWith("/api") ||
+    path === "/productions" ||
     path === "/locked" ||
     path.startsWith("/_next") ||
     path.includes(".")
@@ -17,7 +19,10 @@ export function middleware(request: NextRequest) {
   }
 
   // Check if user has the unlock cookie
-  const hasUnlockCookie = request.cookies.has("site_unlocked");
+  const hasUnlockCookie = await verifyUnlockToken(
+    request.cookies.get("site_unlocked")?.value,
+    process.env.SITE_UNLOCK_SECRET
+  );
 
   // If lock mode is enabled and user doesn't have unlock cookie, redirect to locked page
   if (isLockModeEnabled && !hasUnlockCookie) {
