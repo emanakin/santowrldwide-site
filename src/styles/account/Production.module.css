@@ -33,7 +33,20 @@
 .filters input { flex: 1; }
 .filters select { width: auto; }
 .list { border-top: 1px solid #ddd; }
-.pipelineHead, .pipelineRow { display: grid; grid-template-columns: minmax(150px, 2fr) minmax(90px, 1fr) minmax(75px, .75fr) minmax(85px, .85fr) minmax(100px, 1fr) minmax(180px, 1.4fr); gap: .7rem; align-items: center; }
+.pipelineHead, .pipelineRow { display: grid; grid-template-columns: 2rem minmax(150px, 2fr) minmax(90px, 1fr) minmax(75px, .75fr) minmax(85px, .85fr) minmax(100px, 1fr) minmax(180px, 1.4fr); gap: .7rem; align-items: center; }
+.checkCell { align-items: center !important; justify-content: center; }
+.checkCell input { width: auto; }
+.pipelineRow[data-selected="true"] { background: #f6f6f3; }
+.selectionBar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 0 0 1rem; padding: .85rem 1rem; border: 1px solid #171717; background: #171717; color: white; }
+.selectionBar span { font-size: .9rem; }
+.selectionBar button { background: white; color: #171717; border-color: white; }
+.composer { border: 1px solid #171717; padding: 1.25rem; margin: 0 0 1.5rem; }
+.composer h2 { font-size: 1.4rem; letter-spacing: -.03em; margin-bottom: .4rem; }
+.composerPreview { white-space: pre-wrap; background: #f6f6f3; padding: 1rem; font-size: .9rem; line-height: 1.45; margin: 1rem 0; }
+.composerList { list-style: none; margin: 0; padding: 0; max-height: 22rem; overflow: auto; border-top: 1px solid #e4e4e4; }
+.composerList li { display: flex; justify-content: space-between; gap: 1rem; padding: .7rem 0; border-bottom: 1px solid #eee; }
+.composerList strong { font-size: .92rem; }
+.composerList span { color: #666; font-size: .78rem; text-align: right; }
 .pipelineHead { padding: .65rem .35rem; background: #f1f1ee; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; }
 .pipelineRow { padding: .9rem .35rem; border-bottom: 1px solid #ddd; }
 .pipelineRow > div { display: flex; flex-direction: column; gap: .28rem; min-width: 0; }
@@ -58,6 +71,6 @@
 .draftEditor label { margin-bottom: .85rem; }
 .checkboxLabel { display: flex !important; flex-direction: row !important; align-items: center; gap: .55rem !important; }
 .root .checkboxLabel input { width: auto; }
-@media (max-width: 1000px) { .pipelineHead { display: none; } .pipelineRow { grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: .8rem; } .pipelineRow > div:last-child { grid-column: 1 / -1; } }
+@media (max-width: 1000px) { .pipelineHead { display: none; } .pipelineRow { grid-template-columns: 2rem minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: .8rem; } .pipelineRow > div:last-child { grid-column: 2 / -1; } .composerList li { flex-direction: column; gap: .2rem; } .composerList span { text-align: left; } }
 @media (max-width: 800px) { .stats { grid-template-columns: repeat(2, 1fr); } .formGrid, .draftLayout { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; gap: .4rem; } }
-@media (max-width: 600px) { .pipelineRow { grid-template-columns: 1fr 1fr; } .pipelineRow > div:first-child, .pipelineRow > div:last-child { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .pipelineRow { grid-template-columns: 2rem minmax(0, 1fr); } .pipelineRow > div:not(:first-child) { grid-column: 2; } }

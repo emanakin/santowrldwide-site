@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/firebase/client/firebaseApp";
 import { adminFetch } from "@/services/client/adminApi";
 import { useSuperAdminGuard } from "@/hooks/useSuperAdminGuard";
+import { assignSubjects, outreachBody } from "@/lib/production/message";
 import { CONTACT_CATEGORIES, COMPANY_SCALES, ProductionContact, ProductionDraft } from "@/types/production-types";
 import styles from "@/styles/account/Production.module.css";
 
@@ -15,6 +16,15 @@ const emptyContact = {
 };
 
 type MailStatus = { smtpConfigured: boolean; postalAddressConfigured: boolean; portfolioReady: boolean; canSend: boolean };
+
+const LOCKED = new Set(["sent", "sending", "send_unknown"]);
+
+function canQueue(contact: ProductionContact, drafts: ProductionDraft[]) {
+  if (!contact.email || contact.status === "suppressed") return false;
+  return !drafts.some((draft) => draft.contactId === contact.id && LOCKED.has(draft.status));
+}
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function ProductionAdminPage() {
   const { checking } = useSuperAdminGuard();
@@ -36,6 +46,10 @@ export default function ProductionAdminPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [sendProgress, setSendProgress] = useState("");
+  const stopSend = useRef(false);
 
   const load = useCallback(async () => {
     const [contactData, draftData, configuration] = await Promise.all([
@@ -73,6 +87,85 @@ export default function ProductionAdminPage() {
     return result;
   }, [drafts]);
   const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
+  const visibleEligible = visible.filter((contact) => canQueue(contact, drafts));
+  const allVisibleSelected = visibleEligible.length > 0 && visibleEligible.every((contact) => selected.has(contact.id));
+  const selectedContacts = useMemo(
+    () => contacts.filter((contact) => selected.has(contact.id) && canQueue(contact, drafts)),
+    [contacts, selected, drafts],
+  );
+  const previewSubjects = useMemo(() => {
+    const reserved = drafts.filter((draft) => LOCKED.has(draft.status)).map((draft) => draft.subject);
+    return assignSubjects(selectedContacts, reserved);
+  }, [selectedContacts, drafts]);
+  const notePreview = outreachBody({ name: "Alex" }).replace("Hi Alex,", "Hi {first name},");
+
+  function toggleContact(id: string) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleVisible() {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (allVisibleSelected) visibleEligible.forEach((contact) => next.delete(contact.id));
+      else visibleEligible.forEach((contact) => next.add(contact.id));
+      return next;
+    });
+  }
+
+  async function sendSelected() {
+    if (!selectedContacts.length || !mailStatus?.canSend) return;
+    stopSend.current = false;
+    setBusy(true);
+    setSendProgress("Preparing emails…");
+    setMessage("");
+    try {
+      const prepared = await adminFetch<{ prepared: { id: string; to: string; subject: string }[]; skipped: { reason: string }[] }>(
+        "/api/admin/production/drafts/prepare",
+        { method: "POST", body: JSON.stringify({ contactIds: selectedContacts.map((contact) => contact.id), recordApproval: true }) },
+      );
+      if (!prepared.prepared.length) {
+        setMessage(prepared.skipped.length ? `Nothing sent. ${prepared.skipped.length} skipped (${prepared.skipped[0].reason}).` : "Nothing to send.");
+        return;
+      }
+      let sent = 0;
+      let stoppedEarly = false;
+      for (const [index, draft] of prepared.prepared.entries()) {
+        if (stopSend.current) {
+          stoppedEarly = true;
+          break;
+        }
+        setSendProgress(`Sending ${index + 1} of ${prepared.prepared.length} — ${draft.subject}`);
+        try {
+          await adminFetch(`/api/admin/production/drafts/${draft.id}/send`, { method: "POST", body: JSON.stringify({ confirmSend: true }) });
+          sent += 1;
+        } catch (error) {
+          await load();
+          const reason = error instanceof Error ? error.message : "Send failed";
+          setMessage(`Sent ${sent}. Stopped on ${draft.to}: ${reason}. The rest are still ready and were not retried.`);
+          setSendProgress("");
+          return;
+        }
+        if (index < prepared.prepared.length - 1) await wait(1200);
+      }
+      await load();
+      if (!stoppedEarly) {
+        setSelected(new Set());
+        setReviewOpen(false);
+      }
+      const skipped = prepared.skipped.length ? ` ${prepared.skipped.length} skipped.` : "";
+      setMessage(stoppedEarly ? `Sent ${sent}, then stopped. Remaining drafts stay ready.${skipped}` : `Sent ${sent} emails. Each subject was different.${skipped}`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Prepare failed");
+    } finally {
+      setSendProgress("");
+      setBusy(false);
+    }
+  }
 
   function setField(name: keyof typeof emptyContact, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -202,7 +295,7 @@ export default function ProductionAdminPage() {
     <header className={styles.header}>
       <p className={styles.eyebrow}><Link href="/productions">← Public portfolio</Link> / SANTOWRLDWIDE / PRIVATE</p>
       <h1>Outreach pipeline.</h1>
-      <p>Agencies and collaborators, reviewed drafts, and a clear record of each email sent through Santo’s domain.</p>
+      <p>Load the contacts, select them, and send Zeb’s note. Every subject is different, and the greeting uses their name.</p>
     </header>
     <div className={styles.stats}>
       <div><strong>{contacts.length}</strong><span>contacts</span></div>
@@ -231,7 +324,7 @@ export default function ProductionAdminPage() {
         <button onClick={exportCsv} disabled={busy}>Export CSV</button>
       </div>
     </div>
-    <p className={styles.hint}>Preload adds the researched snapshot once and skips duplicates. “Sent” means SMTP accepted the message. “Image loaded” is only an email image request; privacy tools can load or block it, so it does not prove a person read the email.</p>
+    <p className={styles.hint}>Preload adds the researched snapshot once and skips duplicates. Select everyone with an email, review the subjects, then send. Contacts already emailed are left out. “Sent” means SMTP accepted the message. “Image loaded” is only an email image request; privacy tools can load or block it, so it does not prove a person read the email.</p>
 
     {tab === "contacts" ? <>
       <details className={styles.editorDetails} open={formOpen} onToggle={(event) => setFormOpen(event.currentTarget.open)}>
@@ -258,20 +351,50 @@ export default function ProductionAdminPage() {
         <select aria-label="Filter by company scale" value={scale} onChange={(event) => setScale(event.target.value)}><option value="all">All scales</option>{COMPANY_SCALES.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select>
         <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option>{["research", "qualified", "ready", "contacted", "replied", "suppressed"].map((value) => <option key={value}>{value}</option>)}</select>
       </div>
-      <div className={styles.pipelineHead}><span>Agency / contact</span><span>City / scale</span><span>Stage</span><span>Last sent</span><span>Email image</span><span>Actions</span></div>
+      <div className={styles.selectionBar}>
+        <span>{selectedContacts.length} selected · {visibleEligible.length} ready in this view</span>
+        <div className={styles.actions}>
+          <button type="button" onClick={toggleVisible} disabled={busy || !visibleEligible.length}>{allVisibleSelected ? "Clear visible" : "Select all visible"}</button>
+          <button type="button" onClick={() => setReviewOpen(true)} disabled={busy || !selectedContacts.length}>Review &amp; send</button>
+        </div>
+      </div>
+      {reviewOpen && <section className={styles.composer} aria-label="Bulk send review">
+        <h2>Send {selectedContacts.length} {selectedContacts.length === 1 ? "email" : "emails"}</h2>
+        <p>Same note from Zeb. The greeting uses a first name when we have one. Each subject below is unique.</p>
+        <div className={styles.composerPreview}>{notePreview}</div>
+        <ul className={styles.composerList}>
+          {selectedContacts.map((contact) => <li key={contact.id}>
+            <strong>{previewSubjects.get(contact.id)}</strong>
+            <span>{contact.name} · {contact.company}<br />{contact.email}</span>
+          </li>)}
+        </ul>
+        {sendProgress && <p role="status" className={styles.notice}>{sendProgress}</p>}
+        {!mailStatus?.canSend && <p className={styles.hint}>Finish email setup above before sending. You can still read the subjects.</p>}
+        <div className={styles.actions}>
+          <button type="button" onClick={() => { stopSend.current = true; }} disabled={!busy}>Stop after this one</button>
+          <button type="button" onClick={() => setReviewOpen(false)} disabled={busy}>Back</button>
+          <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || !selectedContacts.length}>Send {selectedContacts.length}</button>
+        </div>
+      </section>}
+      <div className={styles.pipelineHead}>
+        <span className={styles.checkCell}><input type="checkbox" aria-label="Select all visible contacts" checked={allVisibleSelected} onChange={toggleVisible} disabled={!visibleEligible.length} /></span>
+        <span>Agency / contact</span><span>City / scale</span><span>Stage</span><span>Last sent</span><span>Email image</span><span>Actions</span>
+      </div>
       <div className={styles.list}>{visible.map((contact) => {
         const latest = activity.get(contact.id);
-        return <article key={contact.id} className={styles.pipelineRow}>
-          <div><a className={styles.companyLink} href={contact.websiteUrl || contact.sourceUrl} target="_blank" rel="noreferrer">{contact.company} ↗</a><span>{contact.name} · {contact.role || contact.category.replaceAll("_", " ")}</span></div>
+        const queueable = canQueue(contact, drafts);
+        return <article key={contact.id} className={styles.pipelineRow} data-selected={queueable && selected.has(contact.id) ? "true" : "false"}>
+          <div className={styles.checkCell}><input type="checkbox" aria-label={`Select ${contact.company}`} checked={queueable && selected.has(contact.id)} disabled={!queueable || busy} onChange={() => toggleContact(contact.id)} /></div>
+          <div><a className={styles.companyLink} href={contact.websiteUrl || contact.sourceUrl} target="_blank" rel="noreferrer">{contact.company} ↗</a><span>{contact.name} · {contact.role || contact.category.replaceAll("_", " ")}</span>{selected.has(contact.id) && <small>{previewSubjects.get(contact.id)}</small>}</div>
           <div><span>{contact.city}</span><small>{contact.companyScale.replaceAll("_", " ")}</small></div>
           <div><span className={styles.statusChip}>{contact.status}</span></div>
           <div><span>{dateLabel(latest?.sentAt)}</span></div>
           <div><span>{latest?.openedAt ? `Image loaded · ${dateLabel(latest.openedAt)}` : latest?.sentAt ? "No signal" : "—"}</span></div>
-          <div className={styles.rowActions}><a href={contact.contactUrl || contact.sourceUrl} target="_blank" rel="noreferrer">Route ↗</a><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a><button onClick={() => startEdit(contact)}>Edit</button>{contact.email && <button onClick={() => createDraft(contact.id)} disabled={busy || contact.status === "suppressed"}>Draft</button>}</div>
+          <div className={styles.rowActions}><a href={contact.contactUrl || contact.sourceUrl} target="_blank" rel="noreferrer">Route ↗</a><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a><button onClick={() => startEdit(contact)}>Edit</button>{contact.email && <button onClick={() => createDraft(contact.id)} disabled={busy || !queueable}>Draft</button>}</div>
         </article>;
       })}</div>
     </> : <div className={styles.draftLayout}>
-      <div className={styles.draftList}>{drafts.map((draft) => <button key={draft.id} className={selectedDraft === draft.id ? styles.selected : ""} onClick={() => openDraft(draft)}><strong>{contacts.find((contact) => contact.id === draft.contactId)?.company || draft.to}</strong><span>{draft.status} · {draft.to}</span></button>)}</div>
+      <div className={styles.draftList}>{drafts.map((draft) => <button key={draft.id} className={selectedDraft === draft.id ? styles.selected : ""} onClick={() => openDraft(draft)}><strong>{contacts.find((contact) => contact.id === draft.contactId)?.company || draft.to}</strong><span>{draft.subject}</span><span>{draft.status} · {draft.to}</span></button>)}</div>
       <div className={styles.draftEditor}>{currentDraft ? <>
         <p className={styles.eyebrow}>{currentContact?.name} · {currentContact?.company}</p>
         <h2>Review message</h2>

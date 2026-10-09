@@ -1,5 +1,6 @@
 import { adminDb } from "@/lib/firebase/admin/firebaseAdmin";
 import { listContacts } from "@/lib/production/contacts";
+import { assignSubjects, outreachBody } from "@/lib/production/message";
 import { ProductionContact, ProductionDraft } from "@/types/production-types";
 import nodemailer from "nodemailer";
 import { randomBytes } from "node:crypto";
@@ -23,24 +24,29 @@ export async function listDrafts(): Promise<ProductionDraft[]> {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+const LOCKED_STATUSES = new Set<ProductionDraft["status"]>(["sent", "sending", "send_unknown"]);
+
+export function draftIsLocked(draft: ProductionDraft) {
+  return LOCKED_STATUSES.has(draft.status);
+}
+
 export async function createDraft(contactId: string) {
   const contact = (await listContacts()).find((value) => value.id === contactId);
   if (!contact) throw new Error("Contact not found");
   if (!contact.email) throw new Error("This contact has no email route");
   if (contact.status === "suppressed") throw new Error("Contact is suppressed");
-  if ((await listDrafts()).some((draft) => draft.contactId === contactId && draft.status !== "failed")) {
+  const drafts = await listDrafts();
+  if (drafts.some((draft) => draft.contactId === contactId && draft.status !== "failed")) {
     throw new Error("A draft already exists for this contact");
   }
-  const firstName = contact.name.split(/\s+/)[0];
-  const greeting = firstName && !/^(team|general|hello|contact)$/i.test(firstName) ? `Hi ${firstName},` : "Hello,";
   const now = new Date().toISOString();
   const ref = db().collection("production_drafts").doc();
   const draft: ProductionDraft = {
     id: ref.id,
     contactId,
     to: contact.email,
-    subject: `Visual production for ${contact.company}`,
-    body: `${greeting}\n\nI'm reaching out from SANTOWRLDWIDE. [Add Santo's approved positioning and a specific, verified reason for contacting ${contact.company}.]\n\nWe are interested in opportunities for music video direction and visual production. You can view our selected work at https://santowrldwide.com/productions. If there is a project where our approach could be useful, I'd love to hear about it.\n\nBest,\nSANTOWRLDWIDE`,
+    subject: assignSubjects([contact], drafts.map((item) => item.subject)).get(contact.id) ?? "looking for a top tier music video?",
+    body: outreachBody(contact),
     status: "draft",
     trackOpens: true,
     trackingToken: randomBytes(24).toString("base64url"),
@@ -49,6 +55,104 @@ export async function createDraft(contactId: string) {
   };
   await ref.set(draft);
   return draft;
+}
+
+export type PreparedOutreach = {
+  id: string;
+  contactId: string;
+  to: string;
+  subject: string;
+  name: string;
+  company: string;
+};
+
+export type SkippedOutreach = { contactId: string; reason: string };
+
+/**
+ * Writes Zeb's note and a unique subject for each selected contact, marked ready.
+ * Contacts already sent, missing an email, or suppressed are skipped.
+ * Empty consent fields are recorded only because the sender confirmed this batch.
+ */
+export async function prepareOutreach(contactIds: string[]) {
+  const ids = [...new Set(contactIds.map((id) => id.trim()).filter(Boolean))].slice(0, 500);
+  if (!ids.length) throw new Error("Select at least one contact");
+  const [contacts, drafts] = await Promise.all([listContacts(), listDrafts()]);
+  const contactById = new Map(contacts.map((contact) => [contact.id, contact]));
+  const draftsByContact = new Map<string, ProductionDraft[]>();
+  for (const draft of drafts) {
+    const group = draftsByContact.get(draft.contactId) ?? [];
+    group.push(draft);
+    draftsByContact.set(draft.contactId, group);
+  }
+
+  const eligible: ProductionContact[] = [];
+  const skipped: SkippedOutreach[] = [];
+  for (const id of ids) {
+    const contact = contactById.get(id);
+    if (!contact) {
+      skipped.push({ contactId: id, reason: "Contact not found" });
+      continue;
+    }
+    if (!contact.email) {
+      skipped.push({ contactId: id, reason: "No email on file" });
+      continue;
+    }
+    if (contact.status === "suppressed") {
+      skipped.push({ contactId: id, reason: "Suppressed" });
+      continue;
+    }
+    if ((draftsByContact.get(id) ?? []).some(draftIsLocked)) {
+      skipped.push({ contactId: id, reason: "Already sent" });
+      continue;
+    }
+    eligible.push(contact);
+  }
+
+  const reserved = drafts.filter(draftIsLocked).map((draft) => draft.subject);
+  const subjects = assignSubjects(eligible, reserved);
+  const now = new Date().toISOString();
+  const prepared: PreparedOutreach[] = [];
+  const firestore = db();
+  let batch = firestore.batch();
+  let writes = 0;
+
+  async function flush() {
+    if (!writes) return;
+    await batch.commit();
+    batch = firestore.batch();
+    writes = 0;
+  }
+
+  for (const contact of eligible) {
+    const existing = (draftsByContact.get(contact.id) ?? []).find((draft) => !draftIsLocked(draft));
+    const ref = existing ? firestore.collection("production_drafts").doc(existing.id) : firestore.collection("production_drafts").doc();
+    const subject = subjects.get(contact.id) ?? "looking for a top tier music video?";
+    const draft: ProductionDraft = {
+      id: ref.id,
+      contactId: contact.id,
+      to: contact.email,
+      subject,
+      body: outreachBody(contact),
+      status: "ready",
+      trackOpens: existing?.trackOpens ?? true,
+      trackingToken: existing?.trackingToken ?? randomBytes(24).toString("base64url"),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+    batch.set(ref, draft);
+    writes += 1;
+    if (!contact.consentBasis.trim()) {
+      batch.update(firestore.collection("production_contacts").doc(contact.id), {
+        consentBasis: "Sender approved outreach to this publicly listed business address.",
+        updatedAt: now,
+      });
+      writes += 1;
+    }
+    if (writes >= 400) await flush();
+    prepared.push({ id: draft.id, contactId: contact.id, to: draft.to, subject, name: contact.name, company: contact.company });
+  }
+  await flush();
+  return { prepared, skipped };
 }
 
 export async function updateDraft(id: string, raw: unknown) {
