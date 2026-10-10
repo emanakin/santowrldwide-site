@@ -63,12 +63,17 @@ export async function resumeBatch(id: string) {
 }
 
 export async function processBatch(id: string) {
+  const startedAt = Date.now();
   const ref = batches().doc(id);
   const initial = await ref.get();
   if (!initial.exists) return;
   const entries = (initial.data() as ProductionSendBatch).items;
   for (const entry of entries) {
     if (entry.status !== "pending") continue;
+    if (Date.now() - startedAt > 30_000) {
+      await ref.update({ status: "paused", updatedAt: new Date().toISOString() });
+      return;
+    }
     const current = await ref.get();
     if (!current.exists || current.data()?.status !== "running") return;
     try {
@@ -85,5 +90,6 @@ export async function processBatch(id: string) {
       return;
     }
   }
-  await ref.update({ status: "complete", updatedAt: new Date().toISOString() });
+  const final = await ref.get();
+  if (final.data()?.status === "running") await ref.update({ status: "complete", updatedAt: new Date().toISOString() });
 }

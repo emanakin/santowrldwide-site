@@ -176,6 +176,9 @@ export async function sendDraft(id: string, confirm: boolean) {
     port: configuration.port,
     secure: configuration.port === 465,
     auth: { user: configuration.user, pass: configuration.password },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 8000,
   });
   try {
     const result = await transporter.sendMail({

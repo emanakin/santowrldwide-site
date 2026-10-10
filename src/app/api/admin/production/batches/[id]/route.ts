@@ -4,7 +4,7 @@ import { pauseBatch, processBatch, resumeBatch } from "@/lib/production/batches"
 import { z } from "zod";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!await requireSuperAdmin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
