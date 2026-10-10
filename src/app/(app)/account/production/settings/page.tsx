@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/firebase/client/firebaseApp";
 import { adminFetch } from "@/services/client/adminApi";
+import { hasRecordedBasis } from "@/lib/production/eligibility";
 import { useSuperAdminGuard } from "@/hooks/useSuperAdminGuard";
-import { assignSubjects, outreachBody } from "@/lib/production/message";
-import { CONTACT_CATEGORIES, COMPANY_SCALES, ProductionContact, ProductionDraft } from "@/types/production-types";
+import { CONTACT_CATEGORIES, COMPANY_SCALES, ProductionBooking, ProductionBookingSlot, ProductionContact, ProductionDraft, ProductionSendBatch } from "@/types/production-types";
 import styles from "@/styles/account/Production.module.css";
 
 const emptyContact = {
@@ -17,21 +17,20 @@ const emptyContact = {
 
 type MailStatus = { smtpConfigured: boolean; postalAddressConfigured: boolean; portfolioReady: boolean; canSend: boolean };
 
-const LOCKED = new Set(["sent", "sending", "send_unknown"]);
-
 function canQueue(contact: ProductionContact, drafts: ProductionDraft[]) {
-  if (!contact.email || contact.status === "suppressed") return false;
-  return !drafts.some((draft) => draft.contactId === contact.id && LOCKED.has(draft.status));
+  return Boolean(contact.email && hasRecordedBasis(contact.consentBasis) && contact.status !== "suppressed" && drafts.some((draft) => draft.contactId === contact.id && draft.status === "ready"));
 }
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function ProductionAdminPage() {
   const { checking } = useSuperAdminGuard();
   const [contacts, setContacts] = useState<ProductionContact[]>([]);
   const [drafts, setDrafts] = useState<ProductionDraft[]>([]);
+  const [batches, setBatches] = useState<ProductionSendBatch[]>([]);
+  const [slots, setSlots] = useState<ProductionBookingSlot[]>([]);
+  const [bookings, setBookings] = useState<ProductionBooking[]>([]);
+  const [slotLocal, setSlotLocal] = useState("");
   const [mailStatus, setMailStatus] = useState<MailStatus | null>(null);
-  const [tab, setTab] = useState<"contacts" | "drafts">("contacts");
+  const [tab, setTab] = useState<"contacts" | "drafts" | "booking">("contacts");
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("all");
   const [category, setCategory] = useState("all");
@@ -48,18 +47,21 @@ export default function ProductionAdminPage() {
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [sendProgress, setSendProgress] = useState("");
-  const stopSend = useRef(false);
 
   const load = useCallback(async () => {
-    const [contactData, draftData, configuration] = await Promise.all([
+    const [contactData, draftData, configuration, batchData, bookingData] = await Promise.all([
       adminFetch<{ contacts: ProductionContact[] }>("/api/admin/production/contacts"),
       adminFetch<{ drafts: ProductionDraft[] }>("/api/admin/production/drafts"),
       adminFetch<MailStatus>("/api/admin/production/config"),
+      adminFetch<{ batches: ProductionSendBatch[] }>("/api/admin/production/batches"),
+      adminFetch<{ slots: ProductionBookingSlot[]; bookings: ProductionBooking[] }>("/api/admin/production/booking"),
     ]);
     setContacts(contactData.contacts);
     setDrafts(draftData.drafts);
     setMailStatus(configuration);
+    setBatches(batchData.batches);
+    setSlots(bookingData.slots);
+    setBookings(bookingData.bookings);
   }, []);
 
   useEffect(() => {
@@ -93,11 +95,7 @@ export default function ProductionAdminPage() {
     () => contacts.filter((contact) => selected.has(contact.id) && canQueue(contact, drafts)),
     [contacts, selected, drafts],
   );
-  const previewSubjects = useMemo(() => {
-    const reserved = drafts.filter((draft) => LOCKED.has(draft.status)).map((draft) => draft.subject);
-    return assignSubjects(selectedContacts, reserved);
-  }, [selectedContacts, drafts]);
-  const notePreview = outreachBody({ name: "Alex" }).replace("Hi Alex,", "Hi {first name},");
+  const selectedDrafts = selectedContacts.map((contact) => drafts.find((draft) => draft.contactId === contact.id && draft.status === "ready")).filter((draft): draft is ProductionDraft => Boolean(draft));
 
   function toggleContact(id: string) {
     setSelected((current) => {
@@ -118,51 +116,18 @@ export default function ProductionAdminPage() {
   }
 
   async function sendSelected() {
-    if (!selectedContacts.length || !mailStatus?.canSend) return;
-    stopSend.current = false;
+    if (!selectedDrafts.length || selectedDrafts.length > 10 || !mailStatus?.canSend) return;
     setBusy(true);
-    setSendProgress("Preparing emails…");
     setMessage("");
     try {
-      const prepared = await adminFetch<{ prepared: { id: string; to: string; subject: string }[]; skipped: { reason: string }[] }>(
-        "/api/admin/production/drafts/prepare",
-        { method: "POST", body: JSON.stringify({ contactIds: selectedContacts.map((contact) => contact.id), recordApproval: true }) },
-      );
-      if (!prepared.prepared.length) {
-        setMessage(prepared.skipped.length ? `Nothing sent. ${prepared.skipped.length} skipped (${prepared.skipped[0].reason}).` : "Nothing to send.");
-        return;
-      }
-      let sent = 0;
-      let stoppedEarly = false;
-      for (const [index, draft] of prepared.prepared.entries()) {
-        if (stopSend.current) {
-          stoppedEarly = true;
-          break;
-        }
-        setSendProgress(`Sending ${index + 1} of ${prepared.prepared.length} — ${draft.subject}`);
-        try {
-          await adminFetch(`/api/admin/production/drafts/${draft.id}/send`, { method: "POST", body: JSON.stringify({ confirmSend: true }) });
-          sent += 1;
-        } catch (error) {
-          await load();
-          const reason = error instanceof Error ? error.message : "Send failed";
-          setMessage(`Sent ${sent}. Stopped on ${draft.to}: ${reason}. The rest are still ready and were not retried.`);
-          setSendProgress("");
-          return;
-        }
-        if (index < prepared.prepared.length - 1) await wait(1200);
-      }
+      await adminFetch("/api/admin/production/batches", { method: "POST", body: JSON.stringify({ draftIds: selectedDrafts.map((draft) => draft.id), confirmSend: true }) });
       await load();
-      if (!stoppedEarly) {
-        setSelected(new Set());
-        setReviewOpen(false);
-      }
-      const skipped = prepared.skipped.length ? ` ${prepared.skipped.length} skipped.` : "";
-      setMessage(stoppedEarly ? `Sent ${sent}, then stopped. Remaining drafts stay ready.${skipped}` : `Sent ${sent} emails. Each subject was different.${skipped}`);
+      setSelected(new Set());
+      setReviewOpen(false);
+      setMessage(`Batch of ${selectedDrafts.length} started. Refresh to see progress; you can close this page.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Prepare failed");
+      setMessage(error instanceof Error ? error.message : "Batch failed");
     } finally {
-      setSendProgress("");
       setBusy(false);
     }
   }
@@ -206,6 +171,49 @@ export default function ProductionAdminPage() {
       await load();
       setMessage(`Imported ${result.imported} contacts. ${result.errors.length} rows skipped.${result.errors.length ? ` First issue: row ${result.errors[0].row}: ${result.errors[0].error}` : ""}`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Import failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function importDraftCsv(file?: File) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const result = await adminFetch<{ imported: number; skipped: number; errors: { row: number; error: string }[] }>("/api/admin/production/drafts/import", { method: "POST", body: JSON.stringify({ csv: await file.text() }) });
+      await load();
+      setTab("drafts");
+      setMessage(`Imported ${result.imported} unapproved drafts; ${result.skipped} skipped. ${result.errors[0] ? `First issue: row ${result.errors[0].row}: ${result.errors[0].error}` : ""}`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Draft import failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function batchAction(id: string, action: "pause" | "resume") {
+    setBusy(true);
+    try {
+      await adminFetch(`/api/admin/production/batches/${id}`, { method: "POST", body: JSON.stringify({ action }) });
+      await load();
+      setMessage(`Batch ${action === "pause" ? "paused" : "resumed"}.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Batch update failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function addBookingSlot(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      await adminFetch("/api/admin/production/booking", { method: "POST", body: JSON.stringify({ local: slotLocal }) });
+      setSlotLocal("");
+      await load();
+      setMessage("20-minute Toronto slot added.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Slot failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function removeBookingSlot(id: string) {
+    setBusy(true);
+    try {
+      await adminFetch("/api/admin/production/booking", { method: "DELETE", body: JSON.stringify({ id }) });
+      await load();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not remove slot"); }
     finally { setBusy(false); }
   }
 
@@ -295,7 +303,7 @@ export default function ProductionAdminPage() {
     <header className={styles.header}>
       <p className={styles.eyebrow}><Link href="/productions">← Public portfolio</Link> / SANTOWRLDWIDE / PRIVATE</p>
       <h1>Outreach pipeline.</h1>
-      <p>Load the contacts, select them, and send Zeb’s note. Every subject is different, and the greeting uses their name.</p>
+      <p>Research contacts, review each note, then send only the drafts you mark ready.</p>
     </header>
     <div className={styles.stats}>
       <div><strong>{contacts.length}</strong><span>contacts</span></div>
@@ -317,14 +325,17 @@ export default function ProductionAdminPage() {
       <div className={styles.tabs}>
         <button className={tab === "contacts" ? styles.active : ""} onClick={() => setTab("contacts")}>Agency pipeline</button>
         <button className={tab === "drafts" ? styles.active : ""} onClick={() => setTab("drafts")}>Email history &amp; drafts</button>
+        <button className={tab === "booking" ? styles.active : ""} onClick={() => setTab("booking")}>Bookings</button>
       </div>
       <div className={styles.actions}>
         <button onClick={preloadContacts} disabled={busy}>Preload 271 researched contacts</button>
         <label className={styles.fileButton}>Import CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { importCsv(event.target.files?.[0]); event.target.value = ""; }} hidden /></label>
+        <label className={styles.fileButton}>Import researched drafts<input type="file" accept=".csv,text/csv" onChange={(event) => { importDraftCsv(event.target.files?.[0]); event.target.value = ""; }} hidden /></label>
         <button onClick={exportCsv} disabled={busy}>Export CSV</button>
       </div>
     </div>
-    <p className={styles.hint}>Preload adds the researched snapshot once and skips duplicates. Select everyone with an email, review the subjects, then send. Contacts already emailed are left out. “Sent” means SMTP accepted the message. “Image loaded” is only an email image request; privacy tools can load or block it, so it does not prove a person read the email.</p>
+    <p className={styles.hint}>Import adds only source-backed, unapproved drafts and preserves existing edits and sent history. Mark each draft ready after review, then select up to 10 for a manual batch. A recorded contact basis is required. “Sent” means SMTP accepted the message; an image load does not prove a person read it.</p>
+    {batches.length > 0 && <section className={styles.batchList} aria-label="Send batches"><h2>Send batches</h2>{batches.slice(0, 5).map((batch) => <div key={batch.id} className={styles.batchRow}><div><strong>{batch.status} · {batch.items.filter((item) => item.status === "sent").length}/{batch.items.length} sent</strong><small>{new Date(batch.createdAt).toLocaleString()}</small><small>{batch.items.filter((item) => item.status === "send_unknown").length} uncertain · {batch.items.filter((item) => item.status === "skipped" || item.status === "failed").length} skipped/failed · {batch.items.filter((item) => item.status === "pending").length} pending</small>{batch.items.filter((item) => item.error).map((item) => <small key={item.draftId}>{item.status}: {item.error}</small>)}</div><div className={styles.actions}>{batch.status === "running" && <button onClick={() => batchAction(batch.id, "pause")} disabled={busy}>Pause</button>}{batch.status === "paused" && batch.items.some((item) => item.status === "pending") && <button onClick={() => batchAction(batch.id, "resume")} disabled={busy}>Resume pending</button>}</div></div>)}</section>}
 
     {tab === "contacts" ? <>
       <details className={styles.editorDetails} open={formOpen} onToggle={(event) => setFormOpen(event.currentTarget.open)}>
@@ -352,28 +363,26 @@ export default function ProductionAdminPage() {
         <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option>{["research", "qualified", "ready", "contacted", "replied", "suppressed"].map((value) => <option key={value}>{value}</option>)}</select>
       </div>
       <div className={styles.selectionBar}>
-        <span>{selectedContacts.length} selected · {visibleEligible.length} ready in this view</span>
+        <span>{selectedContacts.length} selected · {visibleEligible.length} reviewed and eligible in this view</span>
         <div className={styles.actions}>
           <button type="button" onClick={toggleVisible} disabled={busy || !visibleEligible.length}>{allVisibleSelected ? "Clear visible" : "Select all visible"}</button>
           <button type="button" onClick={() => setReviewOpen(true)} disabled={busy || !selectedContacts.length}>Review &amp; send</button>
         </div>
       </div>
       {reviewOpen && <section className={styles.composer} aria-label="Bulk send review">
-        <h2>Send {selectedContacts.length} {selectedContacts.length === 1 ? "email" : "emails"}</h2>
-        <p>Same note from Zeb. The greeting uses a first name when we have one. Each subject below is unique.</p>
-        <div className={styles.composerPreview}>{notePreview}</div>
+        <h2>Start a batch of {selectedDrafts.length} {selectedDrafts.length === 1 ? "email" : "emails"}</h2>
+        <p>Only individually approved drafts appear here. Review each recipient and subject before starting this batch.</p>
         <ul className={styles.composerList}>
-          {selectedContacts.map((contact) => <li key={contact.id}>
-            <strong>{previewSubjects.get(contact.id)}</strong>
-            <span>{contact.name} · {contact.company}<br />{contact.email}</span>
+          {selectedDrafts.map((draft) => <li key={draft.id}>
+            <strong>{draft.subject}</strong>
+            <span>{contacts.find((contact) => contact.id === draft.contactId)?.company}<br />{draft.to}</span>
           </li>)}
         </ul>
-        {sendProgress && <p role="status" className={styles.notice}>{sendProgress}</p>}
+        {selectedDrafts.length > 10 && <p className={styles.hint}>Select at most 10 at a time. Start the next batch manually after this one.</p>}
         {!mailStatus?.canSend && <p className={styles.hint}>Finish email setup above before sending. You can still read the subjects.</p>}
         <div className={styles.actions}>
-          <button type="button" onClick={() => { stopSend.current = true; }} disabled={!busy}>Stop after this one</button>
           <button type="button" onClick={() => setReviewOpen(false)} disabled={busy}>Back</button>
-          <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || !selectedContacts.length}>Send {selectedContacts.length}</button>
+          <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || !selectedDrafts.length || selectedDrafts.length > 10}>Start batch of {selectedDrafts.length}</button>
         </div>
       </section>}
       <div className={styles.pipelineHead}>
@@ -385,27 +394,34 @@ export default function ProductionAdminPage() {
         const queueable = canQueue(contact, drafts);
         return <article key={contact.id} className={styles.pipelineRow} data-selected={queueable && selected.has(contact.id) ? "true" : "false"}>
           <div className={styles.checkCell}><input type="checkbox" aria-label={`Select ${contact.company}`} checked={queueable && selected.has(contact.id)} disabled={!queueable || busy} onChange={() => toggleContact(contact.id)} /></div>
-          <div><a className={styles.companyLink} href={contact.websiteUrl || contact.sourceUrl} target="_blank" rel="noreferrer">{contact.company} ↗</a><span>{contact.name} · {contact.role || contact.category.replaceAll("_", " ")}</span>{selected.has(contact.id) && <small>{previewSubjects.get(contact.id)}</small>}</div>
+          <div><a className={styles.companyLink} href={contact.websiteUrl || contact.sourceUrl} target="_blank" rel="noreferrer">{contact.company} ↗</a><span>{contact.name} · {contact.role || contact.category.replaceAll("_", " ")}</span>{selected.has(contact.id) && <small>{drafts.find((draft) => draft.contactId === contact.id && draft.status === "ready")?.subject}</small>}</div>
           <div><span>{contact.city}</span><small>{contact.companyScale.replaceAll("_", " ")}</small></div>
           <div><span className={styles.statusChip}>{contact.status}</span></div>
           <div><span>{dateLabel(latest?.sentAt)}</span></div>
           <div><span>{latest?.openedAt ? `Image loaded · ${dateLabel(latest.openedAt)}` : latest?.sentAt ? "No signal" : "—"}</span></div>
-          <div className={styles.rowActions}><a href={contact.contactUrl || contact.sourceUrl} target="_blank" rel="noreferrer">Route ↗</a><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a><button onClick={() => startEdit(contact)}>Edit</button>{contact.email && <button onClick={() => createDraft(contact.id)} disabled={busy || !queueable}>Draft</button>}</div>
+          <div className={styles.rowActions}><a href={contact.contactUrl || contact.sourceUrl} target="_blank" rel="noreferrer">Route ↗</a><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a><button onClick={() => startEdit(contact)}>Edit</button>{contact.email && !drafts.some((draft) => draft.contactId === contact.id) && <button onClick={() => createDraft(contact.id)} disabled={busy || contact.status === "suppressed"}>Draft</button>}</div>
         </article>;
       })}</div>
-    </> : <div className={styles.draftLayout}>
+    </> : tab === "drafts" ? <div className={styles.draftLayout}>
       <div className={styles.draftList}>{drafts.map((draft) => <button key={draft.id} className={selectedDraft === draft.id ? styles.selected : ""} onClick={() => openDraft(draft)}><strong>{contacts.find((contact) => contact.id === draft.contactId)?.company || draft.to}</strong><span>{draft.subject}</span><span>{draft.status} · {draft.to}</span></button>)}</div>
       <div className={styles.draftEditor}>{currentDraft ? <>
         <p className={styles.eyebrow}>{currentContact?.name} · {currentContact?.company}</p>
         <h2>Review message</h2>
         <p>To: {currentDraft.to} · Status: {currentDraft.status}</p>
         <p>Last sent: {dateLabel(currentDraft.sentAt)} · Email image: {currentDraft.openedAt ? `loaded ${dateLabel(currentDraft.openedAt)} (${currentDraft.openCount || 1} request${currentDraft.openCount === 1 ? "" : "s"})` : "no signal"}</p>
+        {currentDraft.pitchAngle && <div className={styles.evidence}><strong>Research angle</strong><p>{currentDraft.pitchAngle}</p><small>{currentDraft.pitchEvidence}</small>{currentDraft.pitchSourceUrl && <a href={currentDraft.pitchSourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a>}</div>}
         <label><span>Subject</span><input value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <label><span>Message</span><textarea value={draftBody} onChange={(event) => setDraftBody(event.target.value)} rows={16} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Include image-load tracking in this email</span></label>
-        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save</button><button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={sendDraft} disabled={busy || currentDraft.status !== "ready"}>Send reviewed email</button></div>
+        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save as draft</button><button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={sendDraft} disabled={busy || currentDraft.status !== "ready"}>Send reviewed email</button></div>
         {currentDraft.error && <p className={styles.notice}>{currentDraft.error}</p>}
       </> : <p>Select a draft to review.</p>}</div>
-    </div>}
+    </div> : null}
+    {tab === "booking" && <section className={styles.bookingPanel}>
+      <h2>20 minutes with Zeb</h2><p>Times are entered in Toronto time. The page stays empty until you add a slot. <a href="/book/zeb" target="_blank" rel="noreferrer">Open booking page ↗</a></p>
+      <form onSubmit={addBookingSlot} className={styles.actions}><label>Toronto date and time<input type="datetime-local" value={slotLocal} onChange={(event) => setSlotLocal(event.target.value)} required /></label><button className={styles.primary} disabled={busy}>Add 20-minute slot</button></form>
+      <h3>Slots</h3>{slots.length ? slots.map((slot) => <div className={styles.bookingRow} key={slot.id}><span>{new Intl.DateTimeFormat("en-US", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" }).format(new Date(slot.startsAt))} ET · {slot.status}</span>{slot.status === "open" && <button onClick={() => removeBookingSlot(slot.id)} disabled={busy}>Remove</button>}</div>) : <p>No slots yet.</p>}
+      <h3>Booked conversations</h3>{bookings.length ? bookings.map((booking) => <div className={styles.bookingRow} key={booking.id}><span>{new Intl.DateTimeFormat("en-US", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" }).format(new Date(booking.startsAt))} ET · {booking.name} · <a href={`mailto:${booking.email}`}>{booking.email}</a>{booking.note && <> · {booking.note}</>}</span></div>) : <p>No bookings yet.</p>}
+    </section>}
   </div>;
 }

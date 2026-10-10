@@ -1,5 +1,6 @@
 import { adminDb } from "@/lib/firebase/admin/firebaseAdmin";
 import { listContacts } from "@/lib/production/contacts";
+import { hasRecordedBasis } from "@/lib/production/eligibility";
 import { assignSubjects, outreachBody } from "@/lib/production/message";
 import { ProductionContact, ProductionDraft } from "@/types/production-types";
 import nodemailer from "nodemailer";
@@ -45,7 +46,7 @@ export async function createDraft(contactId: string) {
     id: ref.id,
     contactId,
     to: contact.email,
-    subject: assignSubjects([contact], drafts.map((item) => item.subject)).get(contact.id) ?? "looking for a top tier music video?",
+    subject: assignSubjects([contact], drafts.map((item) => item.subject)).get(contact.id) ?? `could we talk visuals for ${contact.company.toLowerCase()}?`,
     body: outreachBody(contact),
     status: "draft",
     trackOpens: true,
@@ -57,102 +58,44 @@ export async function createDraft(contactId: string) {
   return draft;
 }
 
-export type PreparedOutreach = {
-  id: string;
-  contactId: string;
-  to: string;
-  subject: string;
-  name: string;
-  company: string;
-};
+const importRow = z.object({
+  contactId: z.string().trim().min(1), company: z.string().trim().min(1),
+  email: z.string().trim().email(), researchStatus: z.literal("verified"),
+  importable: z.literal("yes"), pitchSourceUrl: z.string().trim().url(),
+  pitchAngle: z.string().trim().min(8).max(500),
+  pitchEvidence: z.string().trim().min(20).max(2000),
+  subject: z.string().trim().min(3).max(200), body: z.string().trim().min(30).max(10000),
+});
 
-export type SkippedOutreach = { contactId: string; reason: string };
-
-/**
- * Writes Zeb's note and a unique subject for each selected contact, marked ready.
- * Contacts already sent, missing an email, or suppressed are skipped.
- * Empty consent fields are recorded only because the sender confirmed this batch.
- */
-export async function prepareOutreach(contactIds: string[]) {
-  const ids = [...new Set(contactIds.map((id) => id.trim()).filter(Boolean))].slice(0, 500);
-  if (!ids.length) throw new Error("Select at least one contact");
+export async function importReviewedResearch(raw: unknown[]) {
+  if (raw.length > 500) throw new Error("Import limit is 500 rows");
   const [contacts, drafts] = await Promise.all([listContacts(), listDrafts()]);
-  const contactById = new Map(contacts.map((contact) => [contact.id, contact]));
-  const draftsByContact = new Map<string, ProductionDraft[]>();
-  for (const draft of drafts) {
-    const group = draftsByContact.get(draft.contactId) ?? [];
-    group.push(draft);
-    draftsByContact.set(draft.contactId, group);
-  }
-
-  const eligible: ProductionContact[] = [];
-  const skipped: SkippedOutreach[] = [];
-  for (const id of ids) {
-    const contact = contactById.get(id);
-    if (!contact) {
-      skipped.push({ contactId: id, reason: "Contact not found" });
-      continue;
-    }
-    if (!contact.email) {
-      skipped.push({ contactId: id, reason: "No email on file" });
-      continue;
-    }
-    if (contact.status === "suppressed") {
-      skipped.push({ contactId: id, reason: "Suppressed" });
-      continue;
-    }
-    if ((draftsByContact.get(id) ?? []).some(draftIsLocked)) {
-      skipped.push({ contactId: id, reason: "Already sent" });
-      continue;
-    }
-    eligible.push(contact);
-  }
-
-  const reserved = drafts.filter(draftIsLocked).map((draft) => draft.subject);
-  const subjects = assignSubjects(eligible, reserved);
+  const used = new Set(drafts.map((draft) => draft.contactId));
+  const subjects = new Set(drafts.map((draft) => draft.subject.toLowerCase()));
+  const result = { imported: 0, skipped: 0, errors: [] as { row: number; error: string }[] };
+  const batch = db().batch();
   const now = new Date().toISOString();
-  const prepared: PreparedOutreach[] = [];
-  const firestore = db();
-  let batch = firestore.batch();
-  let writes = 0;
-
-  async function flush() {
-    if (!writes) return;
-    await batch.commit();
-    batch = firestore.batch();
-    writes = 0;
+  for (const [index, rawRow] of raw.entries()) {
+    const row = importRow.safeParse(rawRow);
+    if (!row.success) { result.skipped++; result.errors.push({ row: index + 2, error: "Not a verified email draft or missing evidence" }); continue; }
+    const match = contacts.find((contact) => contact.id === row.data.contactId && contact.email.toLowerCase() === row.data.email.toLowerCase())
+      ?? contacts.find((contact) => contact.email.toLowerCase() === row.data.email.toLowerCase() && contact.company.toLowerCase() === row.data.company.toLowerCase());
+    if (!match || match.status === "suppressed" || used.has(match.id)) { result.skipped++; result.errors.push({ row: index + 2, error: "Contact missing, suppressed, or already has a draft" }); continue; }
+    if (subjects.has(row.data.subject.toLowerCase()) || !row.data.subject.endsWith("?")) { result.skipped++; result.errors.push({ row: index + 2, error: "Subject must be a unique question" }); continue; }
+    const ref = db().collection("production_drafts").doc();
+    batch.set(ref, {
+      id: ref.id, contactId: match.id, to: match.email, subject: row.data.subject,
+      body: row.data.body, status: "draft", trackOpens: false,
+      trackingToken: randomBytes(24).toString("base64url"),
+      pitchAngle: row.data.pitchAngle, pitchSourceUrl: row.data.pitchSourceUrl,
+      pitchEvidence: row.data.pitchEvidence, createdAt: now, updatedAt: now,
+    } satisfies ProductionDraft);
+    used.add(match.id);
+    subjects.add(row.data.subject.toLowerCase());
+    result.imported++;
   }
-
-  for (const contact of eligible) {
-    const existing = (draftsByContact.get(contact.id) ?? []).find((draft) => !draftIsLocked(draft));
-    const ref = existing ? firestore.collection("production_drafts").doc(existing.id) : firestore.collection("production_drafts").doc();
-    const subject = subjects.get(contact.id) ?? "looking for a top tier music video?";
-    const draft: ProductionDraft = {
-      id: ref.id,
-      contactId: contact.id,
-      to: contact.email,
-      subject,
-      body: outreachBody(contact),
-      status: "ready",
-      trackOpens: existing?.trackOpens ?? true,
-      trackingToken: existing?.trackingToken ?? randomBytes(24).toString("base64url"),
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    };
-    batch.set(ref, draft);
-    writes += 1;
-    if (!contact.consentBasis.trim()) {
-      batch.update(firestore.collection("production_contacts").doc(contact.id), {
-        consentBasis: "Sender approved outreach to this publicly listed business address.",
-        updatedAt: now,
-      });
-      writes += 1;
-    }
-    if (writes >= 400) await flush();
-    prepared.push({ id: draft.id, contactId: contact.id, to: draft.to, subject, name: contact.name, company: contact.company });
-  }
-  await flush();
-  return { prepared, skipped };
+  if (result.imported) await batch.commit();
+  return result;
 }
 
 export async function updateDraft(id: string, raw: unknown) {
@@ -162,7 +105,7 @@ export async function updateDraft(id: string, raw: unknown) {
   if (!snapshot.exists) throw new Error("Draft not found");
   const old = snapshot.data() as ProductionDraft;
   if (old.status !== "draft" && old.status !== "ready") throw new Error("This draft can no longer be edited");
-  const value = { ...old, ...input, id, updatedAt: new Date().toISOString() };
+  const value = { ...old, ...input, status: input.status ?? "draft", id, updatedAt: new Date().toISOString() };
   await ref.set(value);
   return value;
 }
@@ -197,7 +140,7 @@ function messageHtml(draft: ProductionDraft, address: string) {
 function ensureEligible(contact: ProductionContact, draft: ProductionDraft, contacts: ProductionContact[]) {
   if (draft.status !== "ready") throw new Error("Review and mark the draft ready before sending");
   if (!contact.email || contact.email.toLowerCase() !== draft.to.toLowerCase()) throw new Error("Recipient no longer matches contact");
-  if (!contact.consentBasis.trim()) throw new Error("Record the legal basis for this contact before sending");
+  if (!hasRecordedBasis(contact.consentBasis)) throw new Error("Record the legal basis for this contact before sending");
   if (contact.status === "suppressed" || contacts.some((value) => value.email && value.email.toLowerCase() === contact.email.toLowerCase() && value.status === "suppressed")) {
     throw new Error("Recipient is suppressed");
   }
@@ -222,7 +165,7 @@ export async function sendDraft(id: string, confirm: boolean) {
     const latestContact = await transaction.get(contactRef);
     if (!snapshot.exists || snapshot.data()?.status !== "ready") throw new Error("Draft has already been sent or is being sent");
     if (!latestContact.exists || latestContact.data()?.status === "suppressed") throw new Error("Recipient is suppressed or missing");
-    if (latestContact.data()?.email?.toLowerCase() !== draft.to.toLowerCase() || !latestContact.data()?.consentBasis?.trim()) {
+    if (latestContact.data()?.email?.toLowerCase() !== draft.to.toLowerCase() || !hasRecordedBasis(latestContact.data()?.consentBasis)) {
       throw new Error("Contact eligibility changed; review before sending");
     }
     transaction.update(ref, { status: "sending", updatedAt: new Date().toISOString() });

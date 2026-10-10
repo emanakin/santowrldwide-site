@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
   if (
     path.startsWith("/api") ||
     path === "/productions" ||
+    path === "/book/zeb" ||
     path === "/locked" ||
     path.startsWith("/_next") ||
     path.includes(".")

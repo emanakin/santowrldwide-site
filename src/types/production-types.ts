@@ -47,4 +47,19 @@ export type ProductionDraft = {
   lastOpenedAt?: string;
   openCount?: number;
   error?: string;
+  pitchAngle?: string;
+  pitchSourceUrl?: string;
+  pitchEvidence?: string;
 };
+
+export type ProductionSendBatch = {
+  id: string;
+  draftIds: string[];
+  status: "running" | "paused" | "complete";
+  items: { draftId: string; status: "pending" | "sent" | "skipped" | "failed" | "send_unknown"; error?: string }[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProductionBookingSlot = { id: string; startsAt: string; endsAt: string; status: "open" | "booked" | "cancelled"; bookingId?: string };
+export type ProductionBooking = { id: string; slotId: string; startsAt: string; endsAt: string; name: string; email: string; note: string; createdAt: string };
