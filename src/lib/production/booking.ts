@@ -26,6 +26,7 @@ export function torontoLocalToUtc(local: string) {
 }
 
 export async function addSlot(local: string) {
+  if (!["00", "20", "40"].includes(local.slice(-2))) throw new Error("Start slots on :00, :20, or :40 to avoid overlap");
   const startsAt = torontoLocalToUtc(local);
   if (Date.parse(startsAt) < Date.now() + 3600_000) throw new Error("Choose a slot at least one hour ahead");
   const endsAt = new Date(Date.parse(startsAt) + 20 * 60_000).toISOString();
