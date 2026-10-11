@@ -1,7 +1,7 @@
 import { adminDb } from "@/lib/firebase/admin/firebaseAdmin";
 import { listContacts } from "@/lib/production/contacts";
 import { hasRecordedBasis } from "@/lib/production/eligibility";
-import { assignSubjects, outreachBody } from "@/lib/production/message";
+import { assignSubjects, draftPlaceholders, outreachBody } from "@/lib/production/message";
 import { escapeHtml, renderLinksAsHtml } from "@/lib/production/emailHtml";
 import { productionMailStatus } from "@/lib/production/mailStatus";
 import { appendToSent } from "@/lib/production/sentCopy";
@@ -123,6 +123,38 @@ export async function importReviewedResearch(raw: unknown[]) {
   return result;
 }
 
+/** Repairs only old unsent template drafts with a verified, matching research row. */
+export async function repairPlaceholderDrafts(raw: unknown[]) {
+  if (raw.length > 500) throw new Error("Repair limit is 500 rows");
+  const [contacts, drafts] = await Promise.all([listContacts(), listDrafts()]);
+  const reviewed = new Map<string, z.infer<typeof importRow>>();
+  for (const rawRow of raw) {
+    const row = importRow.safeParse(rawRow);
+    if (!row.success || draftPlaceholders(row.data.body).length || !row.data.subject.endsWith("?")) continue;
+    reviewed.set(`${row.data.contactId}|${row.data.email.toLowerCase()}`, row.data);
+  }
+  const repairable = drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && draftPlaceholders(draft.body).length);
+  const result = { found: repairable.length, repaired: 0, unresolved: [] as string[] };
+  const write = db().batch();
+  const now = new Date().toISOString();
+  for (const draft of repairable) {
+    const contact = contacts.find((item) => item.id === draft.contactId);
+    const row = reviewed.get(`${draft.contactId}|${draft.to.toLowerCase()}`);
+    if (!contact || !row || row.company.toLowerCase() !== contact.company.toLowerCase() || contact.status === "suppressed" || drafts.some((other) => other.id !== draft.id && other.subject.toLowerCase() === row.subject.toLowerCase())) {
+      result.unresolved.push(`${contact?.company || draft.to} (${draft.to})`);
+      continue;
+    }
+    write.update(db().collection("production_drafts").doc(draft.id), {
+      subject: row.subject, body: row.body,
+      pitchAngle: row.pitchAngle, pitchSourceUrl: row.pitchSourceUrl, pitchEvidence: row.pitchEvidence,
+      updatedAt: now,
+    });
+    result.repaired++;
+  }
+  if (result.repaired) await write.commit();
+  return result;
+}
+
 export async function updateDraft(id: string, raw: unknown) {
   const input = draftEdit.parse(raw);
   const ref = db().collection("production_drafts").doc(id);
@@ -131,6 +163,7 @@ export async function updateDraft(id: string, raw: unknown) {
   const old = snapshot.data() as ProductionDraft;
   if (old.status !== "draft" && old.status !== "ready") throw new Error("This draft can no longer be edited");
   const value = { ...old, ...input, status: input.status ?? old.status, id, updatedAt: new Date().toISOString() };
+  if (value.status === "ready" && draftPlaceholders(value.body).length) throw new Error("Replace all draft placeholders before marking ready");
   await ref.set(value);
   return value;
 }
@@ -143,6 +176,9 @@ export async function markDraftsReady(ids: string[]) {
     const snapshots = await Promise.all(refs.map((ref) => transaction.get(ref)));
     if (snapshots.some((snapshot) => !snapshot.exists || snapshot.data()?.status !== "draft")) {
       throw new Error("Selection includes a missing or already processed draft. Refresh and try again.");
+    }
+    if (snapshots.some((snapshot) => draftPlaceholders(String(snapshot.data()?.body || "")).length)) {
+      throw new Error("Some selected drafts still contain placeholders. Repair or edit them before marking ready.");
     }
     const updatedAt = new Date().toISOString();
     refs.forEach((ref) => transaction.update(ref, { status: "ready", updatedAt }));
@@ -212,7 +248,7 @@ export async function sendDraft(id: string, confirm: boolean) {
   const contact = contacts.find((value) => value.id === draft.contactId);
   if (!contact) throw new Error("Contact not found");
   ensureEligible(contact, draft, contacts);
-  if (/\[[^\]]+\]/.test(draft.body)) throw new Error("Replace all draft placeholders before sending");
+  if (draftPlaceholders(draft.body).length) throw new Error(`Replace draft placeholder for ${contact.company}: ${draftPlaceholders(draft.body)[0]}`);
   const composed = await composeRawMessage(draft, configuration);
   const contactRef = db().collection("production_contacts").doc(contact.id);
   await db().runTransaction(async (transaction) => {

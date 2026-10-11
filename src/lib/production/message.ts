@@ -1,6 +1,10 @@
 export type SubjectContact = { id: string; name: string; company: string; city?: string };
 const GENERIC_NAMES = /^(team|general|hello|contact|info|inquiries|inquiry|hi|there)$/i;
 
+export function draftPlaceholders(body: string): string[] {
+  return body.match(/\[[^\]\n]+\]/g) ?? [];
+}
+
 export function recipientFirstName(name: string): string | null {
   const first = name.trim().split(/\s+/)[0] ?? "";
   return first.length < 2 || GENERIC_NAMES.test(first) ? null : first;

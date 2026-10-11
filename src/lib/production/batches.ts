@@ -2,6 +2,7 @@ import { adminDb } from "@/lib/firebase/admin/firebaseAdmin";
 import { listContacts } from "@/lib/production/contacts";
 import { attestedOutreachBasis, hasRecordedBasis } from "@/lib/production/eligibility";
 import { listDrafts, sendDraft } from "@/lib/production/outreach";
+import { draftPlaceholders } from "@/lib/production/message";
 import { ProductionSendBatch } from "@/types/production-types";
 import { productionMailStatus } from "@/lib/production/mailStatus";
 import { randomBytes } from "node:crypto";
@@ -38,6 +39,8 @@ export async function startBatch(draftIds: string[], sharedBasis: string, trackI
   }
   const selected = ids.map((id) => drafts.find((draft) => draft.id === id));
   if (selected.some((draft) => !draft || draft.status !== "ready")) throw new Error("Every selected email must be marked ready");
+  const unfinished = selected.filter((draft) => draft && draftPlaceholders(draft.body).length);
+  if (unfinished.length) throw new Error(`${unfinished.length} selected drafts still contain placeholders. Repair them in Email history before sending.`);
   if (new Set(selected.map((draft) => draft?.contactId)).size !== ids.length) throw new Error("One email per contact per batch");
   if (new Set(selected.map((draft) => draft!.to.trim().toLowerCase())).size !== ids.length) throw new Error("Select only one email per recipient address");
   if (previous.some((batch) => batch.items.some((item) => ids.includes(item.draftId) && item.status === "pending"))) {
@@ -78,8 +81,18 @@ export async function resumeBatch(id: string) {
   const snapshot = await ref.get();
   if (!snapshot.exists || snapshot.data()?.status !== "paused") throw new Error("Batch is not paused");
   const batch = snapshot.data() as ProductionSendBatch;
-  if (!batch.items.some((item) => item.status === "pending")) throw new Error("No unsent drafts remain");
-  await ref.update({ status: "running", pauseReason: null, updatedAt: new Date().toISOString() });
+  const drafts = await listDrafts();
+  const items = batch.items.map((item) => {
+    if (item.status !== "skipped" || !item.error?.includes("Replace all draft placeholders before sending")) return item;
+    const draft = drafts.find((value) => value.id === item.draftId);
+    return draft?.status === "ready" && !draftPlaceholders(draft.body).length ? { draftId: item.draftId, status: "pending" as const } : item;
+  });
+  const pending = items.filter((item) => item.status === "pending");
+  if (!pending.length) throw new Error("No unsent drafts remain");
+  if (pending.some((item) => { const draft = drafts.find((value) => value.id === item.draftId); return !draft || draft.status !== "ready" || draftPlaceholders(draft.body).length; })) {
+    throw new Error("Some pending drafts still contain placeholders or are no longer ready. Repair them before resuming.");
+  }
+  await ref.update({ items, status: "running", pauseReason: null, updatedAt: new Date().toISOString() });
 }
 
 export async function processBatch(id: string) {

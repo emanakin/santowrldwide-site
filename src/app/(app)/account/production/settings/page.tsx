@@ -5,6 +5,7 @@ import Link from "next/link";
 import { auth } from "@/lib/firebase/client/firebaseApp";
 import { adminFetch } from "@/services/client/adminApi";
 import { hasRecordedBasis } from "@/lib/production/eligibility";
+import { draftPlaceholders } from "@/lib/production/message";
 import { useSuperAdminGuard } from "@/hooks/useSuperAdminGuard";
 import { CONTACT_CATEGORIES, COMPANY_SCALES, ProductionBooking, ProductionBookingSlot, ProductionContact, ProductionDraft, ProductionSendBatch } from "@/types/production-types";
 import styles from "@/styles/account/Production.module.css";
@@ -151,6 +152,7 @@ export default function ProductionAdminPage() {
   const missingBasis = selectedContacts.filter((contact) => !hasRecordedBasis(contact.consentBasis));
   const visibleDrafts = drafts.filter((draft) => draftFilter === "all" || (draftFilter === "issues" ? ["send_unknown", "failed"].includes(draft.status) : draft.status === draftFilter));
   const visibleUnapproved = visibleDrafts.filter((draft) => draft.status === "draft");
+  const placeholderDrafts = drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && draftPlaceholders(draft.body).length);
   const unsentTrackingOff = drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && !trackingActive(draft));
   const sentTracking = drafts.filter((draft) => draft.status === "sent").sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""));
   const visibleTracking = sentTracking.filter((draft) => trackingFilter === "all" || (trackingFilter === "fetched" ? Boolean(draft.openedAt) : trackingFilter === "no_signal" ? trackingActive(draft) && !draft.openedAt : !trackingActive(draft)));
@@ -287,6 +289,18 @@ export default function ProductionAdminPage() {
       setTab("drafts");
       setMessage(`Imported ${result.imported} unapproved drafts; ${result.skipped} skipped. ${result.errors[0] ? `First issue: row ${result.errors[0].row}: ${result.errors[0].error}` : ""}`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Draft import failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function repairDraftCsv(file?: File) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const result = await adminFetch<{ found: number; repaired: number; unresolved: string[] }>("/api/admin/production/drafts/import", { method: "POST", body: JSON.stringify({ csv: await file.text(), repairPlaceholders: true }) });
+      await load();
+      setTab("drafts");
+      setMessage(`Replaced placeholder copy in ${result.repaired} unsent drafts from verified research. ${result.unresolved.length} still need manual repair.${result.unresolved.length ? ` First: ${result.unresolved.slice(0, 3).join(", ")}` : ""} Review the updated messages before you resume the paused batch; no email was sent by this repair.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Draft repair failed"); }
     finally { setBusy(false); }
   }
 
@@ -448,12 +462,14 @@ export default function ProductionAdminPage() {
         <button onClick={preloadContacts} disabled={busy}>Preload 271 researched contacts</button>
         <label className={styles.fileButton}>Import CSV<input type="file" accept=".csv,text/csv" onChange={(event) => { importCsv(event.target.files?.[0]); event.target.value = ""; }} hidden /></label>
         <label className={styles.fileButton}>Import researched drafts<input type="file" accept=".csv,text/csv" onChange={(event) => { importDraftCsv(event.target.files?.[0]); event.target.value = ""; }} hidden /></label>
+        <label className={styles.fileButton}>Repair placeholder drafts<input type="file" accept=".csv,text/csv" onChange={(event) => { repairDraftCsv(event.target.files?.[0]); event.target.value = ""; }} hidden /></label>
         <button onClick={exportCsv} disabled={busy}>Export CSV</button>
       </div>
     </div>
     <p className={styles.hint}>Import preserves existing edits and sent history. Review and mark drafts ready, then select up to 100 for a manual send. The send review records one attestation for any contacts still needing a documented route. “Sent” means SMTP accepted the message; an image request is only an open signal.</p>
     {batches.length > 0 && <section className={styles.batchList} aria-label="Send batches"><h2>Send batches</h2>{batches.slice(0, 5).map((batch) => <div key={batch.id} className={styles.batchRow}><div><strong>{batch.status} · {batch.items.filter((item) => item.status === "sent").length}/{batch.items.length} sent</strong><small>{new Date(batch.createdAt).toLocaleString()}{batch.pauseReason ? ` · ${batch.pauseReason.replaceAll("_", " ")}` : ""}</small><small>{batch.items.filter((item) => item.status === "send_unknown").length} uncertain · {batch.items.filter((item) => item.status === "skipped" || item.status === "failed").length} skipped/failed · {batch.items.filter((item) => item.status === "pending").length} pending</small>{batch.sharedBasis && <small>Outreach basis: {batch.sharedBasis}</small>}{batch.items.filter((item) => item.error).map((item) => <small key={item.draftId}>{item.status}: {item.error}</small>)}</div><div className={styles.actions}>{batch.status === "running" && <button onClick={() => batchAction(batch.id, "pause")} disabled={busy}>Pause</button>}{batch.status === "paused" && batch.items.some((item) => item.status === "pending") && <button onClick={() => batchAction(batch.id, "resume")} disabled={busy}>Resume pending</button>}</div></div>)}</section>}
 
+    {placeholderDrafts.length > 0 && <p className={styles.notice}>{placeholderDrafts.length} unsent {placeholderDrafts.length === 1 ? "draft contains" : "drafts contain"} template instructions in brackets. Use <strong>Repair placeholder drafts</strong> with the reviewed research CSV before resuming a batch.</p>}
     {tab === "contacts" ? <>
       <details className={styles.editorDetails} open={formOpen} onToggle={(event) => setFormOpen(event.currentTarget.open)}>
       <summary>{editingId ? `Editing ${form.company}` : "+ Add a verified contact"}</summary>
