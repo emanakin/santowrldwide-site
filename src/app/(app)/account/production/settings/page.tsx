@@ -52,6 +52,9 @@ export default function ProductionAdminPage() {
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "ready" | "sent" | "issues">("all");
+  const [reviewSelection, setReviewSelection] = useState<Set<string>>(new Set());
+  const [basisEdits, setBasisEdits] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     const [contactData, draftData, configuration, batchData, bookingData] = await Promise.all([
@@ -102,6 +105,8 @@ export default function ProductionAdminPage() {
   );
   const selectedDrafts = selectedContacts.map((contact) => drafts.find((draft) => draft.contactId === contact.id && draft.status === "ready")).filter((draft): draft is ProductionDraft => Boolean(draft));
   const missingBasis = selectedContacts.filter((contact) => !hasRecordedBasis(contact.consentBasis));
+  const visibleDrafts = drafts.filter((draft) => draftFilter === "all" || (draftFilter === "issues" ? ["send_unknown", "failed"].includes(draft.status) : draft.status === draftFilter));
+  const visibleUnapproved = visibleDrafts.filter((draft) => draft.status === "draft");
 
   function toggleContact(id: string) {
     setSelected((current) => {
@@ -147,6 +152,42 @@ export default function ProductionAdminPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function saveBasis(contact: ProductionContact) {
+    const consentBasis = basisEdits[contact.id]?.trim();
+    if (!consentBasis) return;
+    setBusy(true);
+    try {
+      await adminFetch(`/api/admin/production/contacts/${contact.id}`, { method: "PATCH", body: JSON.stringify({ consentBasis }) });
+      await load();
+      setMessage(`Outreach basis saved for ${contact.company}.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save outreach basis"); }
+    finally { setBusy(false); }
+  }
+
+  async function setPortfolioReady(approved: boolean) {
+    if (approved && !window.confirm("Confirm that the public Productions portfolio, credits, media rights, and linked work are approved for outreach.")) return;
+    setBusy(true);
+    try {
+      const configuration = await adminFetch<MailStatus>("/api/admin/production/config", { method: "PATCH", body: JSON.stringify({ approved, confirmReview: true }) });
+      setMailStatus(configuration);
+      setMessage(approved ? "Portfolio approved for outreach. Contact eligibility still applies to every send." : "Portfolio approval removed; sending is paused.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Approval update failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function bulkMarkReady() {
+    const ids = [...reviewSelection].filter((id) => drafts.some((draft) => draft.id === id && draft.status === "draft"));
+    if (!ids.length || !window.confirm(`Mark ${ids.length} selected drafts ready? This confirms you reviewed their copy. Sending remains a separate action.`)) return;
+    setBusy(true);
+    try {
+      const result = await adminFetch<{ updated: number }>("/api/admin/production/drafts/ready", { method: "POST", body: JSON.stringify({ draftIds: ids }) });
+      setReviewSelection(new Set());
+      await load();
+      setMessage(`${result.updated} drafts marked ready. Select up to 10 in Agency pipeline to send a batch.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Bulk approval failed"); }
+    finally { setBusy(false); }
   }
 
   function setField(name: keyof typeof emptyContact, value: string) {
@@ -331,13 +372,13 @@ export default function ProductionAdminPage() {
       <div><strong>{drafts.filter((draft) => draft.openedAt).length}</strong><span>image requests</span></div>
     </div>
     {mailStatus && <section className={styles.mailStatus} aria-label="Email setup status">
-      <div><strong>Email setup</strong><span>{mailStatus.canSend ? "Ready for reviewed sends" : "Complete the remaining steps before sending"}</span></div>
+      <div><strong>Email setup</strong><span>{mailStatus.canSend ? "Ready for eligible, reviewed sends" : "Complete the unchecked steps before sending"}</span></div>
       <ul>
-        <li>{mailStatus.smtpConfigured ? "✓" : "○"} PrivateEmail settings</li>
-        <li>{mailStatus.postalAddressConfigured ? "✓" : "○"} Sender postal address</li>
-        <li>{mailStatus.portfolioReady ? "✓" : "○"} Portfolio approved for outreach</li>
+        <li>{mailStatus.smtpConfigured ? "Configured" : "Missing"}: PrivateEmail settings</li>
+        <li>{mailStatus.postalAddressConfigured ? "Configured" : "Missing"}: sender postal address</li>
+        <li>{mailStatus.portfolioReady ? "Approved" : "Awaiting approval"}: public portfolio</li>
       </ul>
-      <button onClick={verifySmtp} disabled={busy || !mailStatus.smtpConfigured}>Check SMTP connection</button>
+      <div className={styles.actions}><button onClick={verifySmtp} disabled={busy || !mailStatus.smtpConfigured}>Check SMTP connection</button><button onClick={() => setPortfolioReady(!mailStatus.portfolioReady)} disabled={busy}>{mailStatus.portfolioReady ? "Pause portfolio approval" : "Approve published portfolio"}</button></div>
     </section>}
     {message && <p role="status" className={styles.notice}>{message}</p>}
     <div className={styles.toolbar}>
@@ -353,7 +394,7 @@ export default function ProductionAdminPage() {
         <button onClick={exportCsv} disabled={busy}>Export CSV</button>
       </div>
     </div>
-    <p className={styles.hint}>Import adds only source-backed, unapproved drafts and preserves existing edits and sent history. Mark each draft ready after review, then select up to 10 for a manual batch. A recorded contact basis is required before sending. “Sent” means SMTP accepted the message; an image request is not proof of a read.</p>
+    <p className={styles.hint}>Import adds source-backed, unapproved drafts and preserves existing edits and sent history. Review and mark drafts ready, then select up to 10 for each manual batch. A recorded basis is required for each recipient. “Sent” means SMTP accepted the message; an image request does not prove a read.</p>
     {batches.length > 0 && <section className={styles.batchList} aria-label="Send batches"><h2>Send batches</h2>{batches.slice(0, 5).map((batch) => <div key={batch.id} className={styles.batchRow}><div><strong>{batch.status} · {batch.items.filter((item) => item.status === "sent").length}/{batch.items.length} sent</strong><small>{new Date(batch.createdAt).toLocaleString()}</small><small>{batch.items.filter((item) => item.status === "send_unknown").length} uncertain · {batch.items.filter((item) => item.status === "skipped" || item.status === "failed").length} skipped/failed · {batch.items.filter((item) => item.status === "pending").length} pending</small>{batch.items.filter((item) => item.error).map((item) => <small key={item.draftId}>{item.status}: {item.error}</small>)}</div><div className={styles.actions}>{batch.status === "running" && <button onClick={() => batchAction(batch.id, "pause")} disabled={busy}>Pause</button>}{batch.status === "paused" && batch.items.some((item) => item.status === "pending") && <button onClick={() => batchAction(batch.id, "resume")} disabled={busy}>Resume pending</button>}</div></div>)}</section>}
 
     {tab === "contacts" ? <>
@@ -391,7 +432,7 @@ export default function ProductionAdminPage() {
       </div>
       {reviewOpen && <section className={styles.composer} aria-label="Bulk send review">
         <h2>Start a batch of {selectedDrafts.length} {selectedDrafts.length === 1 ? "email" : "emails"}</h2>
-        <p>Only individually approved drafts appear here. Review each recipient and subject before starting this batch.</p>
+        <p>Review each recipient and subject before starting this batch. Draft approval and contact eligibility are separate.</p>
         <ul className={styles.composerList}>
           {selectedDrafts.map((draft) => <li key={draft.id}>
             <strong>{draft.subject}</strong>
@@ -399,8 +440,8 @@ export default function ProductionAdminPage() {
           </li>)}
         </ul>
         {selectedDrafts.length > 10 && <p className={styles.hint}>Select at most 10 at a time. Start the next batch manually after this one.</p>}
-        {missingBasis.length > 0 && <p className={styles.hint}>{missingBasis.length} selected contact{missingBasis.length === 1 ? " needs" : "s need"} a recorded outreach basis before sending. Edit the contact record and note the evidence; a public address alone is not enough.</p>}
-        {!mailStatus?.canSend && <p className={styles.hint}>Finish email setup above before sending. You can still read the subjects.</p>}
+        {missingBasis.length > 0 && <div className={styles.basisList}><p className={styles.hint}>{missingBasis.length} selected contact{missingBasis.length === 1 ? " needs" : "s need"} a recorded outreach basis. Record the specific evidence for each recipient; a public address alone is insufficient.</p>{missingBasis.map((contact) => <div key={contact.id} className={styles.basisRow}><div><strong>{contact.name} · {contact.company}</strong><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Research source ↗</a></div><input aria-label={`Outreach basis for ${contact.company}`} placeholder="Evidence of consent, or publication, no objection, and relevance to this role" value={basisEdits[contact.id] ?? ""} onChange={(event) => setBasisEdits((current) => ({ ...current, [contact.id]: event.target.value }))} /><button type="button" onClick={() => saveBasis(contact)} disabled={busy || !basisEdits[contact.id]?.trim()}>Save basis</button></div>)}</div>}
+        {!mailStatus?.canSend && <p className={styles.hint}>{!mailStatus?.portfolioReady ? "Approve the public portfolio in Email setup above. " : ""}{!mailStatus?.smtpConfigured ? "Configure PrivateEmail SMTP. " : ""}{!mailStatus?.postalAddressConfigured ? "Add a sender postal address. " : ""}</p>}
         <div className={styles.actions}>
           <button type="button" onClick={() => setReviewOpen(false)} disabled={busy}>Back</button>
           <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || missingBasis.length > 0 || !selectedDrafts.length || selectedDrafts.length > 10}>Start batch of {selectedDrafts.length}</button>
@@ -424,19 +465,22 @@ export default function ProductionAdminPage() {
         </article>;
       })}</div>
     </> : tab === "drafts" ? <div className={styles.draftLayout}>
-      <div className={styles.draftList}>{drafts.map((draft) => <button key={draft.id} className={selectedDraft === draft.id ? styles.selected : ""} onClick={() => openDraft(draft)}><strong>{contacts.find((contact) => contact.id === draft.contactId)?.company || draft.to}</strong><span>{draft.subject}</span><span>{draft.status} · {draft.to}</span></button>)}</div>
+      <div><div className={styles.draftControls}><select aria-label="Filter drafts" value={draftFilter} onChange={(event) => setDraftFilter(event.target.value as typeof draftFilter)}><option value="all">All drafts ({drafts.length})</option><option value="draft">Needs review ({drafts.filter((draft) => draft.status === "draft").length})</option><option value="ready">Ready ({drafts.filter((draft) => draft.status === "ready").length})</option><option value="sent">Sent history ({drafts.filter((draft) => draft.status === "sent").length})</option><option value="issues">Send issues ({drafts.filter((draft) => ["send_unknown", "failed"].includes(draft.status)).length})</option></select><label className={styles.checkboxLabel}><input type="checkbox" checked={visibleUnapproved.length > 0 && visibleUnapproved.every((draft) => reviewSelection.has(draft.id))} onChange={(event) => setReviewSelection((current) => { const next = new Set(current); visibleUnapproved.forEach((draft) => event.target.checked ? next.add(draft.id) : next.delete(draft.id)); return next; })} disabled={!visibleUnapproved.length || busy} /><span>Select visible unapproved</span></label><button type="button" onClick={bulkMarkReady} disabled={busy || ![...reviewSelection].some((id) => drafts.some((draft) => draft.id === id && draft.status === "draft"))}>Mark {reviewSelection.size} ready</button></div>
+      <div className={styles.draftList}>{visibleDrafts.map((draft) => <div key={draft.id} className={styles.draftListRow}>{draft.status === "draft" && <input type="checkbox" aria-label={`Select draft for ${draft.to}`} checked={reviewSelection.has(draft.id)} onChange={(event) => setReviewSelection((current) => { const next = new Set(current); if (event.target.checked) next.add(draft.id); else next.delete(draft.id); return next; })} />}<button className={selectedDraft === draft.id ? styles.selected : ""} onClick={() => openDraft(draft)}><strong>{contacts.find((contact) => contact.id === draft.contactId)?.company || draft.to}</strong><span>{draft.subject}</span><span>{draft.status} · {draft.to}{draft.sentAt ? ` · ${new Date(draft.sentAt).toLocaleString()}` : ""}</span></button></div>)}</div></div>
       <div className={styles.draftEditor}>{currentDraft ? <>
         <p className={styles.eyebrow}>{currentContact?.name} · {currentContact?.company}</p>
         <h2>Review message</h2>
         <p>To: {currentDraft.to} · Status: {currentDraft.status}</p>
-        <p>Last sent: {dateLabel(currentDraft.sentAt)} · Image requests: {currentDraft.openedAt ? `${dateLabel(currentDraft.openedAt)} (${currentDraft.openCount || 1})` : "no signal"}</p>
+        <p>Last sent: {currentDraft.sentAt ? new Date(currentDraft.sentAt).toLocaleString() : "Never"} · Image requests: {currentDraft.openedAt ? `${dateLabel(currentDraft.openedAt)} (${currentDraft.openCount || 1})` : "no signal"}</p>
+        {currentDraft.providerMessageId && <p>SMTP message ID: <code>{currentDraft.providerMessageId}</code></p>}
+        {currentContact && !hasRecordedBasis(currentContact.consentBasis) && <div className={styles.basisList}><p className={styles.hint}>This contact needs a recorded outreach basis before sending. Review the <a href={currentContact.sourceUrl} target="_blank" rel="noreferrer">contact source ↗</a> and enter the specific evidence.</p><div className={styles.basisRow}><strong>{currentContact.company}</strong><input aria-label={`Outreach basis for ${currentContact.company}`} placeholder="Evidence of consent, or publication, no objection, and relevance to this role" value={basisEdits[currentContact.id] ?? ""} onChange={(event) => setBasisEdits((current) => ({ ...current, [currentContact.id]: event.target.value }))} /><button type="button" onClick={() => saveBasis(currentContact)} disabled={busy || !basisEdits[currentContact.id]?.trim()}>Save basis</button></div></div>}
         {currentDraft.pitchAngle && <div className={styles.evidence}><strong>Research angle</strong><p>{currentDraft.pitchAngle}</p><small>{currentDraft.pitchEvidence}</small>{currentDraft.pitchSourceUrl && <a href={currentDraft.pitchSourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a>}</div>}
         <label><span>Subject</span><input value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <label><span>Message</span><textarea value={draftBody} onChange={(event) => setDraftBody(event.target.value)} rows={16} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <div className={styles.messageLinks}><strong>Links in this message</strong>{messageLinks(draftBody).map((url) => <a key={url} href={url} target="_blank" rel="noreferrer">{url}</a>)}</div>
         <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Include optional image-request tracking</span></label>
         <p className={styles.hint}>Some email apps block images or fetch them automatically. This signal cannot confirm a person opened or read the message.</p>
-        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save changes</button>{currentDraft.status === "ready" && <button onClick={() => saveDraft("draft")} disabled={busy}>Move back to draft</button>}<button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={sendDraft} disabled={busy || currentDraft.status !== "ready"}>Send reviewed email</button></div>
+        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save changes</button>{currentDraft.status === "ready" && <button onClick={() => saveDraft("draft")} disabled={busy}>Move back to draft</button>}<button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={sendDraft} disabled={busy || currentDraft.status !== "ready" || !mailStatus?.canSend || !currentContact || !hasRecordedBasis(currentContact.consentBasis)}>Send reviewed email</button></div>
         {currentDraft.error && <p className={styles.notice}>{currentDraft.error}</p>}
       </> : <p>Select a draft to review.</p>}</div>
     </div> : null}

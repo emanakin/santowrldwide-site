@@ -3,6 +3,7 @@ import { listContacts } from "@/lib/production/contacts";
 import { hasRecordedBasis } from "@/lib/production/eligibility";
 import { assignSubjects, outreachBody } from "@/lib/production/message";
 import { escapeHtml, renderLinksAsHtml } from "@/lib/production/emailHtml";
+import { productionMailStatus } from "@/lib/production/mailStatus";
 import { ProductionContact, ProductionDraft } from "@/types/production-types";
 import nodemailer from "nodemailer";
 import { randomBytes } from "node:crypto";
@@ -111,12 +112,27 @@ export async function updateDraft(id: string, raw: unknown) {
   return value;
 }
 
-function requireSmtp() {
+export async function markDraftsReady(ids: string[]) {
+  const unique = [...new Set(ids)];
+  if (!unique.length || unique.length > 500) throw new Error("Select 1 to 500 drafts");
+  const refs = unique.map((id) => db().collection("production_drafts").doc(id));
+  await db().runTransaction(async (transaction) => {
+    const snapshots = await Promise.all(refs.map((ref) => transaction.get(ref)));
+    if (snapshots.some((snapshot) => !snapshot.exists || snapshot.data()?.status !== "draft")) {
+      throw new Error("Selection includes a missing or already processed draft. Refresh and try again.");
+    }
+    const updatedAt = new Date().toISOString();
+    refs.forEach((ref) => transaction.update(ref, { status: "ready", updatedAt }));
+  });
+  return { updated: unique.length };
+}
+
+async function requireSmtp() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SANTO_POSTAL_ADDRESS } = process.env;
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM || !SANTO_POSTAL_ADDRESS) {
     throw new Error("SMTP and sender identity are not fully configured");
   }
-  if (process.env.PRODUCTIONS_PORTFOLIO_READY !== "true") {
+  if (!(await productionMailStatus()).portfolioReady) {
     throw new Error("Approve and publish the Productions portfolio before outreach sending");
   }
   const port = Number(SMTP_PORT);
@@ -144,7 +160,7 @@ function ensureEligible(contact: ProductionContact, draft: ProductionDraft, cont
 
 export async function sendDraft(id: string, confirm: boolean) {
   if (!confirm) throw new Error("Explicit send confirmation is required");
-  const configuration = requireSmtp();
+  const configuration = await requireSmtp();
   const ref = db().collection("production_drafts").doc(id);
   const contacts = await listContacts();
   const existing = await ref.get();

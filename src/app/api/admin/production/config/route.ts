@@ -1,26 +1,19 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { requireSuperAdmin } from "@/lib/firebase/admin/auth";
+import { productionMailStatus, setPortfolioApproval } from "@/lib/production/mailStatus";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
-function status() {
-  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SANTO_POSTAL_ADDRESS } = process.env;
-  const port = Number(SMTP_PORT);
-  const smtpConfigured = Boolean(SMTP_HOST && Number.isInteger(port) && port > 0 && port <= 65535 && SMTP_USER && SMTP_PASSWORD && SMTP_FROM);
-  const postalAddressConfigured = Boolean(SANTO_POSTAL_ADDRESS?.trim());
-  const portfolioReady = process.env.PRODUCTIONS_PORTFOLIO_READY === "true";
-  return { smtpConfigured, postalAddressConfigured, portfolioReady, canSend: smtpConfigured && postalAddressConfigured && portfolioReady };
-}
-
 export async function GET(request: Request) {
   if (!await requireSuperAdmin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  return NextResponse.json(status());
+  return NextResponse.json(await productionMailStatus());
 }
 
 export async function POST(request: Request) {
   if (!await requireSuperAdmin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!status().smtpConfigured) return NextResponse.json({ error: "SMTP settings are incomplete" }, { status: 400 });
+  if (!(await productionMailStatus()).smtpConfigured) return NextResponse.json({ error: "SMTP settings are incomplete" }, { status: 400 });
   const port = Number(process.env.SMTP_PORT);
   const transport = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -38,5 +31,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "SMTP connection failed" }, { status: 502 });
   } finally {
     transport.close();
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (!await requireSuperAdmin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const { approved } = z.object({ approved: z.boolean(), confirmReview: z.literal(true) }).parse(await request.json());
+    return NextResponse.json(await setPortfolioApproval(approved));
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not update approval" }, { status: 400 });
   }
 }

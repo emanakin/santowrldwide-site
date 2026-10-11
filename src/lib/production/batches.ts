@@ -3,6 +3,7 @@ import { listContacts } from "@/lib/production/contacts";
 import { hasRecordedBasis } from "@/lib/production/eligibility";
 import { listDrafts, sendDraft } from "@/lib/production/outreach";
 import { ProductionSendBatch } from "@/types/production-types";
+import { productionMailStatus } from "@/lib/production/mailStatus";
 
 function db() { if (!adminDb) throw new Error("Firebase Admin is not configured"); return adminDb; }
 const batches = () => db().collection("production_send_batches");
@@ -24,6 +25,7 @@ export async function listBatches(): Promise<ProductionSendBatch[]> {
 }
 
 export async function startBatch(draftIds: string[]): Promise<ProductionSendBatch> {
+  if (!(await productionMailStatus()).canSend) throw new Error("Complete SMTP, sender address, and portfolio approval before sending");
   const ids = [...new Set(draftIds)];
   if (!ids.length || ids.length > 10) throw new Error("Select 1 to 10 reviewed drafts");
   const [drafts, contacts, previous] = await Promise.all([listDrafts(), listContacts(), listBatches()]);
