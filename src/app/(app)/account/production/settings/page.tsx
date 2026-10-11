@@ -18,7 +18,11 @@ const emptyContact = {
 type MailStatus = { smtpConfigured: boolean; postalAddressConfigured: boolean; portfolioReady: boolean; canSend: boolean };
 
 function canQueue(contact: ProductionContact, drafts: ProductionDraft[]) {
-  return Boolean(contact.email && hasRecordedBasis(contact.consentBasis) && contact.status !== "suppressed" && drafts.some((draft) => draft.contactId === contact.id && draft.status === "ready"));
+  return Boolean(contact.email && contact.status !== "suppressed" && drafts.some((draft) => draft.contactId === contact.id && draft.status === "ready"));
+}
+
+function messageLinks(body: string) {
+  return [...new Set(body.match(/https?:\/\/[^\s<>]+/g) ?? [])].map((value) => value.replace(/[.,;!?]+$/, ""));
 }
 
 export default function ProductionAdminPage() {
@@ -28,7 +32,8 @@ export default function ProductionAdminPage() {
   const [batches, setBatches] = useState<ProductionSendBatch[]>([]);
   const [slots, setSlots] = useState<ProductionBookingSlot[]>([]);
   const [bookings, setBookings] = useState<ProductionBooking[]>([]);
-  const [slotLocal, setSlotLocal] = useState("");
+  const [rangeStart, setRangeStart] = useState("");
+  const [rangeEnd, setRangeEnd] = useState("");
   const [mailStatus, setMailStatus] = useState<MailStatus | null>(null);
   const [tab, setTab] = useState<"contacts" | "drafts" | "booking">("contacts");
   const [search, setSearch] = useState("");
@@ -41,7 +46,7 @@ export default function ProductionAdminPage() {
   const [selectedDraft, setSelectedDraft] = useState<string | null>(null);
   const [draftSubject, setDraftSubject] = useState("");
   const [draftBody, setDraftBody] = useState("");
-  const [draftTrackOpens, setDraftTrackOpens] = useState(true);
+  const [draftTrackOpens, setDraftTrackOpens] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -73,9 +78,9 @@ export default function ProductionAdminPage() {
     return (city === "all" || contact.city === city) &&
       (category === "all" || contact.category === category) &&
       (scale === "all" || contact.companyScale === scale) &&
-      (status === "all" || contact.status === status) &&
+      (status === "all" || (status === "draft_ready" ? canQueue(contact, drafts) : contact.status === status)) &&
       `${contact.name} ${contact.company} ${contact.role} ${contact.category}`.toLowerCase().includes(query);
-  }), [contacts, search, city, category, scale, status]);
+  }), [contacts, drafts, search, city, category, scale, status]);
 
   const currentDraft = drafts.find((draft) => draft.id === selectedDraft);
   const currentContact = currentDraft ? contacts.find((contact) => contact.id === currentDraft.contactId) : null;
@@ -96,6 +101,7 @@ export default function ProductionAdminPage() {
     [contacts, selected, drafts],
   );
   const selectedDrafts = selectedContacts.map((contact) => drafts.find((draft) => draft.contactId === contact.id && draft.status === "ready")).filter((draft): draft is ProductionDraft => Boolean(draft));
+  const missingBasis = selectedContacts.filter((contact) => !hasRecordedBasis(contact.consentBasis));
 
   function toggleContact(id: string) {
     setSelected((current) => {
@@ -115,8 +121,19 @@ export default function ProductionAdminPage() {
     });
   }
 
+  function selectNextTen() {
+    setSelected(() => {
+      const next = new Set(selectedContacts.map((contact) => contact.id));
+      for (const contact of visibleEligible) {
+        if (next.size >= 10) break;
+        next.add(contact.id);
+      }
+      return next;
+    });
+  }
+
   async function sendSelected() {
-    if (!selectedDrafts.length || selectedDrafts.length > 10 || !mailStatus?.canSend) return;
+    if (!selectedDrafts.length || selectedDrafts.length > 10 || missingBasis.length || !mailStatus?.canSend) return;
     setBusy(true);
     setMessage("");
     try {
@@ -200,10 +217,11 @@ export default function ProductionAdminPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      await adminFetch("/api/admin/production/booking", { method: "POST", body: JSON.stringify({ local: slotLocal }) });
-      setSlotLocal("");
+      const result = await adminFetch<{ slots: ProductionBookingSlot[] }>("/api/admin/production/booking", { method: "POST", body: JSON.stringify({ startLocal: rangeStart, endLocal: rangeEnd }) });
+      setRangeStart("");
+      setRangeEnd("");
       await load();
-      setMessage("20-minute Toronto slot added.");
+      setMessage(`${result.slots.length} bookable 20-minute times added.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Slot failed"); }
     finally { setBusy(false); }
   }
@@ -267,11 +285,12 @@ export default function ProductionAdminPage() {
     if (!currentDraft) return;
     setBusy(true);
     try {
-      await adminFetch(`/api/admin/production/drafts/${currentDraft.id}`, {
+      const result = await adminFetch<{ draft: ProductionDraft }>(`/api/admin/production/drafts/${currentDraft.id}`, {
         method: "PATCH", body: JSON.stringify({ subject: draftSubject, body: draftBody, trackOpens: draftTrackOpens, status }),
       });
+      if (status === "ready" && result.draft.status !== "ready") throw new Error("Draft was not marked ready");
       await load();
-      setMessage(status === "ready" ? "Draft marked ready." : "Draft saved.");
+      setMessage(status === "ready" ? "Draft marked ready." : status === "draft" ? "Draft returned to review." : "Changes saved. Review status preserved.");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Save failed"); }
     finally { setBusy(false); }
   }
@@ -309,7 +328,7 @@ export default function ProductionAdminPage() {
       <div><strong>{contacts.length}</strong><span>contacts</span></div>
       <div><strong>{new Set(contacts.map((contact) => contact.company.toLowerCase())).size}</strong><span>agencies &amp; companies</span></div>
       <div><strong>{drafts.filter((draft) => draft.status === "sent").length}</strong><span>sent</span></div>
-      <div><strong>{drafts.filter((draft) => draft.openedAt).length}</strong><span>image loads</span></div>
+      <div><strong>{drafts.filter((draft) => draft.openedAt).length}</strong><span>image requests</span></div>
     </div>
     {mailStatus && <section className={styles.mailStatus} aria-label="Email setup status">
       <div><strong>Email setup</strong><span>{mailStatus.canSend ? "Ready for reviewed sends" : "Complete the remaining steps before sending"}</span></div>
@@ -334,7 +353,7 @@ export default function ProductionAdminPage() {
         <button onClick={exportCsv} disabled={busy}>Export CSV</button>
       </div>
     </div>
-    <p className={styles.hint}>Import adds only source-backed, unapproved drafts and preserves existing edits and sent history. Mark each draft ready after review, then select up to 10 for a manual batch. A recorded contact basis is required. “Sent” means SMTP accepted the message; an image load does not prove a person read it.</p>
+    <p className={styles.hint}>Import adds only source-backed, unapproved drafts and preserves existing edits and sent history. Mark each draft ready after review, then select up to 10 for a manual batch. A recorded contact basis is required before sending. “Sent” means SMTP accepted the message; an image request is not proof of a read.</p>
     {batches.length > 0 && <section className={styles.batchList} aria-label="Send batches"><h2>Send batches</h2>{batches.slice(0, 5).map((batch) => <div key={batch.id} className={styles.batchRow}><div><strong>{batch.status} · {batch.items.filter((item) => item.status === "sent").length}/{batch.items.length} sent</strong><small>{new Date(batch.createdAt).toLocaleString()}</small><small>{batch.items.filter((item) => item.status === "send_unknown").length} uncertain · {batch.items.filter((item) => item.status === "skipped" || item.status === "failed").length} skipped/failed · {batch.items.filter((item) => item.status === "pending").length} pending</small>{batch.items.filter((item) => item.error).map((item) => <small key={item.draftId}>{item.status}: {item.error}</small>)}</div><div className={styles.actions}>{batch.status === "running" && <button onClick={() => batchAction(batch.id, "pause")} disabled={busy}>Pause</button>}{batch.status === "paused" && batch.items.some((item) => item.status === "pending") && <button onClick={() => batchAction(batch.id, "resume")} disabled={busy}>Resume pending</button>}</div></div>)}</section>}
 
     {tab === "contacts" ? <>
@@ -360,12 +379,13 @@ export default function ProductionAdminPage() {
         <select aria-label="Filter by city" value={city} onChange={(event) => setCity(event.target.value)}><option value="all">All cities</option>{[...new Set(contacts.map((contact) => contact.city))].sort().map((value) => <option key={value}>{value}</option>)}</select>
         <select aria-label="Filter by category" value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All categories</option>{CONTACT_CATEGORIES.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select>
         <select aria-label="Filter by company scale" value={scale} onChange={(event) => setScale(event.target.value)}><option value="all">All scales</option>{COMPANY_SCALES.map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select>
-        <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option>{["research", "qualified", "ready", "contacted", "replied", "suppressed"].map((value) => <option key={value}>{value}</option>)}</select>
+        <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}><option value="all">All statuses</option><option value="draft_ready">Draft ready</option>{["research", "qualified", "ready", "contacted", "replied", "suppressed"].map((value) => <option key={value}>{value}</option>)}</select>
       </div>
       <div className={styles.selectionBar}>
-        <span>{selectedContacts.length} selected · {visibleEligible.length} reviewed and eligible in this view</span>
+        <span>{selectedContacts.length} selected · {visibleEligible.length} ready drafts in this view</span>
         <div className={styles.actions}>
           <button type="button" onClick={toggleVisible} disabled={busy || !visibleEligible.length}>{allVisibleSelected ? "Clear visible" : "Select all visible"}</button>
+          <button type="button" onClick={selectNextTen} disabled={busy || !visibleEligible.length || selectedContacts.length >= 10}>Select next 10</button>
           <button type="button" onClick={() => setReviewOpen(true)} disabled={busy || !selectedContacts.length}>Review &amp; send</button>
         </div>
       </div>
@@ -379,15 +399,16 @@ export default function ProductionAdminPage() {
           </li>)}
         </ul>
         {selectedDrafts.length > 10 && <p className={styles.hint}>Select at most 10 at a time. Start the next batch manually after this one.</p>}
+        {missingBasis.length > 0 && <p className={styles.hint}>{missingBasis.length} selected contact{missingBasis.length === 1 ? " needs" : "s need"} a recorded outreach basis before sending. Edit the contact record and note the evidence; a public address alone is not enough.</p>}
         {!mailStatus?.canSend && <p className={styles.hint}>Finish email setup above before sending. You can still read the subjects.</p>}
         <div className={styles.actions}>
           <button type="button" onClick={() => setReviewOpen(false)} disabled={busy}>Back</button>
-          <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || !selectedDrafts.length || selectedDrafts.length > 10}>Start batch of {selectedDrafts.length}</button>
+          <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || missingBasis.length > 0 || !selectedDrafts.length || selectedDrafts.length > 10}>Start batch of {selectedDrafts.length}</button>
         </div>
       </section>}
       <div className={styles.pipelineHead}>
         <span className={styles.checkCell}><input type="checkbox" aria-label="Select all visible contacts" checked={allVisibleSelected} onChange={toggleVisible} disabled={!visibleEligible.length} /></span>
-        <span>Agency / contact</span><span>City / scale</span><span>Stage</span><span>Last sent</span><span>Email image</span><span>Actions</span>
+        <span>Agency / contact</span><span>City / scale</span><span>Stage</span><span>Last sent</span><span>Image request</span><span>Actions</span>
       </div>
       <div className={styles.list}>{visible.map((contact) => {
         const latest = activity.get(contact.id);
@@ -396,9 +417,9 @@ export default function ProductionAdminPage() {
           <div className={styles.checkCell}><input type="checkbox" aria-label={`Select ${contact.company}`} checked={queueable && selected.has(contact.id)} disabled={!queueable || busy} onChange={() => toggleContact(contact.id)} /></div>
           <div><a className={styles.companyLink} href={contact.websiteUrl || contact.sourceUrl} target="_blank" rel="noreferrer">{contact.company} ↗</a><span>{contact.name} · {contact.role || contact.category.replaceAll("_", " ")}</span>{selected.has(contact.id) && <small>{drafts.find((draft) => draft.contactId === contact.id && draft.status === "ready")?.subject}</small>}</div>
           <div><span>{contact.city}</span><small>{contact.companyScale.replaceAll("_", " ")}</small></div>
-          <div><span className={styles.statusChip}>{contact.status}</span></div>
+          <div><span className={styles.statusChip}>{queueable ? "Draft ready" : contact.status}</span>{queueable && !hasRecordedBasis(contact.consentBasis) && <small>Basis needed before send</small>}</div>
           <div><span>{dateLabel(latest?.sentAt)}</span></div>
-          <div><span>{latest?.openedAt ? `Image loaded · ${dateLabel(latest.openedAt)}` : latest?.sentAt ? "No signal" : "—"}</span></div>
+          <div><span>{latest?.openedAt ? `Requested · ${dateLabel(latest.openedAt)}` : latest?.sentAt ? "No signal" : "—"}</span></div>
           <div className={styles.rowActions}><a href={contact.contactUrl || contact.sourceUrl} target="_blank" rel="noreferrer">Route ↗</a><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a><button onClick={() => startEdit(contact)}>Edit</button>{contact.email && !drafts.some((draft) => draft.contactId === contact.id) && <button onClick={() => createDraft(contact.id)} disabled={busy || contact.status === "suppressed"}>Draft</button>}</div>
         </article>;
       })}</div>
@@ -408,20 +429,23 @@ export default function ProductionAdminPage() {
         <p className={styles.eyebrow}>{currentContact?.name} · {currentContact?.company}</p>
         <h2>Review message</h2>
         <p>To: {currentDraft.to} · Status: {currentDraft.status}</p>
-        <p>Last sent: {dateLabel(currentDraft.sentAt)} · Email image: {currentDraft.openedAt ? `loaded ${dateLabel(currentDraft.openedAt)} (${currentDraft.openCount || 1} request${currentDraft.openCount === 1 ? "" : "s"})` : "no signal"}</p>
+        <p>Last sent: {dateLabel(currentDraft.sentAt)} · Image requests: {currentDraft.openedAt ? `${dateLabel(currentDraft.openedAt)} (${currentDraft.openCount || 1})` : "no signal"}</p>
         {currentDraft.pitchAngle && <div className={styles.evidence}><strong>Research angle</strong><p>{currentDraft.pitchAngle}</p><small>{currentDraft.pitchEvidence}</small>{currentDraft.pitchSourceUrl && <a href={currentDraft.pitchSourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a>}</div>}
         <label><span>Subject</span><input value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <label><span>Message</span><textarea value={draftBody} onChange={(event) => setDraftBody(event.target.value)} rows={16} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
-        <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Include image-load tracking in this email</span></label>
-        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save as draft</button><button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={sendDraft} disabled={busy || currentDraft.status !== "ready"}>Send reviewed email</button></div>
+        <div className={styles.messageLinks}><strong>Links in this message</strong>{messageLinks(draftBody).map((url) => <a key={url} href={url} target="_blank" rel="noreferrer">{url}</a>)}</div>
+        <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Include optional image-request tracking</span></label>
+        <p className={styles.hint}>Some email apps block images or fetch them automatically. This signal cannot confirm a person opened or read the message.</p>
+        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save changes</button>{currentDraft.status === "ready" && <button onClick={() => saveDraft("draft")} disabled={busy}>Move back to draft</button>}<button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={sendDraft} disabled={busy || currentDraft.status !== "ready"}>Send reviewed email</button></div>
         {currentDraft.error && <p className={styles.notice}>{currentDraft.error}</p>}
       </> : <p>Select a draft to review.</p>}</div>
     </div> : null}
     {tab === "booking" && <section className={styles.bookingPanel}>
-      <h2>20 minutes with Zeb</h2><p>Times are entered in Toronto time. The page stays empty until you add a slot. <a href="/book/zeb" target="_blank" rel="noreferrer">Open booking page ↗</a></p>
-      <form onSubmit={addBookingSlot} className={styles.actions}><label>Toronto date and time<input type="datetime-local" value={slotLocal} onChange={(event) => setSlotLocal(event.target.value)} required /></label><button className={styles.primary} disabled={busy}>Add 20-minute slot</button></form>
+      <h2>Booking availability</h2><p>Choose a Toronto time range. Guests will see each 20-minute opening within it. We follow up directly after they book. <a href="/book/zeb" target="_blank" rel="noreferrer">Open booking page</a></p>
+      <form onSubmit={addBookingSlot} className={styles.rangeForm}><label>Range starts<input type="datetime-local" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} step={1200} required /></label><label>Range ends<input type="datetime-local" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} step={1200} required /></label><button className={styles.primary} disabled={busy}>Add bookable times</button></form>
+      <p className={styles.hint}>Use one date, with times on :00, :20, or :40. Range length must be a multiple of 20 minutes, up to eight hours.</p>
       <h3>Slots</h3>{slots.length ? slots.map((slot) => <div className={styles.bookingRow} key={slot.id}><span>{new Intl.DateTimeFormat("en-US", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" }).format(new Date(slot.startsAt))} ET · {slot.status}</span>{slot.status === "open" && <button onClick={() => removeBookingSlot(slot.id)} disabled={busy}>Remove</button>}</div>) : <p>No slots yet.</p>}
-      <h3>Booked conversations</h3>{bookings.length ? bookings.map((booking) => <div className={styles.bookingRow} key={booking.id}><span>{new Intl.DateTimeFormat("en-US", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" }).format(new Date(booking.startsAt))} ET · {booking.name} · <a href={`mailto:${booking.email}`}>{booking.email}</a>{booking.note && <> · {booking.note}</>}</span></div>) : <p>No bookings yet.</p>}
+      <h3>Booked conversations</h3>{bookings.length ? bookings.map((booking) => <div className={styles.bookingRow} key={booking.id}><span>{new Intl.DateTimeFormat("en-US", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" }).format(new Date(booking.startsAt))} ET · {booking.name} · <a href={`mailto:${booking.email}`}>{booking.email}</a>{booking.note && <> · {booking.note}</>}{booking.confirmationError && <small> · Confirmation needs manual follow-up</small>}</span></div>) : <p>No bookings yet.</p>}
     </section>}
   </div>;
 }

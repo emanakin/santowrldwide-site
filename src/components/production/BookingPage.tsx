@@ -28,7 +28,9 @@ export default function BookingPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not book this time");
       setBooked(true);
-      setMessage(`you're booked for ${label(result.booking.startsAt)}. a confirmation will be sent to ${email}.`);
+      setMessage(result.booking.confirmationError
+        ? `your time is reserved for ${label(result.booking.startsAt)}, but the confirmation email did not send. please email support@santowrldwide.com if you need to change it.`
+        : `your time is reserved for ${label(result.booking.startsAt)}. we'll email ${email} and follow up directly.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not book this time");
       const data = await fetch("/api/production/booking").then((r) => r.json()).catch(() => ({ slots: [] }));
@@ -37,11 +39,11 @@ export default function BookingPage() {
   }
 
   return <main className={styles.page}>
-    <nav><Link href="/productions">SANTOWRLDWIDE</Link><span>20 MINUTES WITH ZEB</span></nav>
+    <nav><Link href="/productions">SANTOWRLDWIDE</Link><span>STUDIO CALL / 20 MINUTES</span></nav>
     <section className={styles.content}>
-      <p className={styles.kicker}>A CONVERSATION ABOUT WHAT’S NEXT</p>
+      <p className={styles.kicker}>BOOK A STUDIO CALL</p>
       <h1>let’s talk.</h1>
-      <p>music videos, artist identity, visual direction, or a project you’re putting together. pick a time that works and tell me a little about it.</p>
+      <p>choose a 20-minute time to discuss a music video, artist identity, brand film, or another project. the studio will follow up directly afterward.</p>
       {booked ? <p role="status" className={styles.result}>{message}</p> : <form onSubmit={submit}>
         <fieldset><legend>available times · toronto</legend>
           {slots.length ? <div className={styles.slots}>{slots.map((slot) => <label key={slot.id} className={selected === slot.id ? styles.chosen : ""}><input type="radio" name="slot" value={slot.id} checked={selected === slot.id} onChange={() => setSelected(slot.id)} required /><span>{label(slot.startsAt)}</span></label>)}</div> : <p>{message || "no times posted right now. you can reply to the email that brought you here, or reach us at"} <a href="mailto:support@santowrldwide.com">support@santowrldwide.com</a>.</p>}
@@ -50,11 +52,11 @@ export default function BookingPage() {
           <label>name<input value={name} onChange={(e) => setName(e.target.value)} required minLength={2} maxLength={120} /></label>
           <label>email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={200} /></label>
           <label>what should we talk about? <span>optional</span><textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3} /></label>
-          <button disabled={busy || !selected}>{busy ? "booking…" : "book 20 minutes ↗"}</button>
+          <button disabled={busy || !selected}>{busy ? "booking…" : "book 20 minutes"}</button>
         </div>}
       </form>}
       {message && !booked && <p role="alert" className={styles.result}>{message}</p>}
     </section>
-    <footer><Link href="/productions">SELECTED WORK ↗</Link><span>TORONTO / EVERYWHERE</span></footer>
+    <footer><Link href="/productions">SELECTED WORK</Link><span>TORONTO / EVERYWHERE</span></footer>
   </main>;
 }

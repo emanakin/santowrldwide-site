@@ -3,31 +3,22 @@
 .topbar { height: 62px; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(20px, 3vw, 48px); border-bottom: 1px solid #d2d0ca; gap: 20px; }
 .brand { color: inherit; font-size: 15px; font-weight: 900; letter-spacing: -.07em; text-decoration: none; white-space: nowrap; }
 .brand span { font-weight: 400; letter-spacing: -.05em; }
-.private, .kicker, .sectionDivider, .introTop, .marquee, .imageIndex, .personFacts, .filmTop > span, .filmNumber, .filmArrow, .videoCaption, .projectMeta, .footer > div > span { font-family: "Courier New", monospace; font-size: 11px; letter-spacing: .03em; }
+.private, .kicker, .sectionDivider, .introTop, .marquee, .filmTop > span, .videoCaption, .projectMeta, .footer > div > span { font-family: "Courier New", monospace; font-size: 11px; letter-spacing: .03em; }
 .private { color: #77746e; }
 .topbar nav { display: flex; gap: clamp(15px, 2vw, 36px); }
 .topbar nav a { color: #171715; font-size: 13px; text-decoration: none; }
 .topbar nav a:hover, .footer a:hover { text-decoration: underline; }
 .intro { padding: 28px clamp(20px, 3vw, 48px) 0; }
 .introTop, .sectionDivider { display: flex; justify-content: space-between; gap: 20px; }
-.introTitle { min-height: 360px; display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; padding: 45px 0 35px; }
+.introTitle { min-height: 330px; display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; padding: 45px 0 35px; }
 .introTitle h1 { font-size: clamp(76px, 12vw, 190px); line-height: .76; letter-spacing: -.11em; font-weight: 600; margin: 0; }
-.introTitle h1 em, .person h2 i, .project h2 i { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: -.09em; }
-.introTitle > div { width: 230px; align-self: flex-end; }
-.introTitle p { font-size: 16px; line-height: 1.45; margin: 20px 0 0; }
-.star { font-size: 55px; line-height: .7; }
+.introTitle h1 em, .project h2 i { font-family: Georgia, 'Times New Roman', serif; font-weight: 400; letter-spacing: -.09em; }
+.introTitle > p { width: 230px; font-size: 16px; line-height: 1.45; margin: 0; }
 .marquee { display: flex; justify-content: space-between; gap: 15px; padding: 12px 0; border-top: 1px solid #171715; }
-.person { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); align-items: center; gap: clamp(30px, 5vw, 90px); padding: 40px clamp(20px, 3vw, 48px); min-height: 410px; background: #d5d2c8; }
-.personImage { width: 100%; aspect-ratio: 4/5; position: relative; background: #c5c3bd; overflow: hidden; }
-.personImage img { width: 100%; height: 100%; position: absolute; object-fit: cover; object-position: center 25%; filter: grayscale(1); }
+.studio { display: grid; grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr); gap: 3rem; padding: 48px clamp(20px, 3vw, 48px); border-top: 1px solid #d2d0ca; border-bottom: 1px solid #d2d0ca; }
+.studio p { max-width: 650px; margin: 0; font-size: clamp(20px, 2.4vw, 32px); line-height: 1.3; letter-spacing: -.035em; }
 .assetPlaceholder { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; background: radial-gradient(circle at 80% 15%, #eeece6 0, #cac7be 44%, #aaa69e 100%); color: #242320; font-family: "Courier New", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
 .assetPlaceholder strong { font-family: Arial, Helvetica, sans-serif; font-size: clamp(35px, 6vw, 85px); font-weight: 500; line-height: .92; letter-spacing: -.08em; max-width: 70%; text-transform: none; }
-.imageIndex { position: absolute; bottom: 17px; left: 22px; padding: 6px 8px; background: #f8f7f3; z-index: 1; }
-.personCopy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 20px 0; }
-.person h2 { font-size: clamp(58px, 7vw, 104px); font-weight: 600; line-height: .88; letter-spacing: -.09em; margin: 30px 0 24px; }
-.role { font-weight: 700; margin: 0 0 24px !important; }
-.personCopy > p:not(.kicker) { max-width: 500px; font-size: 16px; line-height: 1.55; }
-.personFacts { display: flex; flex-wrap: wrap; gap: 8px 22px; border-top: 1px solid #a6a49d; width: 100%; margin-top: 50px; padding-top: 16px; }
 .sectionDivider { padding: 18px clamp(20px, 3vw, 48px); border-bottom: 1px solid #d2d0ca; }
 .feature { padding: 0 clamp(20px, 3vw, 48px) 86px; }
 .featureHeading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 220px) minmax(0, 360px); align-items: end; gap: clamp(20px, 3vw, 45px); padding: 66px 0 35px; }
@@ -65,13 +56,12 @@
 .footer { min-height: 250px; background: #1d1d1b; color: #f5f4ee; padding: 35px clamp(20px, 3vw, 48px); display: flex; align-items: flex-end; justify-content: space-between; }
 .footer > div { display: flex; flex-direction: column; gap: 24px; }
 .footer strong { font-size: clamp(40px, 7vw, 90px); font-weight: 500; line-height: .9; letter-spacing: -.08em; }
-.footer strong span { color: #b9514c; margin-left: 14px; }
 .footer a { color: inherit; text-decoration: none; font-size: 13px; }
 .footerLinks { text-align: right; }
 .footerLinks a:last-child { opacity: .55; font-size: 11px; }
 @media (max-width: 900px) {
   .private { display: none; }
-  .person { grid-template-columns: minmax(0, 220px) minmax(0, 1fr); }
+  .studio { grid-template-columns: 1fr 2fr; }
   .featureHeading { grid-template-columns: 1fr 150px; }
   .featureHeading > p { grid-column: 1 / -1; }
   .breakdown { grid-template-columns: 1fr; }
@@ -82,14 +72,9 @@
   .topbar nav a { font-size: 11px; }
   .introTitle { min-height: 270px; display: block; padding-top: 45px; }
   .introTitle h1 { font-size: clamp(70px, 18vw, 110px); }
-  .introTitle > div { width: auto; display: flex; gap: 15px; margin-top: 35px; }
-  .introTitle p { margin: 0; font-size: 13px; }
-  .star { font-size: 36px; }
+  .introTitle > p { width: auto; margin-top: 35px; font-size: 13px; }
   .marquee span:nth-child(2), .marquee span:nth-child(3), .sectionDivider span:last-child { display: none; }
-  .person { grid-template-columns: 1fr; gap: 24px; padding: 28px 20px 38px; }
-  .personImage { width: min(58vw, 210px); }
-  .personCopy { padding: 0; }
-  .person h2 { font-size: 70px; }
+  .studio { grid-template-columns: 1fr; gap: 16px; padding: 32px 20px; }
   .featureHeading { grid-template-columns: 1fr 38%; gap: 20px; padding-top: 48px; }
   .projectHeader { display: block; padding-top: 48px; }
   .featureHeading > p, .projectHeader > p { margin-top: 35px; font-size: 15px; }

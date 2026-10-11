@@ -62,4 +62,4 @@ export type ProductionSendBatch = {
 };
 
 export type ProductionBookingSlot = { id: string; startsAt: string; endsAt: string; status: "open" | "booked" | "cancelled"; bookingId?: string };
-export type ProductionBooking = { id: string; slotId: string; startsAt: string; endsAt: string; name: string; email: string; note: string; createdAt: string };
+export type ProductionBooking = { id: string; slotId: string; startsAt: string; endsAt: string; name: string; email: string; note: string; createdAt: string; confirmationError?: string };

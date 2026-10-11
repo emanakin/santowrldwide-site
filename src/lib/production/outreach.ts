@@ -2,6 +2,7 @@ import { adminDb } from "@/lib/firebase/admin/firebaseAdmin";
 import { listContacts } from "@/lib/production/contacts";
 import { hasRecordedBasis } from "@/lib/production/eligibility";
 import { assignSubjects, outreachBody } from "@/lib/production/message";
+import { escapeHtml, renderLinksAsHtml } from "@/lib/production/emailHtml";
 import { ProductionContact, ProductionDraft } from "@/types/production-types";
 import nodemailer from "nodemailer";
 import { randomBytes } from "node:crypto";
@@ -49,7 +50,7 @@ export async function createDraft(contactId: string) {
     subject: assignSubjects([contact], drafts.map((item) => item.subject)).get(contact.id) ?? `could we talk visuals for ${contact.company.toLowerCase()}?`,
     body: outreachBody(contact),
     status: "draft",
-    trackOpens: true,
+    trackOpens: false,
     trackingToken: randomBytes(24).toString("base64url"),
     createdAt: now,
     updatedAt: now,
@@ -105,7 +106,7 @@ export async function updateDraft(id: string, raw: unknown) {
   if (!snapshot.exists) throw new Error("Draft not found");
   const old = snapshot.data() as ProductionDraft;
   if (old.status !== "draft" && old.status !== "ready") throw new Error("This draft can no longer be edited");
-  const value = { ...old, ...input, status: input.status ?? "draft", id, updatedAt: new Date().toISOString() };
+  const value = { ...old, ...input, status: input.status ?? old.status, id, updatedAt: new Date().toISOString() };
   await ref.set(value);
   return value;
 }
@@ -123,13 +124,8 @@ function requireSmtp() {
   return { host: SMTP_HOST, port, user: SMTP_USER, password: SMTP_PASSWORD, from: SMTP_FROM, address: SANTO_POSTAL_ADDRESS };
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] || character);
-}
-
 function messageHtml(draft: ProductionDraft, address: string) {
-  const visible = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${escapeHtml(draft.body)}</div><p style="font-family:Arial,sans-serif">SANTOWRLDWIDE · ${escapeHtml(address)}<br>If you'd prefer no further outreach, reply “unsubscribe” and we'll remove you from our list.</p>`;
+  const visible = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${renderLinksAsHtml(draft.body)}</div><p style="font-family:Arial,sans-serif">SANTOWRLDWIDE · ${escapeHtml(address)}<br>If you'd prefer no further outreach, reply “unsubscribe” and we'll remove you from our list.</p>`;
   if (!draft.trackOpens || !draft.trackingToken) return visible;
   const base = (process.env.SANTO_SITE_URL || "https://santowrldwide.com").replace(/\/$/, "");
   const url = new URL(`${base}/api/production/open/${draft.trackingToken}`);
