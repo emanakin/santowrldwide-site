@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/firebase/client/firebaseApp";
 import { adminFetch } from "@/services/client/adminApi";
@@ -21,6 +21,10 @@ function canQueue(contact: ProductionContact, drafts: ProductionDraft[]) {
   return Boolean(contact.email && contact.status !== "suppressed" && drafts.some((draft) => draft.contactId === contact.id && draft.status === "ready"));
 }
 
+function trackingActive(draft: ProductionDraft) {
+  return draft.trackOpens === true && Boolean(draft.trackingToken);
+}
+
 function messageLinks(body: string) {
   return [...new Set(body.match(/https?:\/\/[^\s<>]+/g) ?? [])].map((value) => value.replace(/[.,;!?]+$/, ""));
 }
@@ -35,7 +39,7 @@ export default function ProductionAdminPage() {
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
   const [mailStatus, setMailStatus] = useState<MailStatus | null>(null);
-  const [tab, setTab] = useState<"contacts" | "drafts" | "booking">("contacts");
+  const [tab, setTab] = useState<"contacts" | "drafts" | "tracking" | "booking">("contacts");
   const [search, setSearch] = useState("");
   const [city, setCity] = useState("all");
   const [category, setCategory] = useState("all");
@@ -53,9 +57,11 @@ export default function ProductionAdminPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [reviewOpen, setReviewOpen] = useState(false);
   const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "ready" | "sent" | "issues">("all");
+  const [trackingFilter, setTrackingFilter] = useState<"all" | "fetched" | "no_signal" | "off">("all");
   const [reviewSelection, setReviewSelection] = useState<Set<string>>(new Set());
   const [trackImageRequests, setTrackImageRequests] = useState(true);
   const [sharedBasis, setSharedBasis] = useState("");
+  const trackingMigrationAttempted = useRef(false);
 
   const load = useCallback(async () => {
     const [contactData, draftData, configuration, batchData, bookingData] = await Promise.all([
@@ -76,6 +82,14 @@ export default function ProductionAdminPage() {
   useEffect(() => {
     if (!checking) load().catch((error) => setMessage(error.message));
   }, [checking, load]);
+
+  useEffect(() => {
+    if (checking || trackingMigrationAttempted.current || !drafts.some((draft) => ["draft", "ready"].includes(draft.status) && (draft.trackOpens !== true || !draft.trackingToken))) return;
+    trackingMigrationAttempted.current = true;
+    adminFetch<{ updated: number; alreadyRun: boolean }>("/api/admin/production/drafts/tracking", { method: "POST", body: JSON.stringify({ force: false }) })
+      .then(async (result) => { if (result.updated) { await load(); setMessage(`Image tracking enabled on ${result.updated} existing unsent drafts.`); } })
+      .catch((error) => setMessage(error instanceof Error ? error.message : "Could not update draft tracking"));
+  }, [checking, drafts, load]);
 
   const activeBatchId = batches.find((batch) => batch.status === "running" || (batch.status === "paused" && batch.pauseReason === "time_window"))?.id;
   useEffect(() => {
@@ -137,6 +151,9 @@ export default function ProductionAdminPage() {
   const missingBasis = selectedContacts.filter((contact) => !hasRecordedBasis(contact.consentBasis));
   const visibleDrafts = drafts.filter((draft) => draftFilter === "all" || (draftFilter === "issues" ? ["send_unknown", "failed"].includes(draft.status) : draft.status === draftFilter));
   const visibleUnapproved = visibleDrafts.filter((draft) => draft.status === "draft");
+  const unsentTrackingOff = drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && !trackingActive(draft));
+  const sentTracking = drafts.filter((draft) => draft.status === "sent").sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""));
+  const visibleTracking = sentTracking.filter((draft) => trackingFilter === "all" || (trackingFilter === "fetched" ? Boolean(draft.openedAt) : trackingFilter === "no_signal" ? trackingActive(draft) && !draft.openedAt : !trackingActive(draft)));
 
   function toggleContact(id: string) {
     setSelected((current) => {
@@ -206,6 +223,16 @@ export default function ProductionAdminPage() {
       await load();
       setMessage(`${result.updated} drafts marked ready. Select up to 100 in Agency pipeline to send a batch.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Bulk approval failed"); }
+    finally { setBusy(false); }
+  }
+
+  async function enableDraftTracking() {
+    setBusy(true);
+    try {
+      const result = await adminFetch<{ eligible: number; updated: number; alreadyEnabled: number }>("/api/admin/production/drafts/tracking", { method: "POST", body: JSON.stringify({ force: true }) });
+      await load();
+      setMessage(`Image tracking enabled on ${result.updated} existing unsent drafts. ${result.alreadyEnabled} were already enabled. Sent messages were not changed.`);
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not update draft tracking"); }
     finally { setBusy(false); }
   }
 
@@ -414,6 +441,7 @@ export default function ProductionAdminPage() {
       <div className={styles.tabs}>
         <button className={tab === "contacts" ? styles.active : ""} onClick={() => setTab("contacts")}>Agency pipeline</button>
         <button className={tab === "drafts" ? styles.active : ""} onClick={() => setTab("drafts")}>Email history &amp; drafts</button>
+        <button className={tab === "tracking" ? styles.active : ""} onClick={() => setTab("tracking")}>Email tracking</button>
         <button className={tab === "booking" ? styles.active : ""} onClick={() => setTab("booking")}>Bookings</button>
       </div>
       <div className={styles.actions}>
@@ -517,6 +545,33 @@ export default function ProductionAdminPage() {
         {currentDraft.error && <p className={styles.notice}>{currentDraft.error}</p>}
       </> : <p>Select a draft to review.</p>}</div>
     </div> : null}
+    {tab === "tracking" && <section className={styles.trackingPanel} aria-label="Email tracking">
+      <div className={styles.trackingIntro}><div><p className={styles.eyebrow}>Outreach / signals</p><h2>Email tracking</h2><p>Image fetches show possible opens, not confirmed reads. Mail apps may prefetch or block the image. Replies and bookings are stronger signals.</p></div><button type="button" onClick={enableDraftTracking} disabled={busy || !unsentTrackingOff.length}>Enable tracking on {unsentTrackingOff.length} unsent {unsentTrackingOff.length === 1 ? "draft" : "drafts"}</button></div>
+      <div className={styles.trackingStats}>
+        <div><strong>{drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && trackingActive(draft)).length}</strong><span>unsent with tracking</span></div>
+        <div><strong>{sentTracking.filter(trackingActive).length}</strong><span>sent with tracking</span></div>
+        <div><strong>{sentTracking.filter((draft) => draft.openedAt).length}</strong><span>possible opens</span></div>
+        <div><strong>{sentTracking.filter((draft) => !trackingActive(draft)).length}</strong><span>sent without tracking</span></div>
+      </div>
+      <div className={styles.trackingControls}>
+        <h3>Sent messages</h3>
+        <select aria-label="Filter email tracking" value={trackingFilter} onChange={(event) => setTrackingFilter(event.target.value as typeof trackingFilter)}>
+          <option value="all">All sent ({sentTracking.length})</option>
+          <option value="fetched">Image fetched ({sentTracking.filter((draft) => draft.openedAt).length})</option>
+          <option value="no_signal">No image signal ({sentTracking.filter((draft) => trackingActive(draft) && !draft.openedAt).length})</option>
+          <option value="off">Tracking off ({sentTracking.filter((draft) => !trackingActive(draft)).length})</option>
+        </select>
+      </div>
+      <div className={styles.trackingList}>{visibleTracking.length ? visibleTracking.map((draft) => {
+        const contact = contacts.find((item) => item.id === draft.contactId);
+        return <article key={draft.id} className={styles.trackingRow}>
+          <div><strong>{contact?.company || draft.to}</strong><span>{draft.subject}</span><small>{draft.to}</small></div>
+          <div><span>Sent {draft.sentAt ? new Date(draft.sentAt).toLocaleString() : "date unavailable"}</span><strong>{draft.openedAt ? "Possible open" : trackingActive(draft) ? "No image signal" : "Tracking off"}</strong>{draft.openedAt && <small>First fetch {new Date(draft.openedAt).toLocaleString()} · Last fetch {new Date(draft.lastOpenedAt || draft.openedAt).toLocaleString()} · {draft.openCount || 1} {draft.openCount === 1 ? "request" : "requests"}</small>}</div>
+          <button type="button" onClick={() => { openDraft(draft); setTab("drafts"); }}>View email</button>
+        </article>;
+      }) : <p className={styles.hint}>No sent messages match this filter.</p>}</div>
+      <p className={styles.hint}>A pixel can be added only before sending. This update leaves previously sent messages and their history unchanged.</p>
+    </section>}
     {tab === "booking" && <section className={styles.bookingPanel}>
       <h2>Booking availability</h2><p>Choose a Toronto time range. Guests will see each 20-minute opening within it. We follow up directly after they book. <a href="/book/zeb" target="_blank" rel="noreferrer">Open booking page</a></p>
       <form onSubmit={addBookingSlot} className={styles.rangeForm}><label>Range starts<input type="datetime-local" value={rangeStart} onChange={(event) => setRangeStart(event.target.value)} step={1200} required /></label><label>Range ends<input type="datetime-local" value={rangeEnd} onChange={(event) => setRangeEnd(event.target.value)} step={1200} required /></label><button className={styles.primary} disabled={busy}>Add bookable times</button></form>

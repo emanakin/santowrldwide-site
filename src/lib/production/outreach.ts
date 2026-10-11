@@ -28,6 +28,28 @@ export async function listDrafts(): Promise<ProductionDraft[]> {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+/** Enables image requests on existing unsent drafts without changing copy, approval, or send history. */
+export async function enableTrackingForUnsentDrafts(force = false) {
+  const marker = db().collection("production_settings").doc("draft_tracking_backfill_v1");
+  if (!force && (await marker.get()).exists) return { eligible: 0, updated: 0, alreadyEnabled: 0, alreadyRun: true };
+  const snapshot = await db().collection("production_drafts").limit(2000).get();
+  const eligible = snapshot.docs.filter((doc) => ["draft", "ready"].includes(doc.data().status));
+  const update = eligible.filter((doc) => doc.data().trackOpens !== true || !doc.data().trackingToken);
+  for (let start = 0; start < update.length; start += 400) {
+    const write = db().batch();
+    for (const doc of update.slice(start, start + 400)) {
+      write.update(doc.ref, {
+        trackOpens: true,
+        trackingToken: doc.data().trackingToken || randomBytes(24).toString("base64url"),
+        updatedAt: new Date().toISOString(),
+      }, { lastUpdateTime: doc.updateTime });
+    }
+    await write.commit();
+  }
+  await marker.set({ completedAt: new Date().toISOString(), updated: update.length });
+  return { eligible: eligible.length, updated: update.length, alreadyEnabled: eligible.length - update.length, alreadyRun: false };
+}
+
 const LOCKED_STATUSES = new Set<ProductionDraft["status"]>(["sent", "sending", "send_unknown"]);
 
 export function draftIsLocked(draft: ProductionDraft) {

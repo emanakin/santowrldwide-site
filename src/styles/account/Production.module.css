@@ -94,8 +94,25 @@
 .messageLinks { display: grid; gap: .35rem; margin: -.25rem 0 1rem; font-size: .8rem; overflow-wrap: anywhere; }
 .messageLinks a { color: #222; text-decoration: underline; }
 .bookingPanel h3 { font-size: .95rem; margin: 2rem 0 .6rem; }
+.trackingPanel { border: 1px solid #dedede; padding: 1.25rem; margin: 1rem 0 1.5rem; }
+.trackingIntro { display: flex; justify-content: space-between; align-items: end; gap: 1.5rem; border-bottom: 1px solid #dedede; padding-bottom: 1.25rem; }
+.trackingIntro h2 { font-size: clamp(1.7rem, 3vw, 2.5rem); letter-spacing: -.05em; margin: .4rem 0; }
+.trackingIntro p:last-child { max-width: 35rem; font-size: .85rem; color: #666; line-height: 1.5; }
+.trackingStats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin: 1.25rem 0 2rem; }
+.trackingStats > div { border: 1px solid #dedede; padding: 1rem; display: flex; flex-direction: column; gap: .35rem; }
+.trackingStats strong { font-size: 1.7rem; line-height: 1; }
+.trackingStats span { font-size: .72rem; color: #666; text-transform: uppercase; letter-spacing: .08em; }
+.trackingControls { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+.trackingControls h3 { font-size: 1rem; }
+.trackingControls select { max-width: 15rem; }
+.trackingList { border-top: 1px solid #dedede; }
+.trackingRow { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.3fr) auto; gap: 1rem; align-items: center; padding: .85rem 0; border-bottom: 1px solid #e5e5e5; }
+.trackingRow > div { display: flex; flex-direction: column; gap: .25rem; min-width: 0; overflow-wrap: anywhere; }
+.trackingRow span, .trackingRow small { color: #666; font-size: .78rem; }
+.trackingRow strong { font-size: .88rem; }
 .rangeForm { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: .8rem; margin: 1.5rem 0 .5rem; }
 .rangeForm button { min-height: 42px; }
 @media (max-width: 1000px) { .pipelineHead { display: none; } .pipelineRow { grid-template-columns: 2rem minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: .8rem; } .pipelineRow > div:last-child { grid-column: 2 / -1; } .composerList li { flex-direction: column; gap: .2rem; } .composerList span { text-align: left; } }
 @media (max-width: 800px) { .stats { grid-template-columns: repeat(2, 1fr); } .formGrid, .draftLayout, .rangeForm, .basisRow { grid-template-columns: 1fr; } .row { grid-template-columns: 1fr; gap: .4rem; } }
+@media (max-width: 800px) { .trackingStats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .trackingIntro { align-items: start; flex-direction: column; } .trackingRow { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .pipelineRow { grid-template-columns: 2rem minmax(0, 1fr); } .pipelineRow > div:not(:first-child) { grid-column: 2; } }
