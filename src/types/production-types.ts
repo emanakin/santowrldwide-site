@@ -41,6 +41,9 @@ export type ProductionDraft = {
   updatedAt: string;
   sentAt?: string;
   providerMessageId?: string;
+  sentCopyStatus?: "saving" | "saved" | "needs_attention";
+  sentCopyError?: string;
+  sentCopySavedAt?: string;
   trackOpens?: boolean;
   trackingToken?: string;
   openedAt?: string;

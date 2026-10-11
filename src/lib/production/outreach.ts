@@ -4,6 +4,7 @@ import { hasRecordedBasis } from "@/lib/production/eligibility";
 import { assignSubjects, outreachBody } from "@/lib/production/message";
 import { escapeHtml, renderLinksAsHtml } from "@/lib/production/emailHtml";
 import { productionMailStatus } from "@/lib/production/mailStatus";
+import { appendToSent } from "@/lib/production/sentCopy";
 import { ProductionContact, ProductionDraft } from "@/types/production-types";
 import nodemailer from "nodemailer";
 import { randomBytes } from "node:crypto";
@@ -127,17 +128,22 @@ export async function markDraftsReady(ids: string[]) {
   return { updated: unique.length };
 }
 
-async function requireSmtp() {
+function mailSettings() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM, SANTO_POSTAL_ADDRESS } = process.env;
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD || !SMTP_FROM || !SANTO_POSTAL_ADDRESS) {
     throw new Error("SMTP and sender identity are not fully configured");
   }
-  if (!(await productionMailStatus()).portfolioReady) {
-    throw new Error("Approve and publish the Productions portfolio before outreach sending");
-  }
   const port = Number(SMTP_PORT);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Invalid SMTP port");
   return { host: SMTP_HOST, port, user: SMTP_USER, password: SMTP_PASSWORD, from: SMTP_FROM, address: SANTO_POSTAL_ADDRESS };
+}
+
+async function requireSmtp() {
+  const settings = mailSettings();
+  if (!(await productionMailStatus()).portfolioReady) {
+    throw new Error("Approve and publish the Productions portfolio before outreach sending");
+  }
+  return settings;
 }
 
 function messageHtml(draft: ProductionDraft, address: string) {
@@ -147,6 +153,21 @@ function messageHtml(draft: ProductionDraft, address: string) {
   const url = new URL(`${base}/api/production/open/${draft.trackingToken}`);
   if (process.env.NODE_ENV === "production" && url.protocol !== "https:") throw new Error("SANTO_SITE_URL must use HTTPS");
   return `${visible}<img src="${escapeHtml(url.toString())}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0">`;
+}
+
+async function composeRawMessage(draft: ProductionDraft, configuration: ReturnType<typeof mailSettings>) {
+  const compiled = await nodemailer.createTransport({ streamTransport: true, buffer: true, newline: "windows" }).sendMail({
+    from: configuration.from,
+    to: draft.to,
+    replyTo: configuration.user,
+    subject: draft.subject,
+    text: `${draft.body}\n\nSANTOWRLDWIDE · ${configuration.address}\nIf you'd prefer no further outreach, reply "unsubscribe" and we'll remove you from our list.`,
+    html: messageHtml(draft, configuration.address),
+    ...(draft.providerMessageId ? { messageId: draft.providerMessageId } : {}),
+    ...(draft.sentAt ? { date: new Date(draft.sentAt) } : {}),
+  });
+  if (!Buffer.isBuffer(compiled.message)) throw new Error("Could not prepare the email copy");
+  return { raw: compiled.message, messageId: compiled.messageId };
 }
 
 function ensureEligible(contact: ProductionContact, draft: ProductionDraft, contacts: ProductionContact[]) {
@@ -170,7 +191,7 @@ export async function sendDraft(id: string, confirm: boolean) {
   if (!contact) throw new Error("Contact not found");
   ensureEligible(contact, draft, contacts);
   if (/\[[^\]]+\]/.test(draft.body)) throw new Error("Replace all draft placeholders before sending");
-  const html = messageHtml(draft, configuration.address);
+  const composed = await composeRawMessage(draft, configuration);
   const contactRef = db().collection("production_contacts").doc(contact.id);
   await db().runTransaction(async (transaction) => {
     const snapshot = await transaction.get(ref);
@@ -193,21 +214,47 @@ export async function sendDraft(id: string, confirm: boolean) {
     socketTimeout: 8000,
   });
   try {
-    const result = await transporter.sendMail({
-      from: configuration.from,
-      to: draft.to,
-      replyTo: configuration.user,
-      subject: draft.subject,
-      text: `${draft.body}\n\nSANTOWRLDWIDE · ${configuration.address}\nIf you'd prefer no further outreach, reply "unsubscribe" and we'll remove you from our list.`,
-      html,
-    });
-    const now = new Date().toISOString();
-    await ref.update({ status: "sent", sentAt: now, updatedAt: now, providerMessageId: result.messageId });
-    await contactRef.update({ status: "contacted", updatedAt: now });
-    return { messageId: result.messageId };
+    await transporter.sendMail({ raw: composed.raw, envelope: { from: configuration.user, to: draft.to } });
   } catch (error) {
     // An SMTP timeout may occur after acceptance. Never retry automatically.
     await ref.update({ status: "send_unknown", updatedAt: new Date().toISOString(), error: error instanceof Error ? error.message : "Unknown SMTP error" });
+    throw error;
+  }
+  const now = new Date().toISOString();
+  await ref.update({ status: "sent", sentAt: now, updatedAt: now, providerMessageId: composed.messageId, sentCopyStatus: "saving" });
+  await contactRef.update({ status: "contacted", updatedAt: now });
+  try {
+    await appendToSent(composed.raw, composed.messageId, now);
+    await ref.update({ sentCopyStatus: "saved", sentCopySavedAt: new Date().toISOString(), sentCopyError: null });
+  } catch (error) {
+    await ref.update({ sentCopyStatus: "needs_attention", sentCopyError: error instanceof Error ? error.message : "IMAP Sent copy failed" });
+  }
+  return { messageId: composed.messageId };
+}
+
+export async function archivePreviouslySentDraft(id: string) {
+  const ref = db().collection("production_drafts").doc(id);
+  const snapshot = await ref.get();
+  if (!snapshot.exists || snapshot.data()?.status !== "sent") throw new Error("Only previously sent messages can be saved to Sent");
+  const draft = snapshot.data() as ProductionDraft;
+  if (!draft.providerMessageId || !draft.sentAt) throw new Error("This sent record lacks a Message-ID or send time");
+  if (draft.sentCopyStatus === "saved") return { alreadySaved: true };
+  const configuration = mailSettings();
+  const composed = await composeRawMessage(draft, configuration);
+  await db().runTransaction(async (transaction) => {
+    const latest = await transaction.get(ref);
+    if (!latest.exists || latest.data()?.status !== "sent" || latest.data()?.sentCopyStatus === "saved") throw new Error("Sent record changed; refresh before trying again");
+    if (latest.data()?.sentCopyStatus === "saving" && Date.now() - Date.parse(latest.data()?.sentCopyStartedAt || "") < 10 * 60_000) {
+      throw new Error("Sent copy is already being saved");
+    }
+    transaction.update(ref, { sentCopyStatus: "saving", sentCopyStartedAt: new Date().toISOString() });
+  });
+  try {
+    const result = await appendToSent(composed.raw, draft.providerMessageId, draft.sentAt);
+    await ref.update({ sentCopyStatus: "saved", sentCopySavedAt: new Date().toISOString(), sentCopyError: null });
+    return result;
+  } catch (error) {
+    await ref.update({ sentCopyStatus: "needs_attention", sentCopyError: error instanceof Error ? error.message : "IMAP Sent copy failed" });
     throw error;
   }
 }

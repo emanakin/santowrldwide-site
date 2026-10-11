@@ -347,6 +347,19 @@ export default function ProductionAdminPage() {
     finally { setBusy(false); }
   }
 
+  async function saveSentCopy() {
+    if (!currentDraft || currentDraft.status !== "sent") return;
+    setBusy(true);
+    try {
+      await adminFetch(`/api/admin/production/drafts/${currentDraft.id}/archive`, { method: "POST" });
+      await load();
+      setMessage("A copy is now in the PrivateEmail Sent folder. The recipient was not emailed again.");
+    } catch (error) {
+      await load();
+      setMessage(error instanceof Error ? error.message : "Sent copy failed. The original send record is unchanged.");
+    } finally { setBusy(false); }
+  }
+
   async function verifySmtp() {
     setBusy(true);
     setMessage("");
@@ -466,13 +479,16 @@ export default function ProductionAdminPage() {
       })}</div>
     </> : tab === "drafts" ? <div className={styles.draftLayout}>
       <div><div className={styles.draftControls}><select aria-label="Filter drafts" value={draftFilter} onChange={(event) => setDraftFilter(event.target.value as typeof draftFilter)}><option value="all">All drafts ({drafts.length})</option><option value="draft">Needs review ({drafts.filter((draft) => draft.status === "draft").length})</option><option value="ready">Ready ({drafts.filter((draft) => draft.status === "ready").length})</option><option value="sent">Sent history ({drafts.filter((draft) => draft.status === "sent").length})</option><option value="issues">Send issues ({drafts.filter((draft) => ["send_unknown", "failed"].includes(draft.status)).length})</option></select><label className={styles.checkboxLabel}><input type="checkbox" checked={visibleUnapproved.length > 0 && visibleUnapproved.every((draft) => reviewSelection.has(draft.id))} onChange={(event) => setReviewSelection((current) => { const next = new Set(current); visibleUnapproved.forEach((draft) => event.target.checked ? next.add(draft.id) : next.delete(draft.id)); return next; })} disabled={!visibleUnapproved.length || busy} /><span>Select visible unapproved</span></label><button type="button" onClick={bulkMarkReady} disabled={busy || ![...reviewSelection].some((id) => drafts.some((draft) => draft.id === id && draft.status === "draft"))}>Mark {reviewSelection.size} ready</button></div>
-      <div className={styles.draftList}>{visibleDrafts.map((draft) => <div key={draft.id} className={styles.draftListRow}>{draft.status === "draft" && <input type="checkbox" aria-label={`Select draft for ${draft.to}`} checked={reviewSelection.has(draft.id)} onChange={(event) => setReviewSelection((current) => { const next = new Set(current); if (event.target.checked) next.add(draft.id); else next.delete(draft.id); return next; })} />}<button className={selectedDraft === draft.id ? styles.selected : ""} onClick={() => openDraft(draft)}><strong>{contacts.find((contact) => contact.id === draft.contactId)?.company || draft.to}</strong><span>{draft.subject}</span><span>{draft.status} · {draft.to}{draft.sentAt ? ` · ${new Date(draft.sentAt).toLocaleString()}` : ""}</span></button></div>)}</div></div>
+      <div className={styles.draftList}>{visibleDrafts.map((draft) => <div key={draft.id} className={styles.draftListRow}>{draft.status === "draft" && <input type="checkbox" aria-label={`Select draft for ${draft.to}`} checked={reviewSelection.has(draft.id)} onChange={(event) => setReviewSelection((current) => { const next = new Set(current); if (event.target.checked) next.add(draft.id); else next.delete(draft.id); return next; })} />}<button className={selectedDraft === draft.id ? styles.selected : ""} onClick={() => openDraft(draft)}><strong>{contacts.find((contact) => contact.id === draft.contactId)?.company || draft.to}</strong><span>{draft.subject}</span><span>{draft.status} · {draft.to}{draft.sentAt ? ` · ${new Date(draft.sentAt).toLocaleString()}` : ""}{draft.status === "sent" ? ` · Sent folder: ${draft.sentCopyStatus === "saved" ? "saved" : draft.sentCopyStatus === "saving" ? "saving" : "needs copy"}` : ""}</span></button></div>)}</div></div>
       <div className={styles.draftEditor}>{currentDraft ? <>
         <p className={styles.eyebrow}>{currentContact?.name} · {currentContact?.company}</p>
         <h2>Review message</h2>
         <p>To: {currentDraft.to} · Status: {currentDraft.status}</p>
         <p>Last sent: {currentDraft.sentAt ? new Date(currentDraft.sentAt).toLocaleString() : "Never"} · Image requests: {currentDraft.openedAt ? `${dateLabel(currentDraft.openedAt)} (${currentDraft.openCount || 1})` : "no signal"}</p>
         {currentDraft.providerMessageId && <p>SMTP message ID: <code>{currentDraft.providerMessageId}</code></p>}
+        {currentDraft.status === "sent" && <p>PrivateEmail Sent folder: {currentDraft.sentCopyStatus === "saved" ? "copy saved" : currentDraft.sentCopyStatus === "saving" ? "saving copy" : "copy missing or unconfirmed"}. This is separate from SMTP acceptance.</p>}
+        {currentDraft.status === "sent" && currentDraft.sentCopyStatus !== "saved" && <div className={styles.actions}><button type="button" onClick={saveSentCopy} disabled={busy || currentDraft.sentCopyStatus === "saving"}>Save copy to PrivateEmail Sent</button><span className={styles.hint}>For older sends, this rebuilds a mailbox copy from the saved draft. It does not resend to the recipient.</span></div>}
+        {currentDraft.sentCopyError && <p className={styles.notice}>Sent copy issue: {currentDraft.sentCopyError}</p>}
         {currentContact && !hasRecordedBasis(currentContact.consentBasis) && <div className={styles.basisList}><p className={styles.hint}>This contact needs a recorded outreach basis before sending. Review the <a href={currentContact.sourceUrl} target="_blank" rel="noreferrer">contact source ↗</a> and enter the specific evidence.</p><div className={styles.basisRow}><strong>{currentContact.company}</strong><input aria-label={`Outreach basis for ${currentContact.company}`} placeholder="Evidence of consent, or publication, no objection, and relevance to this role" value={basisEdits[currentContact.id] ?? ""} onChange={(event) => setBasisEdits((current) => ({ ...current, [currentContact.id]: event.target.value }))} /><button type="button" onClick={() => saveBasis(currentContact)} disabled={busy || !basisEdits[currentContact.id]?.trim()}>Save basis</button></div></div>}
         {currentDraft.pitchAngle && <div className={styles.evidence}><strong>Research angle</strong><p>{currentDraft.pitchAngle}</p><small>{currentDraft.pitchEvidence}</small>{currentDraft.pitchSourceUrl && <a href={currentDraft.pitchSourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a>}</div>}
         <label><span>Subject</span><input value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
