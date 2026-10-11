@@ -15,8 +15,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!await requireSuperAdmin(request)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
-    const body = z.object({ draftIds: z.array(z.string().min(1)).min(1).max(10), confirmSend: z.literal(true) }).parse(await request.json());
-    const batch = await startBatch(body.draftIds);
+    const body = z.object({ draftIds: z.array(z.string().min(1)).min(1).max(100), confirmSend: z.literal(true), sharedBasis: z.string().trim().min(10).max(300), trackImageRequests: z.boolean().optional() }).parse(await request.json());
+    const batch = await startBatch(body.draftIds, body.sharedBasis, body.trackImageRequests !== false);
     after(() => processBatch(batch.id));
     return NextResponse.json({ batch }, { status: 202 });
   } catch (error) {

@@ -59,6 +59,9 @@ export type ProductionSendBatch = {
   id: string;
   draftIds: string[];
   status: "running" | "paused" | "complete";
+  pauseReason?: "time_window" | "manual" | "error" | "interrupted";
+  eligibilityAttestedAt?: string;
+  sharedBasis?: string;
   items: { draftId: string; status: "pending" | "sent" | "skipped" | "failed" | "send_unknown"; error?: string }[];
   createdAt: string;
   updatedAt: string;

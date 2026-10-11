@@ -46,7 +46,7 @@ export default function ProductionAdminPage() {
   const [selectedDraft, setSelectedDraft] = useState<string | null>(null);
   const [draftSubject, setDraftSubject] = useState("");
   const [draftBody, setDraftBody] = useState("");
-  const [draftTrackOpens, setDraftTrackOpens] = useState(false);
+  const [draftTrackOpens, setDraftTrackOpens] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -54,7 +54,8 @@ export default function ProductionAdminPage() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "ready" | "sent" | "issues">("all");
   const [reviewSelection, setReviewSelection] = useState<Set<string>>(new Set());
-  const [basisEdits, setBasisEdits] = useState<Record<string, string>>({});
+  const [trackImageRequests, setTrackImageRequests] = useState(true);
+  const [sharedBasis, setSharedBasis] = useState("");
 
   const load = useCallback(async () => {
     const [contactData, draftData, configuration, batchData, bookingData] = await Promise.all([
@@ -75,6 +76,35 @@ export default function ProductionAdminPage() {
   useEffect(() => {
     if (!checking) load().catch((error) => setMessage(error.message));
   }, [checking, load]);
+
+  const activeBatchId = batches.find((batch) => batch.status === "running" || (batch.status === "paused" && batch.pauseReason === "time_window"))?.id;
+  useEffect(() => {
+    if (checking || !activeBatchId) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const id = activeBatchId;
+    async function poll() {
+      try {
+        const result = await adminFetch<{ batches: ProductionSendBatch[] }>("/api/admin/production/batches");
+        if (cancelled) return;
+        setBatches(result.batches);
+        const current = result.batches.find((batch) => batch.id === id);
+        if (current?.status === "paused" && current.pauseReason === "time_window") {
+          await adminFetch(`/api/admin/production/batches/${id}`, { method: "POST", body: JSON.stringify({ action: "resume" }) });
+        } else if (!current || current.status !== "running") {
+          await load();
+          if (current?.pauseReason === "error" || current?.pauseReason === "interrupted") setMessage("Batch paused. Review its progress and any uncertain sends before resuming.");
+          return;
+        }
+      } catch (error) {
+        if (!cancelled) setMessage(error instanceof Error ? error.message : "Batch progress could not refresh");
+        return;
+      }
+      if (!cancelled) timer = setTimeout(poll, 4000);
+    }
+    timer = setTimeout(poll, 4000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [activeBatchId, checking, load]);
 
   const visible = useMemo(() => contacts.filter((contact) => {
     const query = search.toLowerCase();
@@ -126,11 +156,11 @@ export default function ProductionAdminPage() {
     });
   }
 
-  function selectNextTen() {
+  function selectNextHundred() {
     setSelected(() => {
-      const next = new Set(selectedContacts.map((contact) => contact.id));
+      const next = new Set<string>();
       for (const contact of visibleEligible) {
-        if (next.size >= 10) break;
+        if (next.size >= 100) break;
         next.add(contact.id);
       }
       return next;
@@ -138,32 +168,21 @@ export default function ProductionAdminPage() {
   }
 
   async function sendSelected() {
-    if (!selectedDrafts.length || selectedDrafts.length > 10 || missingBasis.length || !mailStatus?.canSend) return;
+    if (!selectedDrafts.length || selectedDrafts.length > 100 || !mailStatus?.canSend || sharedBasis.trim().length < 10) return;
     setBusy(true);
     setMessage("");
     try {
-      await adminFetch("/api/admin/production/batches", { method: "POST", body: JSON.stringify({ draftIds: selectedDrafts.map((draft) => draft.id), confirmSend: true }) });
+      await adminFetch("/api/admin/production/batches", { method: "POST", body: JSON.stringify({ draftIds: selectedDrafts.map((draft) => draft.id), confirmSend: true, sharedBasis: sharedBasis.trim(), trackImageRequests }) });
       await load();
       setSelected(new Set());
       setReviewOpen(false);
-      setMessage(`Batch of ${selectedDrafts.length} started. Refresh to see progress; you can close this page.`);
+      setSharedBasis("");
+      setMessage(`Batch of ${selectedDrafts.length} started. Keep this page open for automatic continuation; progress is saved and can be resumed later.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Batch failed");
     } finally {
       setBusy(false);
     }
-  }
-
-  async function saveBasis(contact: ProductionContact) {
-    const consentBasis = basisEdits[contact.id]?.trim();
-    if (!consentBasis) return;
-    setBusy(true);
-    try {
-      await adminFetch(`/api/admin/production/contacts/${contact.id}`, { method: "PATCH", body: JSON.stringify({ consentBasis }) });
-      await load();
-      setMessage(`Outreach basis saved for ${contact.company}.`);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not save outreach basis"); }
-    finally { setBusy(false); }
   }
 
   async function setPortfolioReady(approved: boolean) {
@@ -185,7 +204,7 @@ export default function ProductionAdminPage() {
       const result = await adminFetch<{ updated: number }>("/api/admin/production/drafts/ready", { method: "POST", body: JSON.stringify({ draftIds: ids }) });
       setReviewSelection(new Set());
       await load();
-      setMessage(`${result.updated} drafts marked ready. Select up to 10 in Agency pipeline to send a batch.`);
+      setMessage(`${result.updated} drafts marked ready. Select up to 100 in Agency pipeline to send a batch.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Bulk approval failed"); }
     finally { setBusy(false); }
   }
@@ -319,7 +338,7 @@ export default function ProductionAdminPage() {
     setSelectedDraft(draft.id);
     setDraftSubject(draft.subject);
     setDraftBody(draft.body);
-    setDraftTrackOpens(draft.trackOpens ?? false);
+    setDraftTrackOpens(draft.trackOpens ?? true);
   }
 
   async function saveDraft(status?: "draft" | "ready") {
@@ -336,15 +355,12 @@ export default function ProductionAdminPage() {
     finally { setBusy(false); }
   }
 
-  async function sendDraft() {
-    if (!currentDraft || !window.confirm(`Send this reviewed email to ${currentDraft.to}?`)) return;
-    setBusy(true);
-    try {
-      await adminFetch(`/api/admin/production/drafts/${currentDraft.id}/send`, { method: "POST", body: JSON.stringify({ confirmSend: true }) });
-      await load();
-      setMessage("Email sent.");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Send failed. Check status before retrying."); await load(); }
-    finally { setBusy(false); }
+  function reviewSingleDraft() {
+    if (!currentDraft) return;
+    setSelected(new Set([currentDraft.contactId]));
+    setTrackImageRequests(draftTrackOpens);
+    setReviewOpen(true);
+    setTab("contacts");
   }
 
   async function saveSentCopy() {
@@ -382,7 +398,7 @@ export default function ProductionAdminPage() {
       <div><strong>{contacts.length}</strong><span>contacts</span></div>
       <div><strong>{new Set(contacts.map((contact) => contact.company.toLowerCase())).size}</strong><span>agencies &amp; companies</span></div>
       <div><strong>{drafts.filter((draft) => draft.status === "sent").length}</strong><span>sent</span></div>
-      <div><strong>{drafts.filter((draft) => draft.openedAt).length}</strong><span>image requests</span></div>
+      <div><strong>{drafts.filter((draft) => draft.openedAt).length}</strong><span>possible opens</span></div>
     </div>
     {mailStatus && <section className={styles.mailStatus} aria-label="Email setup status">
       <div><strong>Email setup</strong><span>{mailStatus.canSend ? "Ready for eligible, reviewed sends" : "Complete the unchecked steps before sending"}</span></div>
@@ -407,8 +423,8 @@ export default function ProductionAdminPage() {
         <button onClick={exportCsv} disabled={busy}>Export CSV</button>
       </div>
     </div>
-    <p className={styles.hint}>Import adds source-backed, unapproved drafts and preserves existing edits and sent history. Review and mark drafts ready, then select up to 10 for each manual batch. A recorded basis is required for each recipient. “Sent” means SMTP accepted the message; an image request does not prove a read.</p>
-    {batches.length > 0 && <section className={styles.batchList} aria-label="Send batches"><h2>Send batches</h2>{batches.slice(0, 5).map((batch) => <div key={batch.id} className={styles.batchRow}><div><strong>{batch.status} · {batch.items.filter((item) => item.status === "sent").length}/{batch.items.length} sent</strong><small>{new Date(batch.createdAt).toLocaleString()}</small><small>{batch.items.filter((item) => item.status === "send_unknown").length} uncertain · {batch.items.filter((item) => item.status === "skipped" || item.status === "failed").length} skipped/failed · {batch.items.filter((item) => item.status === "pending").length} pending</small>{batch.items.filter((item) => item.error).map((item) => <small key={item.draftId}>{item.status}: {item.error}</small>)}</div><div className={styles.actions}>{batch.status === "running" && <button onClick={() => batchAction(batch.id, "pause")} disabled={busy}>Pause</button>}{batch.status === "paused" && batch.items.some((item) => item.status === "pending") && <button onClick={() => batchAction(batch.id, "resume")} disabled={busy}>Resume pending</button>}</div></div>)}</section>}
+    <p className={styles.hint}>Import preserves existing edits and sent history. Review and mark drafts ready, then select up to 100 for a manual send. The send review records one attestation for any contacts still needing a documented route. “Sent” means SMTP accepted the message; an image request is only an open signal.</p>
+    {batches.length > 0 && <section className={styles.batchList} aria-label="Send batches"><h2>Send batches</h2>{batches.slice(0, 5).map((batch) => <div key={batch.id} className={styles.batchRow}><div><strong>{batch.status} · {batch.items.filter((item) => item.status === "sent").length}/{batch.items.length} sent</strong><small>{new Date(batch.createdAt).toLocaleString()}{batch.pauseReason ? ` · ${batch.pauseReason.replaceAll("_", " ")}` : ""}</small><small>{batch.items.filter((item) => item.status === "send_unknown").length} uncertain · {batch.items.filter((item) => item.status === "skipped" || item.status === "failed").length} skipped/failed · {batch.items.filter((item) => item.status === "pending").length} pending</small>{batch.sharedBasis && <small>Outreach basis: {batch.sharedBasis}</small>}{batch.items.filter((item) => item.error).map((item) => <small key={item.draftId}>{item.status}: {item.error}</small>)}</div><div className={styles.actions}>{batch.status === "running" && <button onClick={() => batchAction(batch.id, "pause")} disabled={busy}>Pause</button>}{batch.status === "paused" && batch.items.some((item) => item.status === "pending") && <button onClick={() => batchAction(batch.id, "resume")} disabled={busy}>Resume pending</button>}</div></div>)}</section>}
 
     {tab === "contacts" ? <>
       <details className={styles.editorDetails} open={formOpen} onToggle={(event) => setFormOpen(event.currentTarget.open)}>
@@ -439,25 +455,27 @@ export default function ProductionAdminPage() {
         <span>{selectedContacts.length} selected · {visibleEligible.length} ready drafts in this view</span>
         <div className={styles.actions}>
           <button type="button" onClick={toggleVisible} disabled={busy || !visibleEligible.length}>{allVisibleSelected ? "Clear visible" : "Select all visible"}</button>
-          <button type="button" onClick={selectNextTen} disabled={busy || !visibleEligible.length || selectedContacts.length >= 10}>Select next 10</button>
+          <button type="button" onClick={selectNextHundred} disabled={busy || !visibleEligible.length}>Select next 100</button>
           <button type="button" onClick={() => setReviewOpen(true)} disabled={busy || !selectedContacts.length}>Review &amp; send</button>
         </div>
       </div>
       {reviewOpen && <section className={styles.composer} aria-label="Bulk send review">
         <h2>Start a batch of {selectedDrafts.length} {selectedDrafts.length === 1 ? "email" : "emails"}</h2>
-        <p>Review each recipient and subject before starting this batch. Draft approval and contact eligibility are separate.</p>
+        <p>Review recipients and subjects before sending. One click starts up to 100 reviewed emails; the page continues a timed-out batch while it stays open.</p>
         <ul className={styles.composerList}>
           {selectedDrafts.map((draft) => <li key={draft.id}>
             <strong>{draft.subject}</strong>
-            <span>{contacts.find((contact) => contact.id === draft.contactId)?.company}<br />{draft.to}</span>
+            <span>{contacts.find((contact) => contact.id === draft.contactId)?.company}<br />{draft.to}<br /><a href={contacts.find((contact) => contact.id === draft.contactId)?.sourceUrl} target="_blank" rel="noreferrer">Contact source ↗</a></span>
           </li>)}
         </ul>
-        {selectedDrafts.length > 10 && <p className={styles.hint}>Select at most 10 at a time. Start the next batch manually after this one.</p>}
-        {missingBasis.length > 0 && <div className={styles.basisList}><p className={styles.hint}>{missingBasis.length} selected contact{missingBasis.length === 1 ? " needs" : "s need"} a recorded outreach basis. Record the specific evidence for each recipient; a public address alone is insufficient.</p>{missingBasis.map((contact) => <div key={contact.id} className={styles.basisRow}><div><strong>{contact.name} · {contact.company}</strong><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Research source ↗</a></div><input aria-label={`Outreach basis for ${contact.company}`} placeholder="Evidence of consent, or publication, no objection, and relevance to this role" value={basisEdits[contact.id] ?? ""} onChange={(event) => setBasisEdits((current) => ({ ...current, [contact.id]: event.target.value }))} /><button type="button" onClick={() => saveBasis(contact)} disabled={busy || !basisEdits[contact.id]?.trim()}>Save basis</button></div>)}</div>}
+        {selectedDrafts.length > 100 && <p className={styles.hint}>Select at most 100 in one send.</p>}
+        <label><span>Outreach basis for this batch</span><textarea value={sharedBasis} onChange={(event) => setSharedBasis(event.target.value)} rows={3} maxLength={300} placeholder="e.g. reviewed each linked company contact page; the address is published without a no-solicitation notice and this visual-production pitch fits the recipient's role" /></label>
+        <p className={styles.hint}>One note is saved with this batch and added to {missingBasis.length} selected {missingBasis.length === 1 ? "contact" : "contacts"} without a recorded basis. Check each linked source first. For Canadian recipients, confirm publication by the recipient, no objection to outreach, and relevance to their role.</p>
+        <label className={styles.checkboxLabel}><input type="checkbox" checked={trackImageRequests} onChange={(event) => setTrackImageRequests(event.target.checked)} /><span>Include a first-party image request signal in these emails. It cannot prove a person read them.</span></label>
         {!mailStatus?.canSend && <p className={styles.hint}>{!mailStatus?.portfolioReady ? "Approve the public portfolio in Email setup above. " : ""}{!mailStatus?.smtpConfigured ? "Configure PrivateEmail SMTP. " : ""}{!mailStatus?.postalAddressConfigured ? "Add a sender postal address. " : ""}</p>}
         <div className={styles.actions}>
           <button type="button" onClick={() => setReviewOpen(false)} disabled={busy}>Back</button>
-          <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || missingBasis.length > 0 || !selectedDrafts.length || selectedDrafts.length > 10}>Start batch of {selectedDrafts.length}</button>
+          <button type="button" className={styles.primary} onClick={sendSelected} disabled={busy || !mailStatus?.canSend || !selectedDrafts.length || selectedDrafts.length > 100 || sharedBasis.trim().length < 10}>Send {selectedDrafts.length} reviewed {selectedDrafts.length === 1 ? "email" : "emails"}</button>
         </div>
       </section>}
       <div className={styles.pipelineHead}>
@@ -471,9 +489,9 @@ export default function ProductionAdminPage() {
           <div className={styles.checkCell}><input type="checkbox" aria-label={`Select ${contact.company}`} checked={queueable && selected.has(contact.id)} disabled={!queueable || busy} onChange={() => toggleContact(contact.id)} /></div>
           <div><a className={styles.companyLink} href={contact.websiteUrl || contact.sourceUrl} target="_blank" rel="noreferrer">{contact.company} ↗</a><span>{contact.name} · {contact.role || contact.category.replaceAll("_", " ")}</span>{selected.has(contact.id) && <small>{drafts.find((draft) => draft.contactId === contact.id && draft.status === "ready")?.subject}</small>}</div>
           <div><span>{contact.city}</span><small>{contact.companyScale.replaceAll("_", " ")}</small></div>
-          <div><span className={styles.statusChip}>{queueable ? "Draft ready" : contact.status}</span>{queueable && !hasRecordedBasis(contact.consentBasis) && <small>Basis needed before send</small>}</div>
+          <div><span className={styles.statusChip}>{queueable ? "Draft ready" : contact.status}</span>{queueable && !hasRecordedBasis(contact.consentBasis) && <small>Route review at send</small>}</div>
           <div><span>{dateLabel(latest?.sentAt)}</span></div>
-          <div><span>{latest?.openedAt ? `Requested · ${dateLabel(latest.openedAt)}` : latest?.sentAt ? "No signal" : "—"}</span></div>
+          <div><span>{latest?.openedAt ? `Image fetched · ${dateLabel(latest.openedAt)}` : latest?.sentAt ? "No image signal" : "—"}</span></div>
           <div className={styles.rowActions}><a href={contact.contactUrl || contact.sourceUrl} target="_blank" rel="noreferrer">Route ↗</a><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a><button onClick={() => startEdit(contact)}>Edit</button>{contact.email && !drafts.some((draft) => draft.contactId === contact.id) && <button onClick={() => createDraft(contact.id)} disabled={busy || contact.status === "suppressed"}>Draft</button>}</div>
         </article>;
       })}</div>
@@ -484,19 +502,18 @@ export default function ProductionAdminPage() {
         <p className={styles.eyebrow}>{currentContact?.name} · {currentContact?.company}</p>
         <h2>Review message</h2>
         <p>To: {currentDraft.to} · Status: {currentDraft.status}</p>
-        <p>Last sent: {currentDraft.sentAt ? new Date(currentDraft.sentAt).toLocaleString() : "Never"} · Image requests: {currentDraft.openedAt ? `${dateLabel(currentDraft.openedAt)} (${currentDraft.openCount || 1})` : "no signal"}</p>
+        <p>Last sent: {currentDraft.sentAt ? new Date(currentDraft.sentAt).toLocaleString() : "Never"} · Image signal: {currentDraft.openedAt ? `first fetched ${new Date(currentDraft.openedAt).toLocaleString()}, last fetched ${new Date(currentDraft.lastOpenedAt || currentDraft.openedAt).toLocaleString()} (${currentDraft.openCount || 1} requests)` : "none"}</p>
         {currentDraft.providerMessageId && <p>SMTP message ID: <code>{currentDraft.providerMessageId}</code></p>}
         {currentDraft.status === "sent" && <p>PrivateEmail Sent folder: {currentDraft.sentCopyStatus === "saved" ? "copy saved" : currentDraft.sentCopyStatus === "saving" ? "saving copy" : "copy missing or unconfirmed"}. This is separate from SMTP acceptance.</p>}
         {currentDraft.status === "sent" && currentDraft.sentCopyStatus !== "saved" && <div className={styles.actions}><button type="button" onClick={saveSentCopy} disabled={busy || currentDraft.sentCopyStatus === "saving"}>Save copy to PrivateEmail Sent</button><span className={styles.hint}>For older sends, this rebuilds a mailbox copy from the saved draft. It does not resend to the recipient.</span></div>}
         {currentDraft.sentCopyError && <p className={styles.notice}>Sent copy issue: {currentDraft.sentCopyError}</p>}
-        {currentContact && !hasRecordedBasis(currentContact.consentBasis) && <div className={styles.basisList}><p className={styles.hint}>This contact needs a recorded outreach basis before sending. Review the <a href={currentContact.sourceUrl} target="_blank" rel="noreferrer">contact source ↗</a> and enter the specific evidence.</p><div className={styles.basisRow}><strong>{currentContact.company}</strong><input aria-label={`Outreach basis for ${currentContact.company}`} placeholder="Evidence of consent, or publication, no objection, and relevance to this role" value={basisEdits[currentContact.id] ?? ""} onChange={(event) => setBasisEdits((current) => ({ ...current, [currentContact.id]: event.target.value }))} /><button type="button" onClick={() => saveBasis(currentContact)} disabled={busy || !basisEdits[currentContact.id]?.trim()}>Save basis</button></div></div>}
         {currentDraft.pitchAngle && <div className={styles.evidence}><strong>Research angle</strong><p>{currentDraft.pitchAngle}</p><small>{currentDraft.pitchEvidence}</small>{currentDraft.pitchSourceUrl && <a href={currentDraft.pitchSourceUrl} target="_blank" rel="noreferrer">Verify source ↗</a>}</div>}
         <label><span>Subject</span><input value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <label><span>Message</span><textarea value={draftBody} onChange={(event) => setDraftBody(event.target.value)} rows={16} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <div className={styles.messageLinks}><strong>Links in this message</strong>{messageLinks(draftBody).map((url) => <a key={url} href={url} target="_blank" rel="noreferrer">{url}</a>)}</div>
-        <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Include optional image-request tracking</span></label>
+        <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Include first-party image-request tracking</span></label>
         <p className={styles.hint}>Some email apps block images or fetch them automatically. This signal cannot confirm a person opened or read the message.</p>
-        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save changes</button>{currentDraft.status === "ready" && <button onClick={() => saveDraft("draft")} disabled={busy}>Move back to draft</button>}<button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={sendDraft} disabled={busy || currentDraft.status !== "ready" || !mailStatus?.canSend || !currentContact || !hasRecordedBasis(currentContact.consentBasis)}>Send reviewed email</button></div>
+        <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save changes</button>{currentDraft.status === "ready" && <button onClick={() => saveDraft("draft")} disabled={busy}>Move back to draft</button>}<button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={reviewSingleDraft} disabled={busy || currentDraft.status !== "ready" || !mailStatus?.canSend || !currentContact}>Review send</button></div>
         {currentDraft.error && <p className={styles.notice}>{currentDraft.error}</p>}
       </> : <p>Select a draft to review.</p>}</div>
     </div> : null}

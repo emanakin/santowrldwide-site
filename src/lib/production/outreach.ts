@@ -52,7 +52,7 @@ export async function createDraft(contactId: string) {
     subject: assignSubjects([contact], drafts.map((item) => item.subject)).get(contact.id) ?? `could we talk visuals for ${contact.company.toLowerCase()}?`,
     body: outreachBody(contact),
     status: "draft",
-    trackOpens: false,
+    trackOpens: true,
     trackingToken: randomBytes(24).toString("base64url"),
     createdAt: now,
     updatedAt: now,
@@ -88,7 +88,7 @@ export async function importReviewedResearch(raw: unknown[]) {
     const ref = db().collection("production_drafts").doc();
     batch.set(ref, {
       id: ref.id, contactId: match.id, to: match.email, subject: row.data.subject,
-      body: row.data.body, status: "draft", trackOpens: false,
+      body: row.data.body, status: "draft", trackOpens: true,
       trackingToken: randomBytes(24).toString("base64url"),
       pitchAngle: row.data.pitchAngle, pitchSourceUrl: row.data.pitchSourceUrl,
       pitchEvidence: row.data.pitchEvidence, createdAt: now, updatedAt: now,
@@ -147,7 +147,7 @@ async function requireSmtp() {
 }
 
 function messageHtml(draft: ProductionDraft, address: string) {
-  const visible = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${renderLinksAsHtml(draft.body)}</div><p style="font-family:Arial,sans-serif">SANTOWRLDWIDE · ${escapeHtml(address)}<br>If you'd prefer no further outreach, reply “unsubscribe” and we'll remove you from our list.</p>`;
+  const visible = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${renderLinksAsHtml(draft.body)}</div><p style="font-family:Arial,sans-serif">SANTOWRLDWIDE · ${escapeHtml(address)}<br>no more emails? reply “no thanks” and i won't follow up.</p>`;
   if (!draft.trackOpens || !draft.trackingToken) return visible;
   const base = (process.env.SANTO_SITE_URL || "https://santowrldwide.com").replace(/\/$/, "");
   const url = new URL(`${base}/api/production/open/${draft.trackingToken}`);
@@ -161,7 +161,7 @@ async function composeRawMessage(draft: ProductionDraft, configuration: ReturnTy
     to: draft.to,
     replyTo: configuration.user,
     subject: draft.subject,
-    text: `${draft.body}\n\nSANTOWRLDWIDE · ${configuration.address}\nIf you'd prefer no further outreach, reply "unsubscribe" and we'll remove you from our list.`,
+    text: `${draft.body}\n\nSANTOWRLDWIDE · ${configuration.address}\nno more emails? reply "no thanks" and i won't follow up.`,
     html: messageHtml(draft, configuration.address),
     ...(draft.providerMessageId ? { messageId: draft.providerMessageId } : {}),
     ...(draft.sentAt ? { date: new Date(draft.sentAt) } : {}),
@@ -224,7 +224,9 @@ export async function sendDraft(id: string, confirm: boolean) {
   await ref.update({ status: "sent", sentAt: now, updatedAt: now, providerMessageId: composed.messageId, sentCopyStatus: "saving" });
   await contactRef.update({ status: "contacted", updatedAt: now });
   try {
-    await appendToSent(composed.raw, composed.messageId, now);
+    // The mailbox copy omits the pixel so viewing Sent never registers as a recipient image request.
+    const archive = await composeRawMessage({ ...draft, trackOpens: false, providerMessageId: composed.messageId, sentAt: now }, configuration);
+    await appendToSent(archive.raw, composed.messageId, now);
     await ref.update({ sentCopyStatus: "saved", sentCopySavedAt: new Date().toISOString(), sentCopyError: null });
   } catch (error) {
     await ref.update({ sentCopyStatus: "needs_attention", sentCopyError: error instanceof Error ? error.message : "IMAP Sent copy failed" });
@@ -240,7 +242,7 @@ export async function archivePreviouslySentDraft(id: string) {
   if (!draft.providerMessageId || !draft.sentAt) throw new Error("This sent record lacks a Message-ID or send time");
   if (draft.sentCopyStatus === "saved") return { alreadySaved: true };
   const configuration = mailSettings();
-  const composed = await composeRawMessage(draft, configuration);
+  const composed = await composeRawMessage({ ...draft, trackOpens: false }, configuration);
   await db().runTransaction(async (transaction) => {
     const latest = await transaction.get(ref);
     if (!latest.exists || latest.data()?.status !== "sent" || latest.data()?.sentCopyStatus === "saved") throw new Error("Sent record changed; refresh before trying again");

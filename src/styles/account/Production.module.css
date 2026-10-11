@@ -81,6 +81,7 @@
 .draftEditor label { margin-bottom: .85rem; }
 .checkboxLabel { display: flex !important; flex-direction: row !important; align-items: center; gap: .55rem !important; }
 .root .checkboxLabel input { width: auto; }
+.root .checkboxLabel span { text-transform: none; letter-spacing: normal; font-size: .85rem; line-height: 1.4; }
 .batchList, .bookingPanel { border: 1px solid #dedede; padding: 1rem; margin: 1rem 0 1.5rem; }
 .batchList h2, .bookingPanel h2 { font-size: 1.15rem; margin-bottom: .8rem; }
 .batchRow, .bookingRow { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem 0; border-top: 1px solid #e4e4e4; }
