@@ -2,7 +2,7 @@ import { adminDb } from "@/lib/firebase/admin/firebaseAdmin";
 import { listContacts } from "@/lib/production/contacts";
 import { hasRecordedBasis } from "@/lib/production/eligibility";
 import { assignSubjects, draftPlaceholders, matchingReviewedDraft, outreachBody } from "@/lib/production/message";
-import { escapeHtml, renderLinksAsHtml } from "@/lib/production/emailHtml";
+import { escapeHtml, renderLinksAsHtml, trackedOutreachHref } from "@/lib/production/emailHtml";
 import { productionMailStatus } from "@/lib/production/mailStatus";
 import { appendToSent } from "@/lib/production/sentCopy";
 import { ProductionContact, ProductionDraft } from "@/types/production-types";
@@ -221,9 +221,10 @@ async function requireSmtp() {
 }
 
 function messageHtml(draft: ProductionDraft, address: string) {
-  const visible = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${renderLinksAsHtml(draft.body)}</div><p style="font-family:Arial,sans-serif">SANTOWRLDWIDE · ${escapeHtml(address)}<br>no more emails? reply “no thanks” and i won't follow up.</p>`;
-  if (!draft.trackOpens || !draft.trackingToken) return visible;
   const base = (process.env.SANTO_SITE_URL || "https://santowrldwide.com").replace(/\/$/, "");
+  const tracked = Boolean(draft.trackOpens && draft.trackingToken);
+  const visible = `<div style="white-space:pre-wrap;font-family:Arial,sans-serif">${renderLinksAsHtml(draft.body, (url) => tracked ? trackedOutreachHref(url, draft.trackingToken!, base) : url)}</div><p style="font-family:Arial,sans-serif">SANTOWRLDWIDE · ${escapeHtml(address)}<br>no more emails? reply “no thanks” and i won't follow up.</p>`;
+  if (!draft.trackOpens || !draft.trackingToken) return visible;
   const url = new URL(`${base}/api/production/open/${draft.trackingToken}`);
   if (process.env.NODE_ENV === "production" && url.protocol !== "https:") throw new Error("SANTO_SITE_URL must use HTTPS");
   return `${visible}<img src="${escapeHtml(url.toString())}" alt="" width="1" height="1" style="display:block;width:1px;height:1px;border:0">`;

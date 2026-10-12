@@ -33,7 +33,7 @@
 .filters input { flex: 1; }
 .filters select { width: auto; }
 .list { border-top: 1px solid #ddd; }
-.pipelineHead, .pipelineRow { display: grid; grid-template-columns: 2rem minmax(150px, 2fr) minmax(90px, 1fr) minmax(75px, .75fr) minmax(85px, .85fr) minmax(100px, 1fr) minmax(180px, 1.4fr); gap: .7rem; align-items: center; }
+.pipelineHead, .pipelineRow { display: grid; grid-template-columns: 2rem minmax(150px, 2fr) minmax(90px, 1fr) minmax(75px, .75fr) minmax(85px, .85fr) minmax(90px, .8fr) minmax(90px, .8fr) minmax(180px, 1.4fr); gap: .7rem; align-items: center; }
 .checkCell { align-items: center !important; justify-content: center; }
 .checkCell input { width: auto; }
 .pipelineRow[data-selected="true"] { background: #f6f6f3; }
@@ -98,7 +98,7 @@
 .trackingIntro { display: flex; justify-content: space-between; align-items: end; gap: 1.5rem; border-bottom: 1px solid #dedede; padding-bottom: 1.25rem; }
 .trackingIntro h2 { font-size: clamp(1.7rem, 3vw, 2.5rem); letter-spacing: -.05em; margin: .4rem 0; }
 .trackingIntro p:last-child { max-width: 35rem; font-size: .85rem; color: #666; line-height: 1.5; }
-.trackingStats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin: 1.25rem 0 2rem; }
+.trackingStats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; margin: 1.25rem 0 2rem; }
 .trackingStats > div { border: 1px solid #dedede; padding: 1rem; display: flex; flex-direction: column; gap: .35rem; }
 .trackingStats strong { font-size: 1.7rem; line-height: 1; }
 .trackingStats span { font-size: .72rem; color: #666; text-transform: uppercase; letter-spacing: .08em; }

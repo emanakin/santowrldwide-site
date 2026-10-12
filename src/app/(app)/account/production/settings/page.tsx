@@ -58,7 +58,7 @@ export default function ProductionAdminPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [reviewOpen, setReviewOpen] = useState(false);
   const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "ready" | "sent" | "issues">("all");
-  const [trackingFilter, setTrackingFilter] = useState<"all" | "fetched" | "no_signal" | "off">("all");
+  const [trackingFilter, setTrackingFilter] = useState<"all" | "clicked" | "fetched" | "no_signal" | "off">("all");
   const [reviewSelection, setReviewSelection] = useState<Set<string>>(new Set());
   const [trackImageRequests, setTrackImageRequests] = useState(true);
   const [sharedBasis, setSharedBasis] = useState("");
@@ -133,7 +133,7 @@ export default function ProductionAdminPage() {
   const currentDraft = drafts.find((draft) => draft.id === selectedDraft);
   const currentContact = currentDraft ? contacts.find((contact) => contact.id === currentDraft.contactId) : null;
   const activity = useMemo(() => {
-    const result = new Map<string, { sentAt?: string; openedAt?: string; openCount?: number }>();
+    const result = new Map<string, ProductionDraft>();
     for (const draft of drafts) {
       if (!draft.sentAt) continue;
       const previous = result.get(draft.contactId);
@@ -155,7 +155,7 @@ export default function ProductionAdminPage() {
   const placeholderDrafts = drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && draftPlaceholders(draft.body).length);
   const unsentTrackingOff = drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && !trackingActive(draft));
   const sentTracking = drafts.filter((draft) => draft.status === "sent").sort((a, b) => (b.sentAt || "").localeCompare(a.sentAt || ""));
-  const visibleTracking = sentTracking.filter((draft) => trackingFilter === "all" || (trackingFilter === "fetched" ? Boolean(draft.openedAt) : trackingFilter === "no_signal" ? trackingActive(draft) && !draft.openedAt : !trackingActive(draft)));
+  const visibleTracking = sentTracking.filter((draft) => trackingFilter === "all" || (trackingFilter === "clicked" ? Boolean(draft.clickCount) : trackingFilter === "fetched" ? Boolean(draft.openedAt) : trackingFilter === "no_signal" ? trackingActive(draft) && !draft.openedAt && !draft.clickCount : !trackingActive(draft)));
 
   function toggleContact(id: string) {
     setSelected((current) => {
@@ -515,7 +515,7 @@ export default function ProductionAdminPage() {
         {selectedDrafts.length > 100 && <p className={styles.hint}>Select at most 100 in one send.</p>}
         <label><span>Outreach basis for this batch</span><textarea value={sharedBasis} onChange={(event) => setSharedBasis(event.target.value)} rows={3} maxLength={300} placeholder="e.g. reviewed each linked company contact page; the address is published without a no-solicitation notice and this visual-production pitch fits the recipient's role" /></label>
         <p className={styles.hint}>One note is saved with this batch and added to {missingBasis.length} selected {missingBasis.length === 1 ? "contact" : "contacts"} without a recorded basis. Check each linked source first. For Canadian recipients, confirm publication by the recipient, no objection to outreach, and relevance to their role.</p>
-        <label className={styles.checkboxLabel}><input type="checkbox" checked={trackImageRequests} onChange={(event) => setTrackImageRequests(event.target.checked)} /><span>Include a first-party image request signal in these emails. It cannot prove a person read them.</span></label>
+        <label className={styles.checkboxLabel}><input type="checkbox" checked={trackImageRequests} onChange={(event) => setTrackImageRequests(event.target.checked)} /><span>Include first-party image and link request signals. They cannot prove a person read or clicked.</span></label>
         {!mailStatus?.canSend && <p className={styles.hint}>{!mailStatus?.portfolioReady ? "Approve the public portfolio in Email setup above. " : ""}{!mailStatus?.smtpConfigured ? "Configure PrivateEmail SMTP. " : ""}{!mailStatus?.postalAddressConfigured ? "Add a sender postal address. " : ""}</p>}
         <div className={styles.actions}>
           <button type="button" onClick={() => setReviewOpen(false)} disabled={busy}>Back</button>
@@ -524,7 +524,7 @@ export default function ProductionAdminPage() {
       </section>}
       <div className={styles.pipelineHead}>
         <span className={styles.checkCell}><input type="checkbox" aria-label="Select all visible contacts" checked={allVisibleSelected} onChange={toggleVisible} disabled={!visibleEligible.length} /></span>
-        <span>Agency / contact</span><span>City / scale</span><span>Stage</span><span>Last sent</span><span>Image request</span><span>Actions</span>
+        <span>Agency / contact</span><span>City / scale</span><span>Stage</span><span>Last sent</span><span>Image request</span><span>Link request</span><span>Actions</span>
       </div>
       <div className={styles.list}>{visible.map((contact) => {
         const latest = activity.get(contact.id);
@@ -536,6 +536,7 @@ export default function ProductionAdminPage() {
           <div><span className={styles.statusChip}>{queueable ? "Draft ready" : contact.status}</span>{queueable && !hasRecordedBasis(contact.consentBasis) && <small>Route review at send</small>}</div>
           <div><span>{dateLabel(latest?.sentAt)}</span></div>
           <div><span>{latest?.openedAt ? `Image fetched · ${dateLabel(latest.openedAt)}` : latest?.sentAt ? "No image signal" : "—"}</span></div>
+          <div><span>{latest?.clickCount ? `${latest.clickCount} possible ${latest.clickCount === 1 ? "click" : "clicks"}` : latest?.sentAt ? "No link signal" : "—"}</span></div>
           <div className={styles.rowActions}><a href={contact.contactUrl || contact.sourceUrl} target="_blank" rel="noreferrer">Route ↗</a><a href={contact.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a><button onClick={() => startEdit(contact)}>Edit</button>{contact.email && !drafts.some((draft) => draft.contactId === contact.id) && <button onClick={() => createDraft(contact.id)} disabled={busy || contact.status === "suppressed"}>Draft</button>}</div>
         </article>;
       })}</div>
@@ -547,6 +548,7 @@ export default function ProductionAdminPage() {
         <h2>Review message</h2>
         <p>To: {currentDraft.to} · Status: {currentDraft.status}</p>
         <p>Last sent: {currentDraft.sentAt ? new Date(currentDraft.sentAt).toLocaleString() : "Never"} · Image signal: {currentDraft.openedAt ? `first fetched ${new Date(currentDraft.openedAt).toLocaleString()}, last fetched ${new Date(currentDraft.lastOpenedAt || currentDraft.openedAt).toLocaleString()} (${currentDraft.openCount || 1} requests)` : "none"}</p>
+        <p>Link requests: {currentDraft.portfolioClickCount || 0} portfolio · {currentDraft.bookingClickCount || 0} booking{currentDraft.portfolioLastClickedAt ? ` · portfolio last ${new Date(currentDraft.portfolioLastClickedAt).toLocaleString()}` : ""}{currentDraft.bookingLastClickedAt ? ` · booking last ${new Date(currentDraft.bookingLastClickedAt).toLocaleString()}` : ""}</p>
         {currentDraft.providerMessageId && <p>SMTP message ID: <code>{currentDraft.providerMessageId}</code></p>}
         {currentDraft.status === "sent" && <p>PrivateEmail Sent folder: {currentDraft.sentCopyStatus === "saved" ? "copy saved" : currentDraft.sentCopyStatus === "saving" ? "saving copy" : "copy missing or unconfirmed"}. This is separate from SMTP acceptance.</p>}
         {currentDraft.status === "sent" && currentDraft.sentCopyStatus !== "saved" && <div className={styles.actions}><button type="button" onClick={saveSentCopy} disabled={busy || currentDraft.sentCopyStatus === "saving"}>Save copy to PrivateEmail Sent</button><span className={styles.hint}>For older sends, this rebuilds a mailbox copy from the saved draft. It does not resend to the recipient.</span></div>}
@@ -555,26 +557,28 @@ export default function ProductionAdminPage() {
         <label><span>Subject</span><input value={draftSubject} onChange={(event) => setDraftSubject(event.target.value)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <label><span>Message</span><textarea value={draftBody} onChange={(event) => setDraftBody(event.target.value)} rows={16} disabled={!(["draft", "ready"].includes(currentDraft.status))} /></label>
         <div className={styles.messageLinks}><strong>Links in this message</strong>{messageLinks(draftBody).map((url) => <a key={url} href={url} target="_blank" rel="noreferrer">{url}</a>)}</div>
-        <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Include first-party image-request tracking</span></label>
+        <label className={styles.checkboxLabel}><input type="checkbox" checked={draftTrackOpens} onChange={(event) => setDraftTrackOpens(event.target.checked)} disabled={!(["draft", "ready"].includes(currentDraft.status))} /><span>Track first-party image and portfolio / booking link requests</span></label>
         <p className={styles.hint}>Some email apps block images or fetch them automatically. This signal cannot confirm a person opened or read the message.</p>
         <div className={styles.actions}><button onClick={() => saveDraft()} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Save changes</button>{currentDraft.status === "ready" && <button onClick={() => saveDraft("draft")} disabled={busy}>Move back to draft</button>}<button onClick={() => saveDraft("ready")} disabled={busy || !(["draft", "ready"].includes(currentDraft.status))}>Mark ready</button><button className={styles.primary} onClick={reviewSingleDraft} disabled={busy || currentDraft.status !== "ready" || !mailStatus?.canSend || !currentContact}>Review send</button></div>
         {currentDraft.error && <p className={styles.notice}>{currentDraft.error}</p>}
       </> : <p>Select a draft to review.</p>}</div>
     </div> : null}
     {tab === "tracking" && <section className={styles.trackingPanel} aria-label="Email tracking">
-      <div className={styles.trackingIntro}><div><p className={styles.eyebrow}>Outreach / signals</p><h2>Email tracking</h2><p>Image fetches show possible opens, not confirmed reads. Mail apps may prefetch or block the image. Replies and bookings are stronger signals.</p></div><button type="button" onClick={enableDraftTracking} disabled={busy || !unsentTrackingOff.length}>Enable tracking on {unsentTrackingOff.length} unsent {unsentTrackingOff.length === 1 ? "draft" : "drafts"}</button></div>
+      <div className={styles.trackingIntro}><div><p className={styles.eyebrow}>Outreach / signals</p><h2>Email tracking</h2><p>Portfolio and booking link requests show possible clicks. Image requests show possible opens. Mail security scanners can fetch either, so neither proves a person visited or read. Replies and bookings are stronger signals.</p></div><button type="button" onClick={enableDraftTracking} disabled={busy || !unsentTrackingOff.length}>Enable tracking on {unsentTrackingOff.length} unsent {unsentTrackingOff.length === 1 ? "draft" : "drafts"}</button></div>
       <div className={styles.trackingStats}>
         <div><strong>{drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && trackingActive(draft)).length}</strong><span>unsent with tracking</span></div>
         <div><strong>{sentTracking.filter(trackingActive).length}</strong><span>sent with tracking</span></div>
         <div><strong>{sentTracking.filter((draft) => draft.openedAt).length}</strong><span>possible opens</span></div>
+        <div><strong>{sentTracking.filter((draft) => draft.clickCount).length}</strong><span>possible clicks</span></div>
         <div><strong>{sentTracking.filter((draft) => !trackingActive(draft)).length}</strong><span>sent without tracking</span></div>
       </div>
       <div className={styles.trackingControls}>
         <h3>Sent messages</h3>
         <select aria-label="Filter email tracking" value={trackingFilter} onChange={(event) => setTrackingFilter(event.target.value as typeof trackingFilter)}>
           <option value="all">All sent ({sentTracking.length})</option>
+          <option value="clicked">Link requested ({sentTracking.filter((draft) => draft.clickCount).length})</option>
           <option value="fetched">Image fetched ({sentTracking.filter((draft) => draft.openedAt).length})</option>
-          <option value="no_signal">No image signal ({sentTracking.filter((draft) => trackingActive(draft) && !draft.openedAt).length})</option>
+          <option value="no_signal">No signal ({sentTracking.filter((draft) => trackingActive(draft) && !draft.openedAt && !draft.clickCount).length})</option>
           <option value="off">Tracking off ({sentTracking.filter((draft) => !trackingActive(draft)).length})</option>
         </select>
       </div>
@@ -582,11 +586,11 @@ export default function ProductionAdminPage() {
         const contact = contacts.find((item) => item.id === draft.contactId);
         return <article key={draft.id} className={styles.trackingRow}>
           <div><strong>{contact?.company || draft.to}</strong><span>{draft.subject}</span><small>{draft.to}</small></div>
-          <div><span>Sent {draft.sentAt ? new Date(draft.sentAt).toLocaleString() : "date unavailable"}</span><strong>{draft.openedAt ? "Possible open" : trackingActive(draft) ? "No image signal" : "Tracking off"}</strong>{draft.openedAt && <small>First fetch {new Date(draft.openedAt).toLocaleString()} · Last fetch {new Date(draft.lastOpenedAt || draft.openedAt).toLocaleString()} · {draft.openCount || 1} {draft.openCount === 1 ? "request" : "requests"}</small>}</div>
+          <div><span>Sent {draft.sentAt ? new Date(draft.sentAt).toLocaleString() : "date unavailable"}</span><strong>{draft.clickCount ? "Possible click" : draft.openedAt ? "Possible open" : trackingActive(draft) ? "No signal" : "Tracking off"}</strong>{draft.openedAt && <small>Image: first {new Date(draft.openedAt).toLocaleString()} · last {new Date(draft.lastOpenedAt || draft.openedAt).toLocaleString()} · {draft.openCount || 1} requests</small>}{draft.portfolioClickedAt && <small>Portfolio: first {new Date(draft.portfolioClickedAt).toLocaleString()} · last {new Date(draft.portfolioLastClickedAt || draft.portfolioClickedAt).toLocaleString()} · {draft.portfolioClickCount || 1} requests</small>}{draft.bookingClickedAt && <small>Booking: first {new Date(draft.bookingClickedAt).toLocaleString()} · last {new Date(draft.bookingLastClickedAt || draft.bookingClickedAt).toLocaleString()} · {draft.bookingClickCount || 1} requests</small>}</div>
           <button type="button" onClick={() => { openDraft(draft); setTab("drafts"); }}>View email</button>
         </article>;
       }) : <p className={styles.hint}>No sent messages match this filter.</p>}</div>
-      <p className={styles.hint}>A pixel can be added only before sending. This update leaves previously sent messages and their history unchanged.</p>
+      <p className={styles.hint}>Tracking links and the image pixel are added when an email is sent. Earlier messages keep their original links and cannot gain click signals retroactively.</p>
     </section>}
     {tab === "booking" && <section className={styles.bookingPanel}>
       <h2>Booking availability</h2><p>Choose a Toronto time range. Guests will see each 20-minute opening within it. We follow up directly after they book. <a href="/book/zeb" target="_blank" rel="noreferrer">Open booking page</a></p>

@@ -49,6 +49,13 @@ export type ProductionDraft = {
   openedAt?: string;
   lastOpenedAt?: string;
   openCount?: number;
+  clickCount?: number;
+  portfolioClickedAt?: string;
+  portfolioLastClickedAt?: string;
+  portfolioClickCount?: number;
+  bookingClickedAt?: string;
+  bookingLastClickedAt?: string;
+  bookingClickCount?: number;
   error?: string;
   pitchAngle?: string;
   pitchSourceUrl?: string;
