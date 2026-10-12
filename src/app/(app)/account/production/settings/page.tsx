@@ -296,10 +296,10 @@ export default function ProductionAdminPage() {
     if (!file) return;
     setBusy(true);
     try {
-      const result = await adminFetch<{ found: number; repaired: number; unresolved: string[] }>("/api/admin/production/drafts/import", { method: "POST", body: JSON.stringify({ csv: await file.text(), repairPlaceholders: true }) });
+      const result = await adminFetch<{ found: number; repaired: number; generalCopy: number; unresolved: string[] }>("/api/admin/production/drafts/import", { method: "POST", body: JSON.stringify({ csv: await file.text(), repairPlaceholders: true }) });
       await load();
       setTab("drafts");
-      setMessage(`Replaced placeholder copy in ${result.repaired} unsent drafts from verified research. ${result.unresolved.length} still need manual repair.${result.unresolved.length ? ` First: ${result.unresolved.slice(0, 3).join(", ")}` : ""} Review the updated messages before you resume the paused batch; no email was sent by this repair.`);
+      setMessage(`Replaced placeholder copy in ${result.repaired} unsent drafts. ${result.generalCopy || 0} used a general introduction because the source did not support a specific pitch. ${result.unresolved.length} still need manual repair.${result.unresolved.length ? ` First: ${result.unresolved.slice(0, 3).join(", ")}` : ""} Review the updated messages before you resume the paused batch; no email was sent by this repair.`);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Draft repair failed"); }
     finally { setBusy(false); }
   }

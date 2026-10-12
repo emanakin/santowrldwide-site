@@ -1,7 +1,7 @@
 import { adminDb } from "@/lib/firebase/admin/firebaseAdmin";
 import { listContacts } from "@/lib/production/contacts";
 import { hasRecordedBasis } from "@/lib/production/eligibility";
-import { assignSubjects, draftPlaceholders, outreachBody } from "@/lib/production/message";
+import { assignSubjects, draftPlaceholders, matchingReviewedDraft, outreachBody } from "@/lib/production/message";
 import { escapeHtml, renderLinksAsHtml } from "@/lib/production/emailHtml";
 import { productionMailStatus } from "@/lib/production/mailStatus";
 import { appendToSent } from "@/lib/production/sentCopy";
@@ -127,28 +127,44 @@ export async function importReviewedResearch(raw: unknown[]) {
 export async function repairPlaceholderDrafts(raw: unknown[]) {
   if (raw.length > 500) throw new Error("Repair limit is 500 rows");
   const [contacts, drafts] = await Promise.all([listContacts(), listDrafts()]);
-  const reviewed = new Map<string, z.infer<typeof importRow>>();
+  const reviewed: z.infer<typeof importRow>[] = [];
   for (const rawRow of raw) {
     const row = importRow.safeParse(rawRow);
     if (!row.success || draftPlaceholders(row.data.body).length || !row.data.subject.endsWith("?")) continue;
-    reviewed.set(`${row.data.contactId}|${row.data.email.toLowerCase()}`, row.data);
+    reviewed.push(row.data);
   }
   const repairable = drafts.filter((draft) => ["draft", "ready"].includes(draft.status) && draftPlaceholders(draft.body).length);
-  const result = { found: repairable.length, repaired: 0, unresolved: [] as string[] };
+  const result = { found: repairable.length, repaired: 0, generalCopy: 0, unresolved: [] as string[] };
   const write = db().batch();
   const now = new Date().toISOString();
+  const reservedSubjects = new Set(drafts.map((draft) => draft.subject.toLowerCase()));
   for (const draft of repairable) {
     const contact = contacts.find((item) => item.id === draft.contactId);
-    const row = reviewed.get(`${draft.contactId}|${draft.to.toLowerCase()}`);
-    if (!contact || !row || row.company.toLowerCase() !== contact.company.toLowerCase() || contact.status === "suppressed" || drafts.some((other) => other.id !== draft.id && other.subject.toLowerCase() === row.subject.toLowerCase())) {
+    const row = contact && matchingReviewedDraft(reviewed, contact, draft.to);
+    if (!contact || contact.status === "suppressed" || contact.email.toLowerCase() !== draft.to.toLowerCase()) {
       result.unresolved.push(`${contact?.company || draft.to} (${draft.to})`);
       continue;
     }
-    write.update(db().collection("production_drafts").doc(draft.id), {
-      subject: row.subject, body: row.body,
-      pitchAngle: row.pitchAngle, pitchSourceUrl: row.pitchSourceUrl, pitchEvidence: row.pitchEvidence,
-      updatedAt: now,
-    });
+    if (row && !drafts.some((other) => other.id !== draft.id && other.subject.toLowerCase() === row.subject.toLowerCase())) {
+      write.update(db().collection("production_drafts").doc(draft.id), {
+        subject: row.subject, body: row.body,
+        pitchAngle: row.pitchAngle, pitchSourceUrl: row.pitchSourceUrl, pitchEvidence: row.pitchEvidence,
+        updatedAt: now,
+      });
+      reservedSubjects.add(row.subject.toLowerCase());
+    } else if (contact.sourceUrl) {
+      // A source may verify the contact route without supporting a company-specific claim.
+      // Use transparent introductory copy instead of keeping an unsendable template.
+      const subject = assignSubjects([contact], reservedSubjects).get(contact.id)!;
+      write.update(db().collection("production_drafts").doc(draft.id), {
+        subject, body: outreachBody(contact), updatedAt: now,
+      });
+      reservedSubjects.add(subject.toLowerCase());
+      result.generalCopy++;
+    } else {
+      result.unresolved.push(`${contact.company} (${draft.to})`);
+      continue;
+    }
     result.repaired++;
   }
   if (result.repaired) await write.commit();

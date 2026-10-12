@@ -5,6 +5,17 @@ export function draftPlaceholders(body: string): string[] {
   return body.match(/\[[^\]\n]+\]/g) ?? [];
 }
 
+/** Contact imports can assign new Firestore IDs; the verified route and company remain stable. */
+export function matchingReviewedDraft<T extends { contactId: string; email: string; company: string }>(
+  rows: T[], contact: { id: string; email: string; company: string }, recipient: string,
+): T | undefined {
+  const email = recipient.trim().toLowerCase();
+  const company = contact.company.trim().toLowerCase();
+  if (contact.email.trim().toLowerCase() !== email) return undefined;
+  const matches = rows.filter((row) => row.email.trim().toLowerCase() === email && row.company.trim().toLowerCase() === company);
+  return matches.find((row) => row.contactId === contact.id) ?? (matches.length === 1 ? matches[0] : undefined);
+}
+
 export function recipientFirstName(name: string): string | null {
   const first = name.trim().split(/\s+/)[0] ?? "";
   return first.length < 2 || GENERIC_NAMES.test(first) ? null : first;

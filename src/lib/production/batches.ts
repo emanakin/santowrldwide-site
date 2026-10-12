@@ -89,8 +89,11 @@ export async function resumeBatch(id: string) {
   });
   const pending = items.filter((item) => item.status === "pending");
   if (!pending.length) throw new Error("No unsent drafts remain");
-  if (pending.some((item) => { const draft = drafts.find((value) => value.id === item.draftId); return !draft || draft.status !== "ready" || draftPlaceholders(draft.body).length; })) {
-    throw new Error("Some pending drafts still contain placeholders or are no longer ready. Repair them before resuming.");
+  const blocked = pending.map((item) => drafts.find((value) => value.id === item.draftId)).filter((draft) => !draft || draft.status !== "ready" || draftPlaceholders(draft.body).length);
+  if (blocked.length) {
+    const contacts = await listContacts();
+    const names = blocked.slice(0, 5).map((draft) => contacts.find((contact) => contact.id === draft?.contactId)?.company || draft?.to || "missing draft");
+    throw new Error(`${blocked.length} batch drafts still need repair or approval: ${names.join(", ")}. Open Email history & drafts, repair or edit them, then resume.`);
   }
   await ref.update({ items, status: "running", pauseReason: null, updatedAt: new Date().toISOString() });
 }
